@@ -20,7 +20,7 @@
 ## Installation
 
 ```bash
-go get github.com/Andrei-hub11/should
+go get github.com/Kairum-Labs/should
 ```
 
 ## Usage
@@ -32,7 +32,7 @@ package main
 
 import (
 	"testing"
-	"github.com/Andrei-hub11/should"
+	"github.com/Kairum-Labs/should"
 )
 
 func TestUser(t *testing.T) {
@@ -60,8 +60,6 @@ func TestUser(t *testing.T) {
 	// should.Ensure(numbers).Contain(t, 3) // Would fail with context about where 3 would fit
 }
 ```
-
-## Advanced Examples
 
 ### Working with Slices and Maps
 
