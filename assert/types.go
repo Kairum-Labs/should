@@ -1,4 +1,4 @@
-package should
+package assert
 
 // Assertion is a struct that contains the value to be asserted.
 type Assertion[T any] struct {
