@@ -1,4 +1,4 @@
-name: Go
+name: CI
 
 on:
   push:
@@ -7,19 +7,20 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    name: Build and Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
+
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.24.3"
+          go-version: "1.24"
 
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Get dependencies
+      - name: Download dependencies
         run: go mod download
 
       - name: Build
@@ -33,4 +34,14 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
-          fail_ci_if_error: true
+          fail_ci_if_error: false
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.txt | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Current coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 85" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below required 85%"
+            exit 1
+          fi
+

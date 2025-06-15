@@ -7,23 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  golangci:
-    name: lint
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: "go.mod"
-          cache: true
+          go-version: "1.24"
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          # We use a specific version to ensure consistent linting results.
-          version: v1.64.8
-          # We've removed --skip-files=".*_test.go" to ensure test files are also linted,
-          # and removed --exclude-use-default=false to use sensible defaults.
+          version: latest
           args: --timeout=5m

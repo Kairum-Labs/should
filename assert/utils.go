@@ -2,6 +2,7 @@ package should
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"slices"
 	"sort"
@@ -382,8 +383,8 @@ func formatMultilineString(s string) string {
 
 //  === THIS SECTION IS TO FIND SIMILAR STRINGS IN A SLICE ===
 
-// FindSimilarStrings encontra strings similares em uma slice
-func FindSimilarStrings(target string, collection []string, maxResults int) []SimilarItem {
+// findSimilarStrings finds similar strings in a slice
+func findSimilarStrings(target string, collection []string, maxResults int) []SimilarItem {
 	var results []SimilarItem
 
 	for i, item := range collection {
@@ -392,7 +393,7 @@ func FindSimilarStrings(target string, collection []string, maxResults int) []Si
 		}
 
 		similarity := calculateStringSimilarity(target, item)
-		if similarity.Similarity > 0.6 { // threshold de 60%
+		if similarity.Similarity >= 0.6 { // threshold de 60%
 			similarity.Index = i
 			results = append(results, similarity)
 		}
@@ -419,6 +420,12 @@ func FindSimilarStrings(target string, collection []string, maxResults int) []Si
 func calculateStringSimilarity(target, candidate string) SimilarItem {
 	item := SimilarItem{
 		Value: candidate,
+	}
+
+	// 0. Check exact match first
+	if target == candidate {
+		item.Similarity = 1.0
+		return item
 	}
 
 	// 1. Check case sensitivity
@@ -488,7 +495,7 @@ func calculateStringSimilarity(target, candidate string) SimilarItem {
 
 	similarity := 1.0 - float64(distance)/float64(maxLen)
 
-	if similarity > 0.6 {
+	if similarity >= 0.6 {
 		item.Similarity = similarity
 		item.DiffType = "typo"
 		item.Details = generateTypoDetails(target, candidate, distance)
@@ -573,7 +580,7 @@ func containsString(target string, collection []string) ContainResult {
 		}
 	}
 
-	result.Similar = FindSimilarStrings(target, collection, maxSimilar)
+	result.Similar = findSimilarStrings(target, collection, maxSimilar)
 
 	// 2. Prepare context (first elements to show)
 	contextSize := maxShow
@@ -638,9 +645,9 @@ func formatContainsError(target interface{}, result ContainResult) string {
 			similar := result.Similar[0]
 			msg.WriteString(fmt.Sprintf("        Found similar: %v (at index %d) - %s\n",
 				similar.Value, similar.Index, similar.Details))
-			msg.WriteString("        💡 Possible typo detected")
+			msg.WriteString("        Hint: Possible typo detected")
 		} else {
-			msg.WriteString("        💡 Similar elements found:\n")
+			msg.WriteString("        Hint: Similar elements found:\n")
 			for _, similar := range result.Similar {
 				msg.WriteString(fmt.Sprintf("          └─ %v (at index %d) - %s\n",
 					similar.Value, similar.Index, similar.Details))
@@ -661,17 +668,33 @@ func formatContainsError(target interface{}, result ContainResult) string {
 // Example:
 //
 //	findInsertionContext([]int{10, 20, 40}, 30) => ("[..., 10, 20, 40]", 2)
-func findInsertionContext(collection []int, target int) (string, int) {
+func findInsertionContext[T Ordered](collection []T, target T) (string, int) {
 	if len(collection) == 0 {
 		return "", -1
 	}
 
-	sortedCollection := make([]int, len(collection))
+	if isFloat(target) {
+		if math.IsNaN(float64(target)) {
+			return "error: NaN values are not supported", -1
+		}
+	}
+
+	sortedCollection := make([]T, len(collection))
 	copy(sortedCollection, collection)
 	slices.Sort(sortedCollection)
 
+	if len(sortedCollection) > 0 && isFloat(sortedCollection[0]) {
+		for _, v := range sortedCollection {
+			if math.IsNaN(float64(v)) {
+				return "error: collection contains NaN values", -1
+			}
+		}
+	}
+
 	//we need to find the index where the target should be inserted in the sorted collection
-	insertIndex := sort.SearchInts(sortedCollection, target)
+	insertIndex := sort.Search(len(sortedCollection), func(i int) bool {
+		return sortedCollection[i] >= target
+	})
 
 	if insertIndex < len(sortedCollection) && sortedCollection[insertIndex] == target {
 		return "", insertIndex
@@ -731,7 +754,7 @@ func findInsertionContext(collection []int, target int) (string, int) {
 	return builder.String(), insertIndex
 }
 
-func formatInsertionContext(collection []int, target int, window string) string {
+func formatInsertionContext[T Ordered](collection []T, target T, window string) string {
 	collectionLength := len(collection)
 	builder := strings.Builder{}
 
@@ -744,9 +767,147 @@ func formatInsertionContext(collection []int, target int, window string) string 
 
 	builder.WriteString("\nCollection: ")
 	builder.WriteString(window)
-	builder.WriteString(fmt.Sprintf(" (showing 4 first of %v elements)", collectionLength))
+	builder.WriteString(fmt.Sprintf(" (showing %d of %v elements)", len(window), collectionLength))
 	builder.WriteString("\nMissing  : ")
 	builder.WriteString(fmt.Sprint(target))
 
 	return builder.String()
+}
+
+func isFloat[T Ordered](v T) bool {
+	switch any(v).(type) {
+	case float32, float64:
+		return true
+	default:
+		return false
+	}
+}
+
+// formatEmptyError formats a detailed error message for empty/not empty assertions
+func formatEmptyError(value interface{}, expectedEmpty bool) string {
+	var msg strings.Builder
+
+	if expectedEmpty {
+		msg.WriteString("Expected value to be empty, but it was not:\n")
+	} else {
+		msg.WriteString("Expected value to be not empty, but it was empty:\n")
+	}
+
+	actualValue := reflect.ValueOf(value)
+
+	switch actualValue.Kind() {
+	case reflect.String:
+
+		if len(actualValue.String()) > 180 {
+			return formatMultilineString(actualValue.String())
+		}
+
+		str := actualValue.String()
+		msg.WriteString("        Type    : string\n")
+		msg.WriteString(fmt.Sprintf("        Length  : %d characters\n", len(str)))
+		if expectedEmpty && len(str) > 0 {
+			if len(str) <= 50 {
+				msg.WriteString(fmt.Sprintf("        Content : %q\n", str))
+			} else {
+				msg.WriteString(fmt.Sprintf("        Content : %q... (truncated)\n", str[:47]))
+			}
+		}
+
+	case reflect.Slice, reflect.Array:
+		length := actualValue.Len()
+		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
+		msg.WriteString(fmt.Sprintf("        Length  : %d elements\n", length))
+		if expectedEmpty && length > 0 {
+			if length <= 5 {
+				msg.WriteString(fmt.Sprintf("        Content : %s\n", formatComparisonValue(value)))
+			} else {
+				// Show first 3 elements
+				elements := make([]string, 3)
+				for i := 0; i < 3; i++ {
+					elements[i] = formatValueComparison(actualValue.Index(i))
+				}
+				msg.WriteString(fmt.Sprintf("        Content : [%s, ...] (showing first 3 of %d)\n",
+					strings.Join(elements, ", "), length))
+			}
+		}
+
+	case reflect.Map:
+		length := actualValue.Len()
+		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
+		msg.WriteString(fmt.Sprintf("        Length  : %d entries\n", length))
+		if expectedEmpty && length > 0 {
+			if length <= 3 {
+				msg.WriteString(fmt.Sprintf("        Content : %s\n", formatComparisonValue(value)))
+			} else {
+				msg.WriteString(fmt.Sprintf("        Content : map[...] (showing %d entries)\n", length))
+			}
+		}
+
+	case reflect.Chan:
+		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
+		msg.WriteString("        Note    : Channel length cannot be determined\n")
+
+	default:
+		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
+		msg.WriteString(fmt.Sprintf("        Value   : %s\n", formatComparisonValue(value)))
+	}
+
+	return msg.String()
+}
+
+// formatNumericComparisonError formats a detailed error message for numeric comparisons
+func formatNumericComparisonError(actual, expected interface{}, operation string) string {
+	var msg strings.Builder
+
+	actualV := reflect.ValueOf(actual)
+	expectedV := reflect.ValueOf(expected)
+
+	actualFloat, _ := toFloat64(actualV)
+	expectedFloat, _ := toFloat64(expectedV)
+
+	difference := actualFloat - expectedFloat
+
+	switch operation {
+	case "greater":
+		msg.WriteString("Expected value to be greater than threshold:\n")
+	case "less":
+		msg.WriteString("Expected value to be less than threshold:\n")
+	case "greaterOrEqual":
+		msg.WriteString("Expected value to be greater than or equal to threshold:\n")
+	case "lessOrEqual":
+		msg.WriteString("Expected value to be less than or equal to threshold:\n")
+	}
+
+	msg.WriteString(fmt.Sprintf("        Value     : %v\n", actual))
+	msg.WriteString(fmt.Sprintf("        Threshold : %v\n", expected))
+
+	if difference > 0 {
+		msg.WriteString(fmt.Sprintf("        Difference: +%v (value is %v greater)\n", difference, difference))
+	} else if difference < 0 {
+		msg.WriteString(fmt.Sprintf("        Difference: %v (value is %v smaller)\n", difference, -difference))
+	} else {
+		msg.WriteString("        Difference: 0 (values are equal)\n")
+	}
+
+	// Add contextual hint
+	switch operation {
+	case "greater":
+		if difference <= 0 {
+			msg.WriteString("        Hint      : Value should be larger than threshold\n")
+		}
+	case "less":
+		if difference >= 0 {
+			msg.WriteString("        Hint      : Value should be smaller than threshold\n")
+		}
+	case "greaterOrEqual":
+		if difference < 0 {
+			msg.WriteString("        Hint      : Value should be larger than or equal to threshold\n")
+		}
+	case "lessOrEqual":
+		if difference > 0 {
+			msg.WriteString("        Hint      : Value should be smaller than or equal to threshold\n")
+		}
+	}
+
+	return msg.String()
 }
