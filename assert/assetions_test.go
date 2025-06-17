@@ -121,12 +121,6 @@ func TestBeEqual_ForMaps_Fails_WhenNotEqual(t *testing.T) {
 	}
 }
 
-/* func TestBeEmpty_Fail_WhenNotEmpty(t *testing.T) {
-	stringTest := "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Praesent commodo cursus magna, vel scelerisque nisl consectetur et."
-
-	Ensure(stringTest).BeEmpty(t)
-} */
-
 func TestBeGreaterThan_Succeeds_WhenGreater(t *testing.T) {
 	t.Parallel()
 
@@ -192,6 +186,46 @@ func TestNotContain_Fails_WhenItemIsPresent(t *testing.T) {
 	expected := "Expected collection to NOT contain element"
 	if !strings.Contains(message, expected) {
 		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestNotContain_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]string{"apple", "banana"}).NotContain(t, "apple", AssertionConfig{Message: "Apple should not be in basket"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Expected collection to NOT contain element"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestContain_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]string{"apple", "banana"}).Contain(t, "orange", AssertionConfig{Message: "Fruit not found in basket"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Fruit not found in basket",
+		"Missing   : orange",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
 	}
 }
 
@@ -397,6 +431,23 @@ func TestBeEmpty_Succeeds(t *testing.T) {
 	}
 }
 
+func TestBeEmpty_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure("hello").BeEmpty(t, AssertionConfig{Message: "This is a custom message"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "This is a custom message"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
 func TestBeEmpty_Fails_WithNonEmptyString(t *testing.T) {
 	t.Parallel()
 
@@ -536,6 +587,42 @@ func TestBeEmpty_WithChannel(t *testing.T) {
 	}
 }
 
+func TestBeEmpty_WithChannelBuffered(t *testing.T) {
+	t.Parallel()
+
+	// Test empty buffered channel
+	ch := make(chan int, 2)
+	Ensure(ch).BeEmpty(t)
+
+	// Test non-empty buffered channel
+	ch <- 42
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(ch).BeEmpty(t, AssertionConfig{Message: "Channel should be empty"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Channel should be empty",
+		"Expected value to be empty, but it was not:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestBeEmpty_WithNilInterface(t *testing.T) {
+	t.Parallel()
+
+	var nilInterface interface{}
+	Ensure(nilInterface).BeEmpty(t)
+}
+
 // === Tests for BeNotEmpty ===
 
 func TestBeNotEmpty_Succeeds_WithNonEmptyString(t *testing.T) {
@@ -639,6 +726,54 @@ func TestBeNotEmpty_WithUnsupportedType(t *testing.T) {
 
 	failed, message := assertFails(t, func(t testing.TB) {
 		Ensure(42).BeNotEmpty(t)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeNotEmpty_WithChannelBuffered(t *testing.T) {
+	t.Parallel()
+
+	// Test non-empty buffered channel
+	ch := make(chan int, 1)
+	ch <- 42
+	Ensure(ch).BeNotEmpty(t)
+
+	// Test empty buffered channel
+	emptyChannel := make(chan int, 1)
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(emptyChannel).BeNotEmpty(t, AssertionConfig{Message: "Channel should have data"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Channel should have data",
+		"Expected value to be not empty, but it was empty:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestBeNotEmpty_WithValidInterface(t *testing.T) {
+	t.Parallel()
+
+	var validInterface interface{} = 42
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(validInterface).BeNotEmpty(t)
 	})
 
 	if !failed {
@@ -1052,6 +1187,29 @@ func TestBeGreaterOrEqualThan_Fails_WithNonNumericTypes(t *testing.T) {
 	expected := "expected a number for actual value, but got string"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(5.0).BeGreaterOrEqualThan(t, 5.1, AssertionConfig{Message: "Integer vs float comparison"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Integer vs float comparison",
+		"Expected 5 to be greater or equal than 5.1",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
 	}
 }
 
@@ -1709,6 +1867,120 @@ func TestBeGreaterThan_Fails_WithNonNumericExpected(t *testing.T) {
 	}
 
 	expected := "expected a number for actual value, but got string"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+// === Tests for BeEqual with complex types and custom messages ===
+
+func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
+	t.Parallel()
+
+	type Address struct {
+		Street string
+		City   string
+	}
+
+	type Person struct {
+		Name    string
+		Age     int
+		Address Address
+	}
+
+	person1 := Person{
+		Name: "John",
+		Age:  30,
+		Address: Address{
+			Street: "123 Main St",
+			City:   "New York",
+		},
+	}
+
+	person2 := Person{
+		Name: "John",
+		Age:  31,
+		Address: Address{
+			Street: "123 Main St",
+			City:   "Boston",
+		},
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(person1).BeEqual(t, person2, AssertionConfig{Message: "Person objects should be identical"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Person objects should be identical",
+		"Differences found",
+		"Field differences:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+// === Tests for numeric type coverage in toFloat64 ===
+
+func TestNumericTypeConversions_AllTypes(t *testing.T) {
+	t.Parallel()
+
+	// Test all supported numeric types for better toFloat64 coverage
+	testCases := []struct {
+		name     string
+		value    interface{}
+		expected float64
+	}{
+		{"int8", int8(10), 10.0},
+		{"int16", int16(20), 20.0},
+		{"int32", int32(30), 30.0},
+		{"int64", int64(40), 40.0},
+		{"uint8", uint8(50), 50.0},
+		{"uint16", uint16(60), 60.0},
+		{"uint32", uint32(70), 70.0},
+		{"uint64", uint64(80), 80.0},
+		{"uintptr", uintptr(90), 90.0},
+		{"float32", float32(3.14), 3.140000104904175}, // float32 precision
+		{"float64", float64(2.718), 2.718},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// This will exercise the toFloat64 function through BeGreaterThan
+			Ensure(tc.value).BeGreaterThan(t, tc.expected-1)
+		})
+	}
+}
+
+func TestIsNumericType_Coverage(t *testing.T) {
+	t.Parallel()
+
+	// Test with a non-numeric slice to exercise the fallback path
+	type CustomStruct struct {
+		Name string
+	}
+
+	structs := []CustomStruct{
+		{Name: "test1"},
+		{Name: "test2"},
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(structs).Contain(t, CustomStruct{Name: "test3"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing   :"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
