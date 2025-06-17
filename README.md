@@ -17,7 +17,6 @@
 - **String Similarity**: When a string assertion fails, `Should` suggests similar strings from your collection to help you spot typos.
 - **Integer Context**: When an integer assertion fails, `Should` shows the nearest values to help you understand the context.
 - **Type-Safe**: Uses Go generics for type safety while maintaining a clean API.
-- **High-Performance**: Optimized implementations for common types and operations.
 
 ## Installation
 
@@ -48,6 +47,10 @@ func TestBasicAssertions(t *testing.T) {
 	should.Ensure(10).BeGreaterThan(t, 5)
 	should.Ensure(3).BeLessThan(t, 7)
 
+	// Numeric comparisons with custom messages
+	should.Ensure(user.Age).BeGreaterThan(t, 18, should.AssertionConfig{Message: "User must be adult"})
+	should.Ensure(score).BeGreaterOrEqualThan(t, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+
 	// Empty/Non-empty checks
 	should.Ensure("").BeEmpty(t)
 	should.Ensure([]int{1, 2, 3}).BeNotEmpty(t)
@@ -56,6 +59,7 @@ func TestBasicAssertions(t *testing.T) {
 	users := []string{"Alice", "Bob", "Charlie"}
 	should.Ensure(users).Contain(t, "Alice")
 	should.Ensure(users).NotContain(t, "David")
+	should.Ensure(userIDs).Contain(t, targetID, should.AssertionConfig{Message: "User ID must exist in the system"})
 }
 ```
 
@@ -113,14 +117,14 @@ Get detailed information about numeric comparison failures:
 
 ```go
 // Basic comparison with custom message
-should.Ensure(5).BeGreaterThan(t, 10, "Score validation failed")
+should.Ensure(5).BeGreaterThan(t, 10, should.AssertionConfig{Message: "Score validation failed"})
 // Output:
 // Score validation failed
 // Expected value to be greater than threshold:
 //         Value     : 5
 //         Threshold : 10
 //         Difference: -5 (value is 5 smaller)
-//         💡 Hint   : Value should be larger than threshold
+//         Hint   : Value should be larger than threshold
 
 // Equal values
 should.Ensure(42).BeGreaterThan(t, 42)
@@ -129,7 +133,7 @@ should.Ensure(42).BeGreaterThan(t, 42)
 //         Value     : 42
 //         Threshold : 42
 //         Difference: 0 (values are equal)
-//         💡 Hint   : Value should be larger than threshold
+//         Hint   : Value should be larger than threshold
 
 // Float precision
 should.Ensure(3.14).BeLessThan(t, 2.71)
@@ -138,7 +142,7 @@ should.Ensure(3.14).BeLessThan(t, 2.71)
 //         Value     : 3.14
 //         Threshold : 2.71
 //         Difference: +0.43000000000000016 (value is 0.43000000000000016 greater)
-//         💡 Hint   : Value should be smaller than threshold
+//         Hint   : Value should be smaller than threshold
 
 // Large numbers
 should.Ensure(1000000).BeLessThan(t, 999999)
@@ -147,7 +151,7 @@ should.Ensure(1000000).BeLessThan(t, 999999)
 //         Value     : 1000000
 //         Threshold : 999999
 //         Difference: +1 (value is 1 greater)
-//         💡 Hint   : Value should be smaller than threshold
+//         Hint   : Value should be smaller than threshold
 ```
 
 ### Struct and Object Comparisons
@@ -233,10 +237,51 @@ should.Ensure(numbers).Contain(t, 6)
 
 ### Panic Handling
 
-- `Panic(t, func)` - Assert that a function panics
-- `NotPanic(t, func)` - Assert that a function does not panic
+- `Panic(t, func, config...)` - Assert that a function panics
+- `NotPanic(t, func, config...)` - Assert that a function does not panic
+
+Example with custom messages:
+
+```go
+// Assert function panics with custom message
+should.Panic(t, func() {
+    divide(1, 0)
+}, should.AssertionConfig{Message: "Division by zero should panic"})
+
+// Assert function doesn't panic with custom message
+should.NotPanic(t, func() {
+    user.Save()
+}, should.AssertionConfig{Message: "Save operation should not panic"})
+```
 
 ## Advanced Usage
+
+### AssertionConfig for Custom Messages
+
+The `should.AssertionConfig` struct provides a scalable way to configure assertions. Currently, it supports custom error messages, with room for future extensions:
+
+```go
+// Basic usage with custom message
+should.Ensure(user.Age).BeGreaterThan(t, 18, should.AssertionConfig{
+    Message: "User must be at least 18 years old",
+})
+
+// Multiple assertions with different messages
+should.Ensure(account.Balance).BeGreaterOrEqualThan(t, 0, should.AssertionConfig{
+    Message: "Account balance cannot be negative",
+})
+
+should.Ensure(userList).Contain(t, expectedUser, should.AssertionConfig{
+    Message: "Expected user not found in the list",
+})
+
+// Future extensibility (planned features)
+// should.Ensure(value).BeEqual(t, expected, should.AssertionConfig{
+//     Message: "Custom error message",
+//     Timeout: 5 * time.Second,
+//     Retries: 3,
+// })
+```
 
 ### Custom Predicate Functions
 
@@ -255,6 +300,15 @@ should.Ensure(people).ContainFunc(t, func(item any) bool {
     }
     return person.Age > 30
 })
+
+// With custom error message
+should.Ensure(people).ContainFunc(t, func(item any) bool {
+    person, ok := item.(Person)
+    if !ok {
+        return false
+    }
+    return person.Age >= 65
+}, should.AssertionConfig{Message: "No elderly users found"})
 ```
 
 ### Type Safety

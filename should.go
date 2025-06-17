@@ -33,6 +33,14 @@ func Ensure[T any](actual T) *assert.Assertion[T] {
 	return assert.Ensure(actual)
 }
 
+// AssertionConfig provides configuration options for assertions.
+// It allows for custom error message
+//
+// Example:
+//
+//	should.Ensure(value).BeEqual(t, expected, should.AssertionConfig{Message: "Custom message"})
+type AssertionConfig = assert.AssertionConfig
+
 // Panic asserts that the given function panics when executed.
 // If the function does not panic, the test will fail with a descriptive error message.
 //
@@ -41,8 +49,8 @@ func Ensure[T any](actual T) *assert.Assertion[T] {
 //	should.Panic(t, func() {
 //		panic("expected panic")
 //	})
-func Panic(t testing.TB, fn func(), msgAndArgs ...interface{}) {
-	assert.Panic(t, fn, msgAndArgs...)
+func Panic(t testing.TB, fn func(), config ...assert.AssertionConfig) {
+	assert.Panic(t, fn, config...)
 }
 
 // NotPanic asserts that the given function does not panic when executed.
@@ -54,6 +62,6 @@ func Panic(t testing.TB, fn func(), msgAndArgs ...interface{}) {
 //		result := safeOperation()
 //		_ = result
 //	})
-func NotPanic(t testing.TB, fn func(), msgAndArgs ...interface{}) {
-	assert.NotPanic(t, fn, msgAndArgs...)
+func NotPanic(t testing.TB, fn func(), config ...assert.AssertionConfig) {
+	assert.NotPanic(t, fn, config...)
 }

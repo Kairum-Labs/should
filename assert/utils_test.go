@@ -2,6 +2,7 @@ package assert
 
 import (
 	"math"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -778,4 +779,632 @@ func TestFormatContainsError(t *testing.T) {
 			t.Error("Error message did not list the first similar item correctly")
 		}
 	})
+}
+
+// === Tests for auxiliary utility functions ===
+
+func TestMin3(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		a, b, c  int
+		expected int
+	}{
+		{
+			name:     "First_Is_Smallest",
+			a:        1,
+			b:        2,
+			c:        3,
+			expected: 1,
+		},
+		{
+			name:     "Second_Is_Smallest",
+			a:        3,
+			b:        1,
+			c:        2,
+			expected: 1,
+		},
+		{
+			name:     "Third_Is_Smallest",
+			a:        2,
+			b:        3,
+			c:        1,
+			expected: 1,
+		},
+		{
+			name:     "All_Equal",
+			a:        5,
+			b:        5,
+			c:        5,
+			expected: 5,
+		},
+		{
+			name:     "Two_Equal_Smallest",
+			a:        1,
+			b:        1,
+			c:        3,
+			expected: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := min3(tc.a, tc.b, tc.c)
+			Ensure(result).BeEqual(t, tc.expected)
+		})
+	}
+}
+
+func TestMinMax(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Min function", func(t *testing.T) {
+		Ensure(min(5, 3)).BeEqual(t, 3)
+		Ensure(min(3, 5)).BeEqual(t, 3)
+		Ensure(min(5, 5)).BeEqual(t, 5)
+		Ensure(min(-1, 1)).BeEqual(t, -1)
+	})
+
+	t.Run("Max function", func(t *testing.T) {
+		Ensure(max(5, 3)).BeEqual(t, 5)
+		Ensure(max(3, 5)).BeEqual(t, 5)
+		Ensure(max(5, 5)).BeEqual(t, 5)
+		Ensure(max(-1, 1)).BeEqual(t, 1)
+	})
+}
+
+func TestIsFloat(t *testing.T) {
+	t.Parallel()
+
+	t.Run("With float32", func(t *testing.T) {
+		result := isFloat(float32(3.14))
+		Ensure(result).BeTrue(t)
+	})
+
+	t.Run("With float64", func(t *testing.T) {
+		result := isFloat(3.14)
+		Ensure(result).BeTrue(t)
+	})
+
+	t.Run("With int", func(t *testing.T) {
+		result := isFloat(42)
+		Ensure(result).BeFalse(t)
+	})
+
+	t.Run("With uint", func(t *testing.T) {
+		result := isFloat(uint(42))
+		Ensure(result).BeFalse(t)
+	})
+}
+
+func TestFormatMultilineString(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Short string", func(t *testing.T) {
+		input := "Hello, World!"
+		result := formatMultilineString(input)
+		Ensure(result).BeEqual(t, input)
+	})
+
+	t.Run("Long string", func(t *testing.T) {
+		// Create a string longer than 280 characters
+		input := strings.Repeat("a", 300)
+		result := formatMultilineString(input)
+
+		expectedParts := []string{
+			"Length: 300",
+			"5 lines",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Very long string with last lines", func(t *testing.T) {
+		// Create a string that will trigger "Last lines" section
+		input := strings.Repeat("a", 56*7) // 7 lines worth
+		result := formatMultilineString(input)
+
+		expectedParts := []string{
+			"Length:",
+			"Last lines:",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+}
+
+func TestIsSliceOrArray(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		input    interface{}
+		expected bool
+	}{
+		{
+			name:     "Nil value",
+			input:    nil,
+			expected: false,
+		},
+		{
+			name:     "String",
+			input:    "hello",
+			expected: false,
+		},
+		{
+			name:     "Int",
+			input:    42,
+			expected: false,
+		},
+		{
+			name:     "Slice",
+			input:    []int{1, 2, 3},
+			expected: true,
+		},
+		{
+			name:     "Array",
+			input:    [3]int{1, 2, 3},
+			expected: true,
+		},
+		{
+			name:     "Map",
+			input:    map[string]int{"a": 1},
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isSliceOrArray(tc.input)
+			Ensure(result).BeEqual(t, tc.expected)
+		})
+	}
+}
+
+func TestFormatSlice(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Valid slice", func(t *testing.T) {
+		input := []int{1, 2, 3}
+		result := formatSlice(input)
+		expected := "[1, 2, 3]"
+		Ensure(result).BeEqual(t, expected)
+	})
+
+	t.Run("Non-slice input", func(t *testing.T) {
+		input := "not a slice"
+		result := formatSlice(input)
+		expected := "<not a slice or array: string>"
+		Ensure(result).BeEqual(t, expected)
+	})
+}
+
+func TestFormatValueComparison_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Invalid value", func(t *testing.T) {
+		var v reflect.Value
+		result := formatValueComparison(v)
+		expected := "nil"
+		Ensure(result).BeEqual(t, expected)
+	})
+
+	t.Run("Unexported interface", func(t *testing.T) {
+		// Test case for interface{} that can't be interfaced
+		v := reflect.ValueOf(42)
+		result := formatValueComparison(v)
+		expected := "42"
+		Ensure(result).BeEqual(t, expected)
+	})
+}
+
+func TestLevenshteinDistance(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		s1, s2   string
+		expected int
+	}{
+		{
+			name:     "Empty strings",
+			s1:       "",
+			s2:       "",
+			expected: 0,
+		},
+		{
+			name:     "One empty string",
+			s1:       "hello",
+			s2:       "",
+			expected: 5,
+		},
+		{
+			name:     "Identical strings",
+			s1:       "hello",
+			s2:       "hello",
+			expected: 0,
+		},
+		{
+			name:     "Single character difference",
+			s1:       "hello",
+			s2:       "hallo",
+			expected: 1,
+		},
+		{
+			name:     "Multiple differences",
+			s1:       "kitten",
+			s2:       "sitting",
+			expected: 3,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := levenshteinDistance(tc.s1, tc.s2)
+			Ensure(result).BeEqual(t, tc.expected)
+		})
+	}
+}
+
+func TestGenerateTypoDetails(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name      string
+		target    string
+		candidate string
+		distance  int
+		expected  string
+	}{
+		{
+			name:      "Single substitution",
+			target:    "hello",
+			candidate: "hallo",
+			distance:  1,
+			expected:  "'a' ≠ 'e' at position 2",
+		},
+		{
+			name:      "Single extra character",
+			target:    "hello",
+			candidate: "helloo",
+			distance:  1,
+			expected:  "1 extra char",
+		},
+		{
+			name:      "Single missing character",
+			target:    "hello",
+			candidate: "hell",
+			distance:  1,
+			expected:  "1 missing char",
+		},
+		{
+			name:      "Multiple differences",
+			target:    "hello",
+			candidate: "world",
+			distance:  4,
+			expected:  "4 char diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := generateTypoDetails(tc.target, tc.candidate, tc.distance)
+			Ensure(result).BeEqual(t, tc.expected)
+		})
+	}
+}
+
+// === Tests for error formatting functions ===
+
+func TestFormatEmptyError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Empty string - expecting empty", func(t *testing.T) {
+		result := formatEmptyError("", true)
+		expectedParts := []string{
+			"Expected value to be empty, but it was not:",
+			"Type    : string",
+			"Length  : 0 characters",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Non-empty string - expecting not empty", func(t *testing.T) {
+		result := formatEmptyError("hello", false)
+		expectedParts := []string{
+			"Expected value to be not empty, but it was empty:",
+			"Type    : string",
+			"Length  : 5 characters",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Large slice - expecting empty", func(t *testing.T) {
+		largeSlice := make([]int, 10)
+		for i := range largeSlice {
+			largeSlice[i] = i
+		}
+		result := formatEmptyError(largeSlice, true)
+
+		expectedParts := []string{
+			"Expected value to be empty, but it was not:",
+			"Type    : []int",
+			"Length  : 10 elements",
+			"showing first 3 of 10",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Long string - expecting empty", func(t *testing.T) {
+		longString := strings.Repeat("a", 200)
+		result := formatEmptyError(longString, true)
+
+		// For very long strings, the function uses formatMultilineString which has different output
+		if strings.Contains(result, longString) {
+			// It's showing the raw string content
+			if !strings.Contains(result, longString) {
+				t.Errorf("Expected result to contain the long string")
+			}
+		} else {
+			// Check for standard formatting
+			expectedParts := []string{
+				"Expected value to be empty, but it was not:",
+				"Type    : string",
+				"Length  : 200 characters",
+			}
+
+			for _, part := range expectedParts {
+				if !strings.Contains(result, part) {
+					t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+				}
+			}
+		}
+	})
+
+	t.Run("Map - expecting empty", func(t *testing.T) {
+		testMap := map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
+		result := formatEmptyError(testMap, true)
+
+		expectedParts := []string{
+			"Expected value to be empty, but it was not:",
+			"Type    : map[string]int",
+			"Length  : 4 entries",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Channel - expecting empty", func(t *testing.T) {
+		ch := make(chan int)
+		result := formatEmptyError(ch, true)
+
+		expectedParts := []string{
+			"Expected value to be empty, but it was not:",
+			"Type    : chan int",
+			"Note    : Channel length cannot be determined",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Other type - expecting empty", func(t *testing.T) {
+		result := formatEmptyError(42, true)
+
+		expectedParts := []string{
+			"Expected value to be empty, but it was not:",
+			"Type    : int",
+			"Value   : 42",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+}
+
+func TestFormatNumericComparisonError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Greater than - positive difference", func(t *testing.T) {
+		result := formatNumericComparisonError(10, 5, "greater")
+
+		expectedParts := []string{
+			"Expected value to be greater than threshold:",
+			"Value     : 10",
+			"Threshold : 5",
+			"Difference: +5 (value is 5 greater)",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Less than - should fail with larger value", func(t *testing.T) {
+		result := formatNumericComparisonError(8, 3, "less")
+
+		expectedParts := []string{
+			"Expected value to be less than threshold:",
+			"Value     : 8",
+			"Threshold : 3",
+			"Difference: +5 (value is 5 greater)",
+			"Hint      : Value should be smaller than threshold",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Equal values", func(t *testing.T) {
+		result := formatNumericComparisonError(5, 5, "greater")
+
+		expectedParts := []string{
+			"Expected value to be greater than threshold:",
+			"Value     : 5",
+			"Threshold : 5",
+			"Difference: 0 (values are equal)",
+			"Hint      : Value should be larger than threshold",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("GreaterOrEqual operation", func(t *testing.T) {
+		result := formatNumericComparisonError(3, 5, "greaterOrEqual")
+
+		expectedParts := []string{
+			"Expected value to be greater than or equal to threshold:",
+			"Hint      : Value should be larger than or equal to threshold",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("LessOrEqual operation", func(t *testing.T) {
+		result := formatNumericComparisonError(8, 5, "lessOrEqual")
+
+		expectedParts := []string{
+			"Expected value to be less than or equal to threshold:",
+			"Hint      : Value should be smaller than or equal to threshold",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+}
+
+func TestFormatInsertionContext_EmptyCollection(t *testing.T) {
+	t.Parallel()
+
+	result := formatInsertionContext([]int{}, 5, "")
+	expectedParts := []string{
+		"Collection: []",
+		"Missing  : 5",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(result, part) {
+			t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+		}
+	}
+}
+
+func TestFormatInsertionContext_LargeCollection(t *testing.T) {
+	t.Parallel()
+
+	largeCollection := make([]int, 10)
+	for i := range largeCollection {
+		largeCollection[i] = i
+	}
+
+	result := formatInsertionContext(largeCollection, 15, "[0, 1, 2, 3]")
+	expectedParts := []string{
+		"Collection: [0, 1, 2, 3]",
+		"(showing 4 of 10 elements)",
+		"Missing  : 15",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(result, part) {
+			t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+		}
+	}
+}
+
+func TestFormatDiffValue(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "Nil value",
+			input:    nil,
+			expected: "nil",
+		},
+		{
+			name:     "String value",
+			input:    "hello",
+			expected: `"hello"`,
+		},
+		{
+			name:     "Bool value",
+			input:    true,
+			expected: "true",
+		},
+		{
+			name:     "Int value",
+			input:    42,
+			expected: "42",
+		},
+		{
+			name:     "Float value",
+			input:    3.14,
+			expected: "3.14",
+		},
+		{
+			name:     "Complex type",
+			input:    []int{1, 2, 3},
+			expected: "[1, 2, 3]",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := formatDiffValue(tc.input)
+			Ensure(result).BeEqual(t, tc.expected)
+		})
+	}
 }

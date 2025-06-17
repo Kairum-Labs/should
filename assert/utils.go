@@ -9,21 +9,6 @@ import (
 	"strings"
 )
 
-func messageFromMsgAndArgs(msgAndArgs ...any) string {
-	if len(msgAndArgs) == 0 {
-		return ""
-	}
-	if len(msgAndArgs) == 1 {
-		if msg, ok := msgAndArgs[0].(string); ok {
-			return msg
-		}
-	}
-	if format, ok := msgAndArgs[0].(string); ok {
-		return fmt.Sprintf(format, msgAndArgs[1:]...)
-	}
-	return ""
-}
-
 // isSliceOrArray checks if the provided value is a slice or an array.
 // It handles nil values by returning false.
 func isSliceOrArray(v interface{}) bool {
@@ -765,9 +750,22 @@ func formatInsertionContext[T Ordered](collection []T, target T, window string) 
 		return builder.String()
 	}
 
+	windowSize := 4
+	var elementsShown int
+
+	if collectionLength <= windowSize {
+		// Small collections show all elements
+		elementsShown = collectionLength
+	} else {
+		// Large collections show up to windowSize elements
+		elementsShown = windowSize
+	}
+
 	builder.WriteString("\nCollection: ")
 	builder.WriteString(window)
-	builder.WriteString(fmt.Sprintf(" (showing %d of %v elements)", len(window), collectionLength))
+	if collectionLength > elementsShown {
+		builder.WriteString(fmt.Sprintf(" (showing %d of %d elements)", elementsShown, collectionLength))
+	}
 	builder.WriteString("\nMissing  : ")
 	builder.WriteString(fmt.Sprint(target))
 
@@ -794,6 +792,13 @@ func formatEmptyError(value interface{}, expectedEmpty bool) string {
 	}
 
 	actualValue := reflect.ValueOf(value)
+
+	// Handle nil or zero value case
+	if !actualValue.IsValid() {
+		msg.WriteString("        Type    : nil\n")
+		msg.WriteString("        Value   : nil\n")
+		return msg.String()
+	}
 
 	switch actualValue.Kind() {
 	case reflect.String:

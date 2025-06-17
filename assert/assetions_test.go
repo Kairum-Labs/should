@@ -516,6 +516,26 @@ func TestBeEmpty_Fails_WithUnsupportedType(t *testing.T) {
 	}
 }
 
+func TestBeEmpty_WithChannel(t *testing.T) {
+	t.Parallel()
+
+	ch := make(chan int, 1)
+	ch <- 42
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(ch).BeEmpty(t)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Expected value to be empty, but it was not:"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
 // === Tests for BeNotEmpty ===
 
 func TestBeNotEmpty_Succeeds_WithNonEmptyString(t *testing.T) {
@@ -596,6 +616,41 @@ func TestBeNotEmpty_Fails_WithNilPointer(t *testing.T) {
 	}
 }
 
+func TestBeNotEmpty_WithInvalidValue(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		var v interface{}
+		Ensure(v).BeNotEmpty(t)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Expected value to be not empty, but it was empty:"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeNotEmpty_WithUnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(42).BeNotEmpty(t)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
 // === Tests for BeGreaterThan ===
 
 func TestBeGreaterThan_Succeeds_WithIntegers(t *testing.T) {
@@ -666,7 +721,7 @@ func TestBeGreaterThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(0.0).BeGreaterThan(t, 0.1, "Score validation failed")
+		Ensure(0.0).BeGreaterThan(t, 0.1, AssertionConfig{Message: "Score validation failed"})
 	})
 
 	if !failed {
@@ -843,7 +898,7 @@ func TestPanic_WithCustomMessage(t *testing.T) {
 	failed, message := assertFails(t, func(t testing.TB) {
 		Panic(t, func() {
 			// No panic
-		}, "Division by zero should panic")
+		}, AssertionConfig{Message: "Division by zero should panic"})
 	})
 
 	if !failed {
@@ -902,7 +957,7 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 	failed, message := assertFails(t, func(t testing.TB) {
 		NotPanic(t, func() {
 			panic("error occurred")
-		}, "Save operation should not panic")
+		}, AssertionConfig{Message: "Save operation should not panic"})
 	})
 
 	if !failed {
@@ -964,7 +1019,7 @@ func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(0).BeGreaterOrEqualThan(t, 1, "Score cannot be negative")
+		Ensure(0).BeGreaterOrEqualThan(t, 1, AssertionConfig{Message: "Score cannot be negative"})
 	})
 
 	if !failed {
@@ -1239,6 +1294,421 @@ func TestNotContain_Fails_WithNonSliceType(t *testing.T) {
 	}
 
 	expected := "expected a slice or array, but got int"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+// === Tests for custom messages in boolean assertions ===
+
+func TestBeTrue_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(false).BeTrue(t, AssertionConfig{Message: "User must be active"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"User must be active",
+		"Expected true, got false",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestBeFalse_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(true).BeFalse(t, AssertionConfig{Message: "User should not be deleted"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"User should not be deleted",
+		"Expected false, got true",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+// === Tests for BeNil/BeNotNil with custom messages ===
+
+func TestBeNil_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	value := 42
+	ptr := &value
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(ptr).BeNil(t, AssertionConfig{Message: "Pointer should be nil"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Pointer should be nil",
+		"Expected nil, but was not",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestBeNotNil_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	var ptr *int
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(ptr).BeNotNil(t, AssertionConfig{Message: "User must not be nil"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"User must not be nil",
+		"Expected not nil, but was nil",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+// === Tests for numeric slice contain with different types ===
+
+func TestContain_WithInt8Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with int8 slice - success case
+	Ensure([]int8{1, 2, 3}).Contain(t, int8(2))
+
+	// Test with int8 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]int8{1, 2, 4, 5}).Contain(t, int8(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithInt16Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with int16 slice - success case
+	Ensure([]int16{1, 2, 3}).Contain(t, int16(2))
+
+	// Test with int16 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]int16{1, 2, 4, 5}).Contain(t, int16(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithInt32Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with int32 slice - success case
+	Ensure([]int32{1, 2, 3}).Contain(t, int32(2))
+
+	// Test with int32 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]int32{1, 2, 4, 5}).Contain(t, int32(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithInt64Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with int64 slice - success case
+	Ensure([]int64{1, 2, 3}).Contain(t, int64(2))
+
+	// Test with int64 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]int64{1, 2, 4, 5}).Contain(t, int64(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithUintSlices(t *testing.T) {
+	t.Parallel()
+
+	// Test with uint slice - success case
+	Ensure([]uint{1, 2, 3}).Contain(t, uint(2))
+
+	// Test with uint slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]uint{1, 2, 4, 5}).Contain(t, uint(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithUint8Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with uint8 slice - success case
+	Ensure([]uint8{1, 2, 3}).Contain(t, uint8(2))
+
+	// Test with uint8 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]uint8{1, 2, 4, 5}).Contain(t, uint8(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithUint16Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with uint16 slice - success case
+	Ensure([]uint16{1, 2, 3}).Contain(t, uint16(2))
+
+	// Test with uint16 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]uint16{1, 2, 4, 5}).Contain(t, uint16(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithUint32Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with uint32 slice - success case
+	Ensure([]uint32{1, 2, 3}).Contain(t, uint32(2))
+
+	// Test with uint32 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]uint32{1, 2, 4, 5}).Contain(t, uint32(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithUint64Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with uint64 slice - success case
+	Ensure([]uint64{1, 2, 3}).Contain(t, uint64(2))
+
+	// Test with uint64 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]uint64{1, 2, 4, 5}).Contain(t, uint64(3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithFloat32Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with float32 slice - success case
+	Ensure([]float32{1.1, 2.2, 3.3}).Contain(t, float32(2.2))
+
+	// Test with float32 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]float32{1.1, 2.2, 4.4, 5.5}).Contain(t, float32(3.3))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3.3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestContain_WithFloat64Slices(t *testing.T) {
+	t.Parallel()
+
+	// Test with float64 slice - success case
+	Ensure([]float64{1.1, 2.2, 3.3}).Contain(t, 2.2)
+
+	// Test with float64 slice - failure case
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]float64{1.1, 2.2, 4.4, 5.5}).Contain(t, 3.3)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing  : 3.3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+// === Tests for unsupported numeric type combinations ===
+
+func TestContain_WithUnsupportedNumericTypeCombination(t *testing.T) {
+	t.Parallel()
+
+	// Test with int slice but float target (should fall back to generic contain)
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure([]int{1, 2, 3}).Contain(t, 2.5)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "Missing   : 2.5"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+// === Tests for BeLessThan error handling ===
+
+func TestBeLessThan_Fails_WithNonNumericActual(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure("hello").BeLessThan(t, "world")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a number for actual value, but got string"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeLessThan_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure(10).BeLessThan(t, 5, AssertionConfig{Message: "Value should be smaller"})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Value should be smaller",
+		"Expected value to be less than threshold:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+// === Tests for BeGreaterThan error handling ===
+
+func TestBeGreaterThan_Fails_WithNonNumericExpected(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		Ensure("hello").BeGreaterThan(t, "world")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a number for actual value, but got string"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}

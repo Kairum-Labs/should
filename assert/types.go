@@ -5,6 +5,12 @@ type Assertion[T any] struct {
 	value T // The value to be asserted.
 }
 
+// AssertionConfig provides configuration options for assertions.
+// It allows for custom error messages and future extensibility.
+type AssertionConfig struct {
+	Message string // Custom error message to display when assertion fails
+}
+
 // fieldDiff represents a single difference between two compared values.
 // It stores the path to the differing field, along with the expected and actual values.
 // This is used by the Match function to provide detailed information about differences.
