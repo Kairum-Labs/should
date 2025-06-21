@@ -328,4 +328,52 @@ func TestWrappers(t *testing.T) {
 			t.Error("ContainFunc should fail")
 		}
 	})
+
+	// HaveLength
+	t.Run("HaveLength passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		HaveLength(mockT, []int{1, 2, 3}, 3)
+		if mockT.failed {
+			t.Error("HaveLength should pass")
+		}
+	})
+	t.Run("HaveLength fails", func(t *testing.T) {
+		mockT := &mockTB{}
+		HaveLength(mockT, []int{1, 2, 3}, 4)
+		if !mockT.failed {
+			t.Error("HaveLength should fail")
+		}
+	})
+
+	// BeOfType
+	t.Run("BeOfType passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeOfType(mockT, "hello", "world")
+		if mockT.failed {
+			t.Error("BeOfType should pass")
+		}
+	})
+	t.Run("BeOfType fails", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeOfType(mockT, "hello", 123)
+		if !mockT.failed {
+			t.Error("BeOfType should fail")
+		}
+	})
+
+	// BeOneOf
+	t.Run("BeOneOf passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeOneOf(mockT, "a", []string{"a", "b"})
+		if mockT.failed {
+			t.Error("BeOneOf should pass")
+		}
+	})
+	t.Run("BeOneOf fails", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeOneOf(mockT, "c", []string{"a", "b"})
+		if !mockT.failed {
+			t.Error("BeOneOf should fail")
+		}
+	})
 }

@@ -657,6 +657,107 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, c
 	fail(t, "\nPredicate does not match any item in the slice")
 }
 
+// HaveLength reports a test failure if the collection does not have the expected length.
+//
+// This assertion works with strings, slices, arrays, and maps.
+// It provides a detailed error message showing the expected and actual lengths,
+// along with the difference.
+//
+// Example:
+//
+//	should.HaveLength(t, []int{1, 2, 3}, 3)
+//	should.HaveLength(t, "hello", 5)
+func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfig) {
+	t.Helper()
+	v := reflect.ValueOf(actual)
+	var actualLen int
+
+	switch v.Kind() {
+	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+		actualLen = v.Len()
+	default:
+		fail(t, "HaveLength can only be used with types that have a concept of length (string, slice, array, map), but got %T", actual)
+		return
+	}
+
+	if actualLen != expected {
+		var customMsg string
+		if len(config) > 0 {
+			customMsg = config[0].Message
+		}
+		errorMsg := formatLengthError(actual, expected, actualLen)
+		if customMsg != "" {
+			fail(t, "%s\n%s", customMsg, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
+		}
+	}
+}
+
+// BeOfType reports a test failure if the value is not of the expected type.
+//
+// This assertion checks if the type of the actual value matches the type
+// of the expected value (using an instance of the expected type).
+//
+// Example:
+//
+//	type MyType struct{}
+//	var v MyType
+//	should.BeOfType(t, MyType{}, v)
+func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
+	t.Helper()
+	expectedType := reflect.TypeOf(expected)
+	actualType := reflect.TypeOf(actual)
+
+	if actualType != expectedType {
+		var customMsg string
+		if len(config) > 0 {
+			customMsg = config[0].Message
+		}
+		errorMsg := formatTypeError(actual, expectedType, actualType)
+		if customMsg != "" {
+			fail(t, "%s\n%s", customMsg, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
+		}
+	}
+}
+
+// BeOneOf reports a test failure if the value is not one of the provided options.
+//
+// This assertion checks if the actual value is present in the slice of allowed options.
+// It uses deep comparison to check for equality.
+//
+// Example:
+//
+//	status := "pending"
+//	allowedStatus := []string{"active", "inactive"}
+//	should.BeOneOf(t, status, allowedStatus)
+func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConfig) {
+	t.Helper()
+	if len(options) == 0 {
+		fail(t, "Options list cannot be empty for BeOneOf assertion")
+		return
+	}
+
+	for _, opt := range options {
+		if reflect.DeepEqual(actual, opt) {
+			return
+		}
+	}
+
+	var customMsg string
+	if len(config) > 0 {
+		customMsg = config[0].Message
+	}
+	errorMsg := formatOneOfError(actual, options)
+	if customMsg != "" {
+		fail(t, "%s\n%s", customMsg, errorMsg)
+	} else {
+		fail(t, "%s", errorMsg)
+	}
+}
+
 // Panic reports a test failure if the given function does not panic.
 //
 // This assertion executes the provided function and expects it to panic.

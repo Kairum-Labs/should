@@ -312,3 +312,48 @@ func NotPanic(t testing.TB, fn func(), config ...AssertionConfig) {
 	t.Helper()
 	assert.NotPanic(t, fn, config...)
 }
+
+// HaveLength reports a test failure if the collection does not have the expected length.
+//
+// This assertion works with strings, slices, arrays, and maps.
+// It provides a detailed error message showing the expected and actual lengths,
+// along with the difference.
+//
+// Example:
+//
+//	should.HaveLength(t, []int{1, 2, 3}, 3)
+//	should.HaveLength(t, "hello", 5)
+func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfig) {
+	t.Helper()
+	assert.HaveLength(t, actual, expected, config...)
+}
+
+// BeOfType reports a test failure if the value is not of the expected type.
+//
+// This assertion checks if the type of the actual value matches the type
+// of the expected value (using an instance of the expected type).
+//
+// Example:
+//
+//	type MyType struct{}
+//	var v MyType
+//	should.BeOfType(t, MyType{}, v)
+func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
+	t.Helper()
+	assert.BeOfType(t, actual, expected, config...)
+}
+
+// BeOneOf reports a test failure if the value is not one of the provided options.
+//
+// This assertion checks if the actual value is present in the slice of allowed options.
+// It uses deep comparison to check for equality.
+//
+// Example:
+//
+//	status := "pending"
+//	allowedStatus := []string{"active", "inactive"}
+//	should.BeOneOf(t, status, allowedStatus)
+func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConfig) {
+	t.Helper()
+	assert.BeOneOf(t, actual, options, config...)
+}

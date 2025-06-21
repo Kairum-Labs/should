@@ -2019,3 +2019,192 @@ func TestIsNumericType_Coverage(t *testing.T) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
 }
+
+// === Tests for HaveLength ===
+
+func TestHaveLength(t *testing.T) {
+	t.Run("should pass for correct length of slice", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, []int{1, 2, 3}, 3)
+		if mockT.failed {
+			t.Errorf("Expected HaveLength to pass, but it failed with message: %q", mockT.message)
+		}
+	})
+
+	t.Run("should pass for correct length of string", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, "abc", 3)
+		if mockT.failed {
+			t.Errorf("Expected HaveLength to pass, but it failed with message: %q", mockT.message)
+		}
+	})
+
+	t.Run("should pass for correct length of map", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, map[int]int{1: 1, 2: 2}, 2)
+		if mockT.failed {
+			t.Errorf("Expected HaveLength to pass, but it failed with message: %q", mockT.message)
+		}
+	})
+
+	t.Run("should fail for incorrect length with custom message", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, []int{1, 2}, 3, AssertionConfig{Message: "Custom message"})
+		if !mockT.failed {
+			t.Fatal("Expected HaveLength to fail, but it passed")
+		}
+		expectedMsg := "Custom message"
+		if !strings.Contains(mockT.message, expectedMsg) {
+			t.Errorf("Expected error message to contain custom message %q, but got %q", expectedMsg, mockT.message)
+		}
+	})
+
+	t.Run("should fail for incorrect length and show detailed error", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, []int{1, 2}, 3)
+		if !mockT.failed {
+			t.Fatal("Expected HaveLength to fail, but it passed")
+		}
+
+		if !strings.Contains(mockT.message, "Expected collection to have specific length:") ||
+			!strings.Contains(mockT.message, "Type          : []int") ||
+			!strings.Contains(mockT.message, "Expected Length: 3") ||
+			!strings.Contains(mockT.message, "Actual Length : 2") ||
+			!strings.Contains(mockT.message, "Difference    : -1 (1 element missing)") {
+			t.Errorf("Error message format is incorrect.\nGot:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("should fail for incorrect length (more elements)", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, []int{1, 2, 3, 4}, 3)
+		if !mockT.failed {
+			t.Fatal("Expected HaveLength to fail, but it passed")
+		}
+		if !strings.Contains(mockT.message, "Difference    : +1 (1 element extra)") {
+			t.Errorf("Error message format is incorrect for extra elements.\nGot:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("should fail for unsupported type", func(t *testing.T) {
+		mockT := &mockT{}
+		HaveLength(mockT, 123, 1)
+		if !mockT.failed {
+			t.Fatal("Expected HaveLength to fail for unsupported type, but it passed")
+		}
+		expectedMsg := "HaveLength can only be used with types that have a concept of length (string, slice, array, map), but got int"
+		if !strings.Contains(mockT.message, expectedMsg) {
+			t.Errorf("Expected error message to contain %q, but got %q", expectedMsg, mockT.message)
+		}
+	})
+}
+
+// === Tests for BeOfType ===
+
+func TestBeOfType(t *testing.T) {
+	type Cat struct{ Name string }
+	type Dog struct{ Name string }
+
+	t.Run("should pass for same type", func(t *testing.T) {
+		mockT := &mockT{}
+		var c *Cat
+		BeOfType(mockT, &Cat{}, c)
+		if mockT.failed {
+			t.Errorf("Expected BeOfType to pass, but it failed: %s", mockT.message)
+		}
+	})
+
+	t.Run("should fail for different types", func(t *testing.T) {
+		mockT := &mockT{}
+		var d *Dog
+		BeOfType(mockT, &Cat{Name: "Whiskers"}, d)
+		if !mockT.failed {
+			t.Fatal("Expected BeOfType to fail, but it passed")
+		}
+
+		if !strings.Contains(mockT.message, "Expected value to be of specific type:") ||
+			!strings.Contains(mockT.message, "Expected Type: *assert.Dog") ||
+			!strings.Contains(mockT.message, "Actual Type  : *assert.Cat") ||
+			!strings.Contains(mockT.message, "Difference   : Different concrete types") ||
+			!strings.Contains(mockT.message, `Value        : {Name: "Whiskers"}`) {
+			t.Errorf("Error message format is incorrect.\nGot:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("should pass for primitive types", func(t *testing.T) {
+		mockT := &mockT{}
+		BeOfType(mockT, 1, 0) // int and int
+		if mockT.failed {
+			t.Errorf("Expected BeOfType to pass for ints, but it failed: %s", mockT.message)
+		}
+	})
+
+	t.Run("should fail for different primitive types", func(t *testing.T) {
+		mockT := &mockT{}
+		BeOfType(mockT, int32(1), int64(0))
+		if !mockT.failed {
+			t.Fatal("Expected BeOfType to fail, but it passed")
+		}
+
+		if !strings.Contains(mockT.message, "Expected Type: int64") ||
+			!strings.Contains(mockT.message, "Actual Type  : int32") {
+			t.Errorf("Error message does not contain correct types for primitives.\nGot:\n%s", mockT.message)
+		}
+	})
+}
+
+// === Tests for BeOneOf ===
+
+func TestBeOneOf(t *testing.T) {
+	t.Run("should pass if value is one of the options", func(t *testing.T) {
+		mockT := &mockT{}
+		options := []string{"active", "inactive"}
+		BeOneOf(mockT, "active", options)
+		if mockT.failed {
+			t.Errorf("Expected BeOneOf to pass, but it failed: %s", mockT.message)
+		}
+	})
+
+	t.Run("should fail if value is not one of the options", func(t *testing.T) {
+		mockT := &mockT{}
+		options := []string{"active", "inactive", "suspended"}
+		BeOneOf(mockT, "pending", options)
+		if !mockT.failed {
+			t.Fatal("Expected BeOneOf to fail, but it passed")
+		}
+
+		if !strings.Contains(mockT.message, `Expected value to be one of the allowed options:`) ||
+			!strings.Contains(mockT.message, `Value   : "pending"`) ||
+			!strings.Contains(mockT.message, `Options : ["active", "inactive", "suspended"]`) ||
+			!strings.Contains(mockT.message, `Count   : 0 of 3 options matched`) {
+			t.Errorf("Error message format is incorrect.\nGot:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("should fail for empty options", func(t *testing.T) {
+		mockT := &mockT{}
+		BeOneOf(mockT, "any", []string{})
+		if !mockT.failed {
+			t.Fatal("Expected BeOneOf to fail for empty options, but it passed")
+		}
+		if !strings.Contains(mockT.message, "Options list cannot be empty") {
+			t.Errorf("Expected error for empty options, but got: %s", mockT.message)
+		}
+	})
+
+	t.Run("should truncate long option lists in the error message", func(t *testing.T) {
+		mockT := &mockT{}
+		options := []string{"active", "inactive", "suspended", "deleted", "archived"}
+		BeOneOf(mockT, "pending", options)
+		if !mockT.failed {
+			t.Fatal("Expected BeOneOf to fail, but it passed")
+		}
+
+		if !strings.Contains(mockT.message, `Options : ["active", "inactive", "suspended", "deleted", ...]`) {
+			t.Errorf("Expected truncated option list in message, got:\n%s", mockT.message)
+		}
+		if !strings.Contains(mockT.message, `showing first 4 of 5`) {
+			t.Errorf("Expected truncation note in message, got:\n%s", mockT.message)
+		}
+	})
+}

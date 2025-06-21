@@ -16,6 +16,10 @@ func (m *mockT) Errorf(format string, args ...interface{}) {
 	m.message = fmt.Sprintf(format, args...)
 }
 
+func (m *mockT) Helper() {
+	// No-op for mock implementation
+}
+
 func assertFails(t *testing.T, test func(t testing.TB)) (failed bool, message string) {
 	t.Helper()
 	mock := &mockT{T: t}

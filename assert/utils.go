@@ -917,3 +917,76 @@ func formatNumericComparisonError(actual, expected interface{}, operation string
 
 	return msg.String()
 }
+
+// formatLengthError formats a detailed error message for HaveLength assertions.
+func formatLengthError(actual any, expected, actualLen int) string {
+	var msg strings.Builder
+	msg.WriteString("Expected collection to have specific length:\n")
+	msg.WriteString(fmt.Sprintf("Type          : %T\n", actual))
+	msg.WriteString(fmt.Sprintf("Expected Length: %d\n", expected))
+	msg.WriteString(fmt.Sprintf("Actual Length : %d\n", actualLen))
+
+	diff := actualLen - expected
+	if diff > 0 {
+		elementWord := "elements"
+		if diff == 1 {
+			elementWord = "element"
+		}
+		msg.WriteString(fmt.Sprintf("Difference    : +%d (%d %s extra)\n", diff, diff, elementWord))
+	} else {
+		elementWord := "elements"
+		if -diff == 1 {
+			elementWord = "element"
+		}
+		msg.WriteString(fmt.Sprintf("Difference    : %d (%d %s missing)\n", diff, -diff, elementWord))
+	}
+
+	return msg.String()
+}
+
+// formatTypeError formats a detailed error message for BeOfType assertions.
+func formatTypeError(actual any, expectedType, actualType reflect.Type) string {
+	var msg strings.Builder
+	msg.WriteString("Expected value to be of specific type:\n")
+	msg.WriteString(fmt.Sprintf("Expected Type: %v\n", expectedType))
+	msg.WriteString(fmt.Sprintf("Actual Type  : %v\n", actualType))
+	msg.WriteString("Difference   : Different concrete types\n")
+
+	// Truncate long values for readability
+	formattedValue := formatComparisonValue(actual)
+	if len(formattedValue) > 80 {
+		formattedValue = formattedValue[:77] + "..."
+	}
+	msg.WriteString(fmt.Sprintf("Value        : %s\n", formattedValue))
+
+	return msg.String()
+}
+
+// formatOneOfError formats a detailed error message for BeOneOf assertions.
+func formatOneOfError[T any](actual T, options []T) string {
+	var msg strings.Builder
+	msg.WriteString("Expected value to be one of the allowed options:\n")
+	msg.WriteString(fmt.Sprintf("Value   : %s\n", formatComparisonValue(actual)))
+
+	// Truncate options if there are more than 4
+	msg.WriteString("Options : ")
+	if len(options) <= 4 {
+		msg.WriteString(formatComparisonValue(options))
+	} else {
+		// Show first 4 options with truncation indicator
+		truncatedOptions := make([]T, 4)
+		copy(truncatedOptions, options[:4])
+		baseStr := formatComparisonValue(truncatedOptions)
+		// Remove the closing bracket and add truncation indicator
+		if strings.HasSuffix(baseStr, "]") {
+			msg.WriteString(baseStr[:len(baseStr)-1])
+			msg.WriteString(fmt.Sprintf(", ...] (showing first 4 of %d)", len(options)))
+		} else {
+			msg.WriteString(baseStr)
+		}
+	}
+	msg.WriteString("\n")
+
+	msg.WriteString(fmt.Sprintf("Count   : 0 of %d options matched\n", len(options)))
+	return msg.String()
+}

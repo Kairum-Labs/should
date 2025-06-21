@@ -179,6 +179,33 @@ should.BeEqual(t, p1, p2)
 //   └─ Age: 25 ≠ 30
 ```
 
+### Length and Type Assertions
+
+Get clear feedback on length and type mismatches.
+
+```go
+// Incorrect length
+should.HaveLength(t, []string{"apple", "banana"}, 3)
+// Output:
+// Expected collection to have specific length:
+// Type          : []string
+// Expected Length: 3
+// Actual Length : 2
+// Difference    : -1 (1 element(s) missing)
+
+// Incorrect type
+type Dog struct{ Name string }
+type Cat struct{ Name string }
+var d Dog
+should.BeOfType(t, Cat{Name: "Whiskers"}, d)
+// Output:
+// Expected value to be of specific type:
+// Expected Type: should_test.Dog
+// Actual Type  : should_test.Cat
+// Difference   : Different concrete types
+// Value        : {Name: "Whiskers"}
+```
+
 ### String Similarity Detection
 
 When checking for strings in slices, `Should` helps you find typos:
@@ -210,6 +237,19 @@ should.Contain(t, numbers, 6)
 // Missing   : 6
 ```
 
+### Set Membership Assertions
+
+Check if a value is part of a set of allowed options.
+
+```go
+should.BeOneOf(t, "pending", []string{"active", "inactive", "suspended"})
+// Output:
+// Expected value to be one of the allowed options:
+// Value   : "pending"
+// Options : ["active", "inactive", "suspended"]
+// Count   : 0 of 3 options matched
+```
+
 ## API Reference
 
 ### Core Assertions
@@ -217,20 +257,18 @@ should.Contain(t, numbers, 6)
 - `BeTrue(t, actual)` / `BeFalse(t, actual)` - Boolean value checks
 - `BeEqual(t, actual, expected)` - Deep equality comparison with detailed diffs
 - `BeNil(t, actual)` / `BeNotNil(t, actual)` - Nil pointer checks
+- `BeOfType(t, actual, expected)` - Checks if a value is of a specific type
+- `HaveLength(t, collection, length)` - Checks if a collection has a specific length
 
 ### Empty/Non-Empty Checks
 
 - `BeEmpty(t, actual)` - Checks if strings, slices, arrays, maps, channels, or pointers are empty
 - `BeNotEmpty(t, actual)` - Checks if values are not empty
-
-### Numeric Comparisons
-
-- `BeGreaterThan(t, actual, threshold)` - Numeric greater-than comparison
-- `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
 - `BeGreaterOrEqualThan(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 
 ### Collection Operations
 
+- `BeOneOf(t, actual, options)` - Check if a value is one of a set of options
 - `Contain(t, collection, element)` - Check if slice/array contains an element
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
 - `ContainFunc(t, collection, predicate)` - Check if any element matches a custom predicate
