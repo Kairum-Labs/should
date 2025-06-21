@@ -29,6 +29,7 @@ func fail(t testing.TB, message string, args ...any) {
 //
 // If the input is not a boolean, the test fails immediately.
 func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	val, ok := any(actual).(bool)
 	if !ok {
 		fail(t, "expected a boolean value, but got %T", actual)
@@ -61,6 +62,7 @@ func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // If the input is not a boolean, the test fails immediately.
 func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	val, ok := any(actual).(bool)
 	if !ok {
 		fail(t, "expected a boolean value, but got %T", actual)
@@ -510,6 +512,7 @@ func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfi
 //
 // If the input is not a slice or array, the test fails immediately.
 func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
 		return
@@ -596,6 +599,7 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 //
 // If the input is not a slice or array, the test fails immediately.
 func NotContain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
 		return
@@ -635,6 +639,7 @@ func NotContain[T any](t testing.TB, actual T, expected any, config ...Assertion
 //
 // If the input is not a slice or array, the test fails immediately.
 func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, config ...AssertionConfig) {
+	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
 		return

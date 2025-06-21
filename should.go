@@ -42,6 +42,7 @@ type AssertionConfig = assert.AssertionConfig
 //
 // If the input is not a boolean, the test fails immediately.
 func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeTrue(t, actual, config...)
 }
 
@@ -58,6 +59,7 @@ func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // If the input is not a boolean, the test fails immediately.
 func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeFalse(t, actual, config...)
 }
 
@@ -78,6 +80,7 @@ func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
 func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeEmpty(t, actual, config...)
 }
 
@@ -97,6 +100,7 @@ func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
 func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeNotEmpty(t, actual, config...)
 }
 
@@ -115,6 +119,7 @@ func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
 func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeNil(t, actual, config...)
 }
 
@@ -132,6 +137,7 @@ func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
 func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeNotNil(t, actual, config...)
 }
 
@@ -151,6 +157,7 @@ func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // Only works with numeric types. Both values must be numeric.
 func BeGreaterThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeGreaterThan(t, actual, expected, config...)
 }
 
@@ -170,6 +177,7 @@ func BeGreaterThan[T any](t testing.TB, actual, expected T, config ...AssertionC
 //
 // Only works with numeric types. Both values must be numeric.
 func BeLessThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeLessThan(t, actual, expected, config...)
 }
 
@@ -188,6 +196,7 @@ func BeLessThan[T any](t testing.TB, actual, expected T, config ...AssertionConf
 //
 // Only works with numeric types. Both values must be numeric.
 func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeGreaterOrEqualThan(t, actual, expected, config...)
 }
 
@@ -207,6 +216,7 @@ func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, config ...Ass
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
 func BeEqual[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+	t.Helper()
 	assert.BeEqual(t, actual, expected, config...)
 }
 
@@ -230,6 +240,7 @@ func BeEqual[T any](t testing.TB, actual, expected T, config ...AssertionConfig)
 //
 // If the input is not a slice or array, the test fails immediately.
 func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	t.Helper()
 	assert.Contain(t, actual, expected, config...)
 }
 
@@ -248,6 +259,7 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 //
 // If the input is not a slice or array, the test fails immediately.
 func NotContain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	t.Helper()
 	assert.NotContain(t, actual, expected, config...)
 }
 
@@ -270,6 +282,7 @@ func NotContain[T any](t testing.TB, actual T, expected any, config ...Assertion
 //
 // If the input is not a slice or array, the test fails immediately.
 func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, config ...AssertionConfig) {
+	t.Helper()
 	assert.ContainFunc(t, actual, predicate, config...)
 }
 
@@ -282,6 +295,7 @@ func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, c
 //		panic("expected panic")
 //	})
 func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
+	t.Helper()
 	assert.Panic(t, fn, config...)
 }
 
@@ -295,5 +309,6 @@ func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
 //		_ = result
 //	})
 func NotPanic(t testing.TB, fn func(), config ...AssertionConfig) {
+	t.Helper()
 	assert.NotPanic(t, fn, config...)
 }

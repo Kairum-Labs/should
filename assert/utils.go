@@ -804,7 +804,8 @@ func formatEmptyError(value interface{}, expectedEmpty bool) string {
 	case reflect.String:
 
 		if len(actualValue.String()) > 180 {
-			return formatMultilineString(actualValue.String())
+			msg.WriteString(formatMultilineString(actualValue.String()))
+			return msg.String()
 		}
 
 		str := actualValue.String()
