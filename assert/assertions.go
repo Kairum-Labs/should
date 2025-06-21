@@ -1,3 +1,7 @@
+// Package assert provides the underlying implementation for the Should assertion library.
+// It contains the core assertion logic, which is then exposed through the top-level
+// `should` package. This package handles value comparisons, error formatting,
+// and detailed difference reporting.
 package assert
 
 import (
@@ -6,22 +10,6 @@ import (
 	"strings"
 	"testing"
 )
-
-// Ensure creates a new assertion for the given value.
-//
-// This is the entry point for all assertions in the Should library.
-// It returns an Assertion object that provides fluent assertion methods.
-//
-// Example:
-//
-//	should.Ensure(42).BeEqual(t, 42)
-//
-//	should.Ensure("hello").BeNotEmpty(t)
-//
-//	should.Ensure([]int{1, 2, 3}).Contain(t, 2)
-func Ensure[T any](value T) *Assertion[T] {
-	return &Assertion[T]{value: value}
-}
 
 func fail(t testing.TB, message string, args ...any) {
 	t.Helper()
@@ -35,15 +23,15 @@ func fail(t testing.TB, message string, args ...any) {
 //
 // Example:
 //
-//	should.Ensure(true).BeTrue(t)
+//	should.BeTrue(t, true)
 //
-//	should.Ensure(user.IsActive).BeTrue(t, should.AssertionConfig{Message: "User must be active"})
+//	should.BeTrue(t, user.IsActive, should.AssertionConfig{Message: "User must be active"})
 //
 // If the input is not a boolean, the test fails immediately.
-func (a *Assertion[T]) BeTrue(t testing.TB, config ...AssertionConfig) {
-	val, ok := any(a.value).(bool)
+func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	val, ok := any(actual).(bool)
 	if !ok {
-		fail(t, "expected a boolean value, but got %T", a.value)
+		fail(t, "expected a boolean value, but got %T", actual)
 		return
 	}
 
@@ -67,15 +55,15 @@ func (a *Assertion[T]) BeTrue(t testing.TB, config ...AssertionConfig) {
 //
 // Example:
 //
-//	should.Ensure(false).BeFalse(t)
+//	should.BeFalse(t, false)
 //
-//	should.Ensure(user.IsDeleted).BeFalse(t, should.AssertionConfig{Message: "User should not be deleted"})
+//	should.BeFalse(t, user.IsDeleted, should.AssertionConfig{Message: "User should not be deleted"})
 //
 // If the input is not a boolean, the test fails immediately.
-func (a *Assertion[T]) BeFalse(t testing.TB, config ...AssertionConfig) {
-	val, ok := any(a.value).(bool)
+func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
+	val, ok := any(actual).(bool)
 	if !ok {
-		fail(t, "expected a boolean value, but got %T", a.value)
+		fail(t, "expected a boolean value, but got %T", actual)
 		return
 	}
 
@@ -101,16 +89,16 @@ func (a *Assertion[T]) BeFalse(t testing.TB, config ...AssertionConfig) {
 //
 // Example:
 //
-//	should.Ensure("").BeEmpty(t)
+//	should.BeEmpty(t, "")
 //
-//	should.Ensure([]int{}).BeEmpty(t, should.AssertionConfig{Message: "List should be empty"})
+//	should.BeEmpty(t, []int{}, should.AssertionConfig{Message: "List should be empty"})
 //
-//	should.Ensure(map[string]int{}).BeEmpty(t)
+//	should.BeEmpty(t, map[string]int{})
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func (a *Assertion[T]) BeEmpty(t testing.TB, config ...AssertionConfig) {
+func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
-	actualValue := reflect.ValueOf(a.value)
+	actualValue := reflect.ValueOf(actual)
 
 	// Handle nil values
 	if !actualValue.IsValid() {
@@ -125,7 +113,7 @@ func (a *Assertion[T]) BeEmpty(t testing.TB, config ...AssertionConfig) {
 			if len(config) > 0 {
 				customMsg = config[0].Message
 			}
-			errorMsg := formatEmptyError(a.value, true)
+			errorMsg := formatEmptyError(actual, true)
 			if customMsg != "" {
 				fail(t, "%s\n%s", customMsg, errorMsg)
 			} else {
@@ -140,14 +128,14 @@ func (a *Assertion[T]) BeEmpty(t testing.TB, config ...AssertionConfig) {
 		if len(config) > 0 {
 			customMsg = config[0].Message
 		}
-		errorMsg := formatEmptyError(a.value, true)
+		errorMsg := formatEmptyError(actual, true)
 		if customMsg != "" {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
 	default:
-		fail(t, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", a.value)
+		fail(t, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
 	}
 }
 
@@ -159,16 +147,16 @@ func (a *Assertion[T]) BeEmpty(t testing.TB, config ...AssertionConfig) {
 //
 // Example:
 //
-//	should.Ensure("hello").BeNotEmpty(t)
+//	should.BeNotEmpty(t, "hello")
 //
-//	should.Ensure([]int{1, 2, 3}).BeNotEmpty(t, should.AssertionConfig{Message: "List must have items"})
+//	should.BeNotEmpty(t, []int{1, 2, 3}, should.AssertionConfig{Message: "List must have items"})
 //
-//	should.Ensure(&user).BeNotEmpty(t)
+//	should.BeNotEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
+func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
-	actualValue := reflect.ValueOf(a.value)
+	actualValue := reflect.ValueOf(actual)
 
 	// Handle nil values
 	if !actualValue.IsValid() {
@@ -176,7 +164,7 @@ func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
 		if len(config) > 0 {
 			customMsg = config[0].Message
 		}
-		errorMsg := formatEmptyError(a.value, false)
+		errorMsg := formatEmptyError(actual, false)
 		if customMsg != "" {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 		} else {
@@ -193,7 +181,7 @@ func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
 			if len(config) > 0 {
 				customMsg = config[0].Message
 			}
-			errorMsg := formatEmptyError(a.value, false)
+			errorMsg := formatEmptyError(actual, false)
 			if customMsg != "" {
 				fail(t, "%s\n%s", customMsg, errorMsg)
 			} else {
@@ -206,7 +194,7 @@ func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
 			if len(config) > 0 {
 				customMsg = config[0].Message
 			}
-			errorMsg := formatEmptyError(a.value, false)
+			errorMsg := formatEmptyError(actual, false)
 			if customMsg != "" {
 				fail(t, "%s\n%s", customMsg, errorMsg)
 			} else {
@@ -214,7 +202,7 @@ func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
 			}
 		}
 	default:
-		fail(t, "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", a.value)
+		fail(t, "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
 	}
 }
 
@@ -226,15 +214,29 @@ func (a *Assertion[T]) BeNotEmpty(t testing.TB, config ...AssertionConfig) {
 // Example:
 //
 //	var ptr *int
-//	should.Ensure(ptr).BeNil(t)
+//	should.BeNil(t, ptr)
 //
 //	var slice []int
-//	should.Ensure(slice).BeNil(t, should.AssertionConfig{Message: "Slice should be nil"})
+//	should.BeNil(t, slice, should.AssertionConfig{Message: "Slice should be nil"})
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func (a *Assertion[T]) BeNil(t testing.TB, config ...AssertionConfig) {
+func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
-	if !reflect.ValueOf(a.value).IsNil() {
+	v := reflect.ValueOf(actual)
+	kind := v.Kind()
+	nillable := kind == reflect.Chan ||
+		kind == reflect.Func ||
+		kind == reflect.Interface ||
+		kind == reflect.Map ||
+		kind == reflect.Ptr ||
+		kind == reflect.Slice
+
+	if !nillable {
+		fail(t, "BeNil can only be used with nillable types, but got %T", actual)
+		return
+	}
+
+	if !v.IsNil() {
 		var customMsg string
 		if len(config) > 0 {
 			customMsg = config[0].Message
@@ -255,14 +257,28 @@ func (a *Assertion[T]) BeNil(t testing.TB, config ...AssertionConfig) {
 // Example:
 //
 //	user := &User{Name: "John"}
-//	should.Ensure(user).BeNotNil(t, should.AssertionConfig{Message: "User must not be nil"})
+//	should.BeNotNil(t, user, should.AssertionConfig{Message: "User must not be nil"})
 //
-//	should.Ensure(make([]int, 0)).BeNotNil(t)
+//	should.BeNotNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func (a *Assertion[T]) BeNotNil(t testing.TB, config ...AssertionConfig) {
+func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
-	if reflect.ValueOf(a.value).IsNil() {
+	v := reflect.ValueOf(actual)
+	kind := v.Kind()
+	nillable := kind == reflect.Chan ||
+		kind == reflect.Func ||
+		kind == reflect.Interface ||
+		kind == reflect.Map ||
+		kind == reflect.Ptr ||
+		kind == reflect.Slice
+
+	if !nillable {
+		fail(t, "BeNotNil can only be used with nillable types, but got %T", actual)
+		return
+	}
+
+	if v.IsNil() {
 		var customMsg string
 		if len(config) > 0 {
 			customMsg = config[0].Message
@@ -283,23 +299,23 @@ func (a *Assertion[T]) BeNotNil(t testing.TB, config ...AssertionConfig) {
 //
 // Example:
 //
-//	should.Ensure(10).BeGreaterThan(t, 5)
+//	should.BeGreaterThan(t, 10, 5)
 //
-//	should.Ensure(user.Age).BeGreaterThan(t, 18, should.AssertionConfig{Message: "User must be adult"})
+//	should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{Message: "User must be adult"})
 //
-//	should.Ensure(3.14).BeGreaterThan(t, 2.71)
+//	should.BeGreaterThan(t, 3.14, 2.71)
 //
 // Only works with numeric types. Both values must be numeric.
-func (a *Assertion[T]) BeGreaterThan(t testing.TB, expected T, config ...AssertionConfig) {
+func BeGreaterThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
 	t.Helper()
-	actualV := reflect.ValueOf(a.value)
+	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
 
 	actualAsFloat, actualOk := toFloat64(actualV)
 	expectedAsFloat, expectedOk := toFloat64(expectedV)
 
 	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", a.value)
+		fail(t, "expected a number for actual value, but got %T", actual)
 		return
 	}
 
@@ -313,7 +329,7 @@ func (a *Assertion[T]) BeGreaterThan(t testing.TB, expected T, config ...Asserti
 		if len(config) > 0 {
 			customMsg = config[0].Message
 		}
-		errorMsg := formatNumericComparisonError(a.value, expected, "greater")
+		errorMsg := formatNumericComparisonError(actual, expected, "greater")
 		if customMsg != "" {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 		} else {
@@ -330,23 +346,23 @@ func (a *Assertion[T]) BeGreaterThan(t testing.TB, expected T, config ...Asserti
 //
 // Example:
 //
-//	should.Ensure(5).BeLessThan(t, 10)
+//	should.BeLessThan(t, 5, 10)
 //
-//	should.Ensure(user.Age).BeLessThan(t, 65, should.AssertionConfig{Message: "User must be under retirement age"})
+//	should.BeLessThan(t, user.Age, 65, should.AssertionConfig{Message: "User must be under retirement age"})
 //
-//	should.Ensure(2.71).BeLessThan(t, 3.14)
+//	should.BeLessThan(t, 2.71, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func (a *Assertion[T]) BeLessThan(t testing.TB, expected T, config ...AssertionConfig) {
+func BeLessThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
 	t.Helper()
-	actualV := reflect.ValueOf(a.value)
+	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
 
 	actualAsFloat, actualOk := toFloat64(actualV)
 	expectedAsFloat, expectedOk := toFloat64(expectedV)
 
 	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", a.value)
+		fail(t, "expected a number for actual value, but got %T", actual)
 		return
 	}
 
@@ -360,7 +376,7 @@ func (a *Assertion[T]) BeLessThan(t testing.TB, expected T, config ...AssertionC
 		if len(config) > 0 {
 			customMsg = config[0].Message
 		}
-		errorMsg := formatNumericComparisonError(a.value, expected, "less")
+		errorMsg := formatNumericComparisonError(actual, expected, "less")
 		if customMsg != "" {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 		} else {
@@ -376,23 +392,23 @@ func (a *Assertion[T]) BeLessThan(t testing.TB, expected T, config ...AssertionC
 //
 // Example:
 //
-//	should.Ensure(10).BeGreaterOrEqualThan(t, 10)
+//	should.BeGreaterOrEqualThan(t, 10, 10)
 //
-//	should.Ensure(user.Score).BeGreaterOrEqualThan(t, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.AssertionConfig{Message: "Score cannot be negative"})
 //
-//	should.Ensure(3.14).BeGreaterOrEqualThan(t, 3.14)
+//	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func (a *Assertion[T]) BeGreaterOrEqualThan(t testing.TB, expected T, config ...AssertionConfig) {
+func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
 	t.Helper()
-	actualV := reflect.ValueOf(a.value)
+	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
 
 	actualAsFloat, actualOk := toFloat64(actualV)
 	expectedAsFloat, expectedOk := toFloat64(expectedV)
 
 	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", a.value)
+		fail(t, "expected a number for actual value, but got %T", actual)
 		return
 	}
 
@@ -409,7 +425,7 @@ func (a *Assertion[T]) BeGreaterOrEqualThan(t testing.TB, expected T, config ...
 		if customMsg != "" {
 			customMsg += "\n"
 		}
-		fail(t, "%sExpected %v to be greater or equal than %v", customMsg, a.value, expected)
+		fail(t, "%sExpected %v to be greater or equal than %v", customMsg, actual, expected)
 	}
 }
 
@@ -421,21 +437,21 @@ func (a *Assertion[T]) BeGreaterOrEqualThan(t testing.TB, expected T, config ...
 //
 // Example:
 //
-//	should.Ensure("hello").BeEqual(t, "hello")
+//	should.BeEqual(t, "hello", "hello")
 //
-//	should.Ensure(42).BeEqual(t, 42)
+//	should.BeEqual(t, 42, 42)
 //
-//	should.Ensure(user).BeEqual(t, expectedUser, should.AssertionConfig{Message: "User objects should match"})
+//	should.BeEqual(t, user, expectedUser, should.AssertionConfig{Message: "User objects should match"})
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func (a *Assertion[T]) BeEqual(t testing.TB, expected T, config ...AssertionConfig) {
+func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
 	t.Helper()
 
-	if reflect.DeepEqual(a.value, expected) {
+	if reflect.DeepEqual(actual, expected) {
 		return
 	}
 
-	diffs := findDifferences(expected, a.value)
+	diffs := findDifferences(expected, actual)
 
 	var differences []string
 	differencesOutput := "Field differences:\n"
@@ -455,7 +471,7 @@ func (a *Assertion[T]) BeEqual(t testing.TB, expected T, config ...AssertionConf
 		"%sNot equal:\nexpected: %v\nactual  : %v",
 		customMsg,
 		formatComparisonValue(expected),
-		formatComparisonValue(a.value),
+		formatComparisonValue(actual),
 	)
 
 	differences = append(differences, message, differencesOutput)
@@ -474,23 +490,23 @@ func (a *Assertion[T]) BeEqual(t testing.TB, expected T, config ...AssertionConf
 //
 // Example:
 //
-//	should.Ensure(users).Contain(t, "user3")
+//	should.Contain(t, users, "user3")
 //
-//	should.Ensure([]int{1, 2, 3}).Contain(t, 2)
+//	should.Contain(t, []int{1, 2, 3}, 2)
 //
-//	should.Ensure([]float64{1.1, 2.2}).Contain(t, 1.5, should.AssertionConfig{Message: "Expected value missing"})
+//	should.Contain(t, []float64{1.1, 2.2}, 1.5, should.AssertionConfig{Message: "Expected value missing"})
 //
-//	should.Ensure([]string{"apple", "banana"}).Contain(t, "apple")
+//	should.Contain(t, []string{"apple", "banana"}, "apple")
 //
 // If the input is not a slice or array, the test fails immediately.
-func (a *Assertion[T]) Contain(t testing.TB, expected any, config ...AssertionConfig) {
-	if !isSliceOrArray(a.value) {
-		fail(t, "expected a slice or array, but got %T", a.value)
+func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	if !isSliceOrArray(actual) {
+		fail(t, "expected a slice or array, but got %T", actual)
 		return
 	}
 
 	// Handle string slices with intelligent similarity detection
-	if collection, ok := any(a.value).([]string); ok {
+	if collection, ok := any(actual).([]string); ok {
 		if target, ok := expected.(string); ok {
 			result := containsString(target, collection)
 			if result.Found {
@@ -511,12 +527,12 @@ func (a *Assertion[T]) Contain(t testing.TB, expected any, config ...AssertionCo
 	}
 
 	// Handle numeric slices with insertion context
-	actualValue := reflect.ValueOf(a.value)
+	actualValue := reflect.ValueOf(actual)
 	elemType := actualValue.Type().Elem()
 
 	// Check if it's a numeric type and provide insertion context
 	if isNumericType(elemType) {
-		found, output := handleNumericSliceContain(a.value, expected)
+		found, output := handleNumericSliceContain(actual, expected)
 		if found {
 			return
 		}
@@ -546,7 +562,7 @@ func (a *Assertion[T]) Contain(t testing.TB, expected any, config ...AssertionCo
 		customMsg = config[0].Message
 	}
 	baseMsg := fmt.Sprintf("Expected collection to contain element:\n  Collection: %s\n  Missing   : %s",
-		formatSlice(a.value), formatComparisonValue(expected))
+		formatSlice(actual), formatComparisonValue(expected))
 
 	if customMsg != "" {
 		fail(t, "%s\n%s", customMsg, baseMsg)
@@ -562,26 +578,26 @@ func (a *Assertion[T]) Contain(t testing.TB, expected any, config ...AssertionCo
 //
 // Example:
 //
-//	should.Ensure(users).NotContain(t, "bannedUser")
+//	should.NotContain(t, users, "bannedUser")
 //
-//	should.Ensure([]int{1, 2, 3}).NotContain(t, 4)
+//	should.NotContain(t, []int{1, 2, 3}, 4)
 //
-//	should.Ensure([]string{"apple", "banana"}).NotContain(t, "orange", should.AssertionConfig{Message: "Should not have orange"})
+//	should.NotContain(t, []string{"apple", "banana"}, "orange", should.AssertionConfig{Message: "Should not have orange"})
 //
 // If the input is not a slice or array, the test fails immediately.
-func (a *Assertion[T]) NotContain(t testing.TB, expected any, config ...AssertionConfig) {
-	if !isSliceOrArray(a.value) {
-		fail(t, "expected a slice or array, but got %T", a.value)
+func NotContain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+	if !isSliceOrArray(actual) {
+		fail(t, "expected a slice or array, but got %T", actual)
 		return
 	}
 
-	actualValue := reflect.ValueOf(a.value)
+	actualValue := reflect.ValueOf(actual)
 
 	foundOutput := []string{}
 	for i := range actualValue.Len() {
 		item := actualValue.Index(i).Interface()
 		if reflect.DeepEqual(item, expected) {
-			foundOutput = append(foundOutput, fmt.Sprintf("\nCollection: %s", formatSlice(a.value)))
+			foundOutput = append(foundOutput, fmt.Sprintf("\nCollection: %s", formatSlice(actual)))
 			foundOutput = append(foundOutput, fmt.Sprintf("Found: %s at index %d", formatComparisonValue(item), i))
 			output := strings.Join(foundOutput, "\n")
 			fail(t, "\nExpected collection to NOT contain element: %s", output)
@@ -598,23 +614,23 @@ func (a *Assertion[T]) NotContain(t testing.TB, expected any, config ...Assertio
 //
 // Example:
 //
-//	should.Ensure(users).ContainFunc(t, func(item any) bool {
+//	should.ContainFunc(t, users, func(item any) bool {
 //		user := item.(User)
 //		return user.Age > 18
 //	})
 //
-//	should.Ensure(numbers).ContainFunc(t, func(item any) bool {
+//	should.ContainFunc(t, numbers, func(item any) bool {
 //		return item.(int) % 2 == 0
 //	}, should.AssertionConfig{Message: "No even numbers found"})
 //
 // If the input is not a slice or array, the test fails immediately.
-func (a *Assertion[T]) ContainFunc(t testing.TB, expected func(TItem any) bool, config ...AssertionConfig) {
-	if !isSliceOrArray(a.value) {
-		fail(t, "expected a slice or array, but got %T", a.value)
+func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, config ...AssertionConfig) {
+	if !isSliceOrArray(actual) {
+		fail(t, "expected a slice or array, but got %T", actual)
 		return
 	}
 
-	actualValue := reflect.ValueOf(a.value)
+	actualValue := reflect.ValueOf(actual)
 
 	for i := range actualValue.Len() {
 		item := actualValue.Index(i).Interface()

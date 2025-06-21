@@ -451,8 +451,8 @@ func TestFindInsertionContext_Parameterized(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			window, insertIndex := findInsertionContext(tc.collection, tc.target)
 
-			Ensure(window).BeEqual(t, tc.expectedWindow)
-			Ensure(insertIndex).BeEqual(t, tc.expectedIndex)
+			BeEqual(t, window, tc.expectedWindow)
+			BeEqual(t, insertIndex, tc.expectedIndex)
 		})
 	}
 }
@@ -485,8 +485,8 @@ func TestFindInsertionContext_WithDifferentTypes(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				window, insertIndex := findInsertionContext(tc.collection, tc.target)
-				Ensure(window).BeEqual(t, tc.expectedWindow)
-				Ensure(insertIndex).BeEqual(t, tc.expectedIndex)
+				BeEqual(t, window, tc.expectedWindow)
+				BeEqual(t, insertIndex, tc.expectedIndex)
 			})
 		}
 	})
@@ -532,8 +532,8 @@ func TestFindInsertionContext_WithDifferentTypes(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				window, insertIndex := findInsertionContext(tc.collection, tc.target)
-				Ensure(window).BeEqual(t, tc.expectedWindow)
-				Ensure(insertIndex).BeEqual(t, tc.expectedIndex)
+				BeEqual(t, window, tc.expectedWindow)
+				BeEqual(t, insertIndex, tc.expectedIndex)
 			})
 		}
 	})
@@ -831,7 +831,7 @@ func TestMin3(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := min3(tc.a, tc.b, tc.c)
-			Ensure(result).BeEqual(t, tc.expected)
+			BeEqual(t, result, tc.expected)
 		})
 	}
 }
@@ -840,17 +840,17 @@ func TestMinMax(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Min function", func(t *testing.T) {
-		Ensure(min(5, 3)).BeEqual(t, 3)
-		Ensure(min(3, 5)).BeEqual(t, 3)
-		Ensure(min(5, 5)).BeEqual(t, 5)
-		Ensure(min(-1, 1)).BeEqual(t, -1)
+		BeEqual(t, min(5, 3), 3)
+		BeEqual(t, min(3, 5), 3)
+		BeEqual(t, min(5, 5), 5)
+		BeEqual(t, min(-1, 1), -1)
 	})
 
 	t.Run("Max function", func(t *testing.T) {
-		Ensure(max(5, 3)).BeEqual(t, 5)
-		Ensure(max(3, 5)).BeEqual(t, 5)
-		Ensure(max(5, 5)).BeEqual(t, 5)
-		Ensure(max(-1, 1)).BeEqual(t, 1)
+		BeEqual(t, max(5, 3), 5)
+		BeEqual(t, max(3, 5), 5)
+		BeEqual(t, max(5, 5), 5)
+		BeEqual(t, max(-1, 1), 1)
 	})
 }
 
@@ -859,22 +859,22 @@ func TestIsFloat(t *testing.T) {
 
 	t.Run("With float32", func(t *testing.T) {
 		result := isFloat(float32(3.14))
-		Ensure(result).BeTrue(t)
+		BeTrue(t, result)
 	})
 
 	t.Run("With float64", func(t *testing.T) {
 		result := isFloat(3.14)
-		Ensure(result).BeTrue(t)
+		BeTrue(t, result)
 	})
 
 	t.Run("With int", func(t *testing.T) {
 		result := isFloat(42)
-		Ensure(result).BeFalse(t)
+		BeFalse(t, result)
 	})
 
 	t.Run("With uint", func(t *testing.T) {
 		result := isFloat(uint(42))
-		Ensure(result).BeFalse(t)
+		BeFalse(t, result)
 	})
 }
 
@@ -884,7 +884,7 @@ func TestFormatMultilineString(t *testing.T) {
 	t.Run("Short string", func(t *testing.T) {
 		input := "Hello, World!"
 		result := formatMultilineString(input)
-		Ensure(result).BeEqual(t, input)
+		BeEqual(t, result, input)
 	})
 
 	t.Run("Long string", func(t *testing.T) {
@@ -965,7 +965,7 @@ func TestIsSliceOrArray(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := isSliceOrArray(tc.input)
-			Ensure(result).BeEqual(t, tc.expected)
+			BeEqual(t, result, tc.expected)
 		})
 	}
 }
@@ -977,14 +977,14 @@ func TestFormatSlice(t *testing.T) {
 		input := []int{1, 2, 3}
 		result := formatSlice(input)
 		expected := "[1, 2, 3]"
-		Ensure(result).BeEqual(t, expected)
+		BeEqual(t, result, expected)
 	})
 
 	t.Run("Non-slice input", func(t *testing.T) {
 		input := "not a slice"
 		result := formatSlice(input)
 		expected := "<not a slice or array: string>"
-		Ensure(result).BeEqual(t, expected)
+		BeEqual(t, result, expected)
 	})
 }
 
@@ -995,7 +995,7 @@ func TestFormatValueComparison_EdgeCases(t *testing.T) {
 		var v reflect.Value
 		result := formatValueComparison(v)
 		expected := "nil"
-		Ensure(result).BeEqual(t, expected)
+		BeEqual(t, result, expected)
 	})
 
 	t.Run("Unexported interface", func(t *testing.T) {
@@ -1003,7 +1003,7 @@ func TestFormatValueComparison_EdgeCases(t *testing.T) {
 		v := reflect.ValueOf(42)
 		result := formatValueComparison(v)
 		expected := "42"
-		Ensure(result).BeEqual(t, expected)
+		BeEqual(t, result, expected)
 	})
 }
 
@@ -1050,7 +1050,7 @@ func TestLevenshteinDistance(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := levenshteinDistance(tc.s1, tc.s2)
-			Ensure(result).BeEqual(t, tc.expected)
+			BeEqual(t, result, tc.expected)
 		})
 	}
 }
@@ -1098,7 +1098,7 @@ func TestGenerateTypoDetails(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := generateTypoDetails(tc.target, tc.candidate, tc.distance)
-			Ensure(result).BeEqual(t, tc.expected)
+			BeEqual(t, result, tc.expected)
 		})
 	}
 }
@@ -1404,7 +1404,7 @@ func TestFormatDiffValue(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := formatDiffValue(tc.input)
-			Ensure(result).BeEqual(t, tc.expected)
+			BeEqual(t, result, tc.expected)
 		})
 	}
 }

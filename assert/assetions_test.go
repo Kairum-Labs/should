@@ -8,13 +8,13 @@ import (
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
 	t.Parallel()
 
-	Ensure(true).BeTrue(t)
+	BeTrue(t, true)
 }
 
 func TestBeFalse_Succeeds_WhenFalse(t *testing.T) {
 	t.Parallel()
 
-	Ensure(false).BeFalse(t)
+	BeFalse(t, false)
 }
 
 func TestBeEqual_ForStructs_Succeeds_WhenEqual(t *testing.T) {
@@ -26,7 +26,7 @@ func TestBeEqual_ForStructs_Succeeds_WhenEqual(t *testing.T) {
 	}
 
 	newPerson := Person{Name: "John", Age: 30}
-	Ensure(newPerson).BeEqual(t, Person{Name: "John", Age: 30})
+	BeEqual(t, newPerson, Person{Name: "John", Age: 30})
 }
 
 func TestBeEqual_ForSlices_Succeeds_WhenEqual(t *testing.T) {
@@ -40,7 +40,7 @@ func TestBeEqual_ForSlices_Succeeds_WhenEqual(t *testing.T) {
 	p1 := Person{Name: "John", Age: 30}
 	p2 := Person{Name: "Jane", Age: 25}
 
-	Ensure([]Person{p1, p2}).BeEqual(t, []Person{p1, p2})
+	BeEqual(t, []Person{p1, p2}, []Person{p1, p2})
 }
 
 func TestBeEqual_ForMaps_Succeeds_WhenEqual(t *testing.T) {
@@ -49,7 +49,7 @@ func TestBeEqual_ForMaps_Succeeds_WhenEqual(t *testing.T) {
 	map1 := map[string]int{"a": 1, "b": 2}
 	map2 := map[string]int{"a": 1, "b": 2}
 
-	Ensure(map1).BeEqual(t, map2)
+	BeEqual(t, map1, map2)
 }
 
 func TestBeEqual_ForStructs_Fails_WhenNotEqual(t *testing.T) {
@@ -63,7 +63,7 @@ func TestBeEqual_ForStructs_Fails_WhenNotEqual(t *testing.T) {
 	p2 := Person{Name: "Jane", Age: 25}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(p1).BeEqual(t, p2)
+		BeEqual(t, p1, p2)
 	})
 
 	if !failed {
@@ -88,7 +88,7 @@ func TestBeEqual_ForSlices_Fails_WhenNotEqual(t *testing.T) {
 	p2 := Person{Name: "Jane", Age: 25}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]Person{p1}).BeEqual(t, []Person{p2})
+		BeEqual(t, []Person{p1}, []Person{p2})
 	})
 
 	if !failed {
@@ -108,7 +108,7 @@ func TestBeEqual_ForMaps_Fails_WhenNotEqual(t *testing.T) {
 	map2 := map[string]int{"a": 1, "c": 3}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(map1).BeEqual(t, map2)
+		BeEqual(t, map1, map2)
 	})
 
 	if !failed {
@@ -124,20 +124,20 @@ func TestBeEqual_ForMaps_Fails_WhenNotEqual(t *testing.T) {
 func TestBeGreaterThan_Succeeds_WhenGreater(t *testing.T) {
 	t.Parallel()
 
-	Ensure(10).BeGreaterThan(t, 5)
+	BeGreaterThan(t, 10, 5)
 }
 
 func TestContain_Succeeds_WhenItemIsPresent(t *testing.T) {
 	t.Parallel()
 
-	Ensure([]int{1, 2, 3}).Contain(t, 2)
+	Contain(t, []int{1, 2, 3}, 2)
 }
 
 func TestContain_Fails_WhenItemIsNotPresent(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3}).Contain(t, 4)
+		Contain(t, []int{1, 2, 3}, 4)
 	})
 
 	if !failed {
@@ -154,7 +154,7 @@ func TestContain_ShortensErrorMessage_WhenSliceIsLarge(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}).Contain(t, 21)
+		Contain(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 21)
 	})
 	if !failed {
 		t.Fatal("Expected test to fail, but it passed")
@@ -169,14 +169,14 @@ func TestContain_ShortensErrorMessage_WhenSliceIsLarge(t *testing.T) {
 func TestNotContain_Succeeds_WhenItemIsNotPresent(t *testing.T) {
 	t.Parallel()
 
-	Ensure([]int{1, 2, 3}).NotContain(t, 4)
+	NotContain(t, []int{1, 2, 3}, 4)
 }
 
 func TestNotContain_Fails_WhenItemIsPresent(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3}).NotContain(t, 2)
+		NotContain(t, []int{1, 2, 3}, 2)
 	})
 
 	if !failed {
@@ -193,7 +193,7 @@ func TestNotContain_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]string{"apple", "banana"}).NotContain(t, "apple", AssertionConfig{Message: "Apple should not be in basket"})
+		NotContain(t, []string{"apple", "banana"}, "apple", AssertionConfig{Message: "Apple should not be in basket"})
 	})
 
 	if !failed {
@@ -210,7 +210,7 @@ func TestContain_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]string{"apple", "banana"}).Contain(t, "orange", AssertionConfig{Message: "Fruit not found in basket"})
+		Contain(t, []string{"apple", "banana"}, "orange", AssertionConfig{Message: "Fruit not found in basket"})
 	})
 
 	if !failed {
@@ -232,7 +232,7 @@ func TestContain_WithCustomMessage(t *testing.T) {
 func TestContainFunc_Succeeds_WhenPredicateMatches(t *testing.T) {
 	t.Parallel()
 
-	Ensure([]int{1, 2, 3}).ContainFunc(t, func(item any) bool {
+	ContainFunc(t, []int{1, 2, 3}, func(item any) bool {
 		i, ok := item.(int)
 		if !ok {
 			return false
@@ -245,7 +245,7 @@ func TestContainFunc_Fails_WhenPredicateDoesNotMatch(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3}).ContainFunc(t, func(item any) bool {
+		ContainFunc(t, []int{1, 2, 3}, func(item any) bool {
 			return item == 4
 		})
 	})
@@ -275,7 +275,7 @@ func TestShouldContain_ShowsSimilarElements_OnFailure(t *testing.T) {
 	}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(users).Contain(t, "user3")
+		Contain(t, users, "user3")
 	})
 
 	if !failed {
@@ -360,11 +360,11 @@ func TestContain_WithIntSlices(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.expected {
 				// Should pass
-				Ensure(tc.slice).Contain(t, tc.target)
+				Contain(t, tc.slice, tc.target)
 			} else {
 				// Should fail
 				failed, message := assertFails(t, func(t testing.TB) {
-					Ensure(tc.slice).Contain(t, tc.target)
+					Contain(t, tc.slice, tc.target)
 				})
 
 				if !failed {
@@ -388,7 +388,7 @@ func TestContain_ShowsInsertionContext_ForIntSlices(t *testing.T) {
 	target := 7
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(slice).Contain(t, target)
+		Contain(t, slice, target)
 	})
 
 	if !failed {
@@ -426,7 +426,7 @@ func TestBeEmpty_Succeeds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Ensure(tt.value).BeEmpty(t)
+			BeEmpty(t, tt.value)
 		})
 	}
 }
@@ -435,7 +435,7 @@ func TestBeEmpty_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeEmpty(t, AssertionConfig{Message: "This is a custom message"})
+		BeEmpty(t, "hello", AssertionConfig{Message: "This is a custom message"})
 	})
 
 	if !failed {
@@ -452,7 +452,7 @@ func TestBeEmpty_Fails_WithNonEmptyString(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeEmpty(t)
+		BeEmpty(t, "hello")
 	})
 
 	if !failed {
@@ -477,7 +477,7 @@ func TestBeEmpty_Fails_WithNonEmptySlice(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3}).BeEmpty(t)
+		BeEmpty(t, []int{1, 2, 3})
 	})
 
 	if !failed {
@@ -503,7 +503,7 @@ func TestBeEmpty_Fails_WithLongString(t *testing.T) {
 
 	longString := "This is a very long string that should be truncated in the error message"
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(longString).BeEmpty(t)
+		BeEmpty(t, longString)
 	})
 
 	if !failed {
@@ -529,7 +529,7 @@ func TestBeEmpty_Fails_WithLargeSlice(t *testing.T) {
 
 	largeSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(largeSlice).BeEmpty(t)
+		BeEmpty(t, largeSlice)
 	})
 
 	if !failed {
@@ -554,7 +554,7 @@ func TestBeEmpty_Fails_WithUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(42).BeEmpty(t)
+		BeEmpty(t, 42)
 	})
 
 	if !failed {
@@ -574,7 +574,7 @@ func TestBeEmpty_WithChannel(t *testing.T) {
 	ch <- 42
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ch).BeEmpty(t)
+		BeEmpty(t, ch)
 	})
 
 	if !failed {
@@ -592,12 +592,12 @@ func TestBeEmpty_WithChannelBuffered(t *testing.T) {
 
 	// Test empty buffered channel
 	ch := make(chan int, 2)
-	Ensure(ch).BeEmpty(t)
+	BeEmpty(t, ch)
 
 	// Test non-empty buffered channel
 	ch <- 42
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ch).BeEmpty(t, AssertionConfig{Message: "Channel should be empty"})
+		BeEmpty(t, ch, AssertionConfig{Message: "Channel should be empty"})
 	})
 
 	if !failed {
@@ -620,7 +620,7 @@ func TestBeEmpty_WithNilInterface(t *testing.T) {
 	t.Parallel()
 
 	var nilInterface interface{}
-	Ensure(nilInterface).BeEmpty(t)
+	BeEmpty(t, nilInterface)
 }
 
 // === Tests for BeNotEmpty ===
@@ -628,20 +628,20 @@ func TestBeEmpty_WithNilInterface(t *testing.T) {
 func TestBeNotEmpty_Succeeds_WithNonEmptyString(t *testing.T) {
 	t.Parallel()
 
-	Ensure("hello").BeNotEmpty(t)
+	BeNotEmpty(t, "hello")
 }
 
 func TestBeNotEmpty_Succeeds_WithNonEmptySlice(t *testing.T) {
 	t.Parallel()
 
-	Ensure([]int{1, 2, 3}).BeNotEmpty(t)
+	BeNotEmpty(t, []int{1, 2, 3})
 }
 
 func TestBeNotEmpty_Fails_WithEmptyString(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("").BeNotEmpty(t)
+		BeNotEmpty(t, "")
 	})
 
 	if !failed {
@@ -665,7 +665,7 @@ func TestBeNotEmpty_Fails_WithEmptySlice(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{}).BeNotEmpty(t)
+		BeNotEmpty(t, []int{})
 	})
 
 	if !failed {
@@ -690,7 +690,7 @@ func TestBeNotEmpty_Fails_WithNilPointer(t *testing.T) {
 
 	var ptr *int
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ptr).BeNotEmpty(t)
+		BeNotEmpty(t, ptr)
 	})
 
 	if !failed {
@@ -708,7 +708,7 @@ func TestBeNotEmpty_WithInvalidValue(t *testing.T) {
 
 	failed, message := assertFails(t, func(t testing.TB) {
 		var v interface{}
-		Ensure(v).BeNotEmpty(t)
+		BeNotEmpty(t, v)
 	})
 
 	if !failed {
@@ -725,7 +725,7 @@ func TestBeNotEmpty_WithUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(42).BeNotEmpty(t)
+		BeNotEmpty(t, 42)
 	})
 
 	if !failed {
@@ -744,12 +744,12 @@ func TestBeNotEmpty_WithChannelBuffered(t *testing.T) {
 	// Test non-empty buffered channel
 	ch := make(chan int, 1)
 	ch <- 42
-	Ensure(ch).BeNotEmpty(t)
+	BeNotEmpty(t, ch)
 
 	// Test empty buffered channel
 	emptyChannel := make(chan int, 1)
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(emptyChannel).BeNotEmpty(t, AssertionConfig{Message: "Channel should have data"})
+		BeNotEmpty(t, emptyChannel, AssertionConfig{Message: "Channel should have data"})
 	})
 
 	if !failed {
@@ -773,7 +773,7 @@ func TestBeNotEmpty_WithValidInterface(t *testing.T) {
 
 	var validInterface interface{} = 42
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(validInterface).BeNotEmpty(t)
+		BeNotEmpty(t, validInterface)
 	})
 
 	if !failed {
@@ -791,20 +791,20 @@ func TestBeNotEmpty_WithValidInterface(t *testing.T) {
 func TestBeGreaterThan_Succeeds_WithIntegers(t *testing.T) {
 	t.Parallel()
 
-	Ensure(10).BeGreaterThan(t, 5)
+	BeGreaterThan(t, 10, 5)
 }
 
 func TestBeGreaterThan_Succeeds_WithFloats(t *testing.T) {
 	t.Parallel()
 
-	Ensure(3.14).BeGreaterThan(t, 2.71)
+	BeGreaterThan(t, 3.14, 2.71)
 }
 
 func TestBeGreaterThan_Fails_WithSmallerValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(5).BeGreaterThan(t, 10)
+		BeGreaterThan(t, 5, 10)
 	})
 
 	if !failed {
@@ -830,7 +830,7 @@ func TestBeGreaterThan_Fails_WithEqualValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(5).BeGreaterThan(t, 5)
+		BeGreaterThan(t, 5, 5)
 	})
 
 	if !failed {
@@ -856,7 +856,7 @@ func TestBeGreaterThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(0.0).BeGreaterThan(t, 0.1, AssertionConfig{Message: "Score validation failed"})
+		BeGreaterThan(t, 0.0, 0.1, AssertionConfig{Message: "Score validation failed"})
 	})
 
 	if !failed {
@@ -882,14 +882,14 @@ func TestBeGreaterThan_WithCustomMessage(t *testing.T) {
 func TestBeLessThan_Succeeds_WithSmallerValue(t *testing.T) {
 	t.Parallel()
 
-	Ensure(5).BeLessThan(t, 10)
+	BeLessThan(t, 5, 10)
 }
 
 func TestBeLessThan_Fails_WithLargerValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(10).BeLessThan(t, 5)
+		BeLessThan(t, 10, 5)
 	})
 
 	if !failed {
@@ -915,7 +915,7 @@ func TestBeLessThan_Fails_WithEqualValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(5).BeLessThan(t, 5)
+		BeLessThan(t, 5, 5)
 	})
 
 	if !failed {
@@ -941,7 +941,7 @@ func TestBeLessThan_WithFloats(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(3.14).BeLessThan(t, 2.71)
+		BeLessThan(t, 3.14, 2.71)
 	})
 
 	if !failed {
@@ -968,7 +968,7 @@ func TestBeGreaterThan_Fails_WithNonNumericActual(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeGreaterThan(t, "world")
+		BeGreaterThan(t, "hello", "world")
 	})
 
 	if !failed {
@@ -985,7 +985,7 @@ func TestBeLessThan_Fails_WithNonNumericExpected(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeLessThan(t, "world")
+		BeLessThan(t, "hello", "world")
 	})
 
 	if !failed {
@@ -1117,27 +1117,27 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 func TestBeGreaterOrEqualThan_Succeeds_WithGreaterValue(t *testing.T) {
 	t.Parallel()
 
-	Ensure(10).BeGreaterOrEqualThan(t, 5)
+	BeGreaterOrEqualThan(t, 10, 5)
 }
 
 func TestBeGreaterOrEqualThan_Succeeds_WithEqualValue(t *testing.T) {
 	t.Parallel()
 
-	Ensure(5).BeGreaterOrEqualThan(t, 5)
+	BeGreaterOrEqualThan(t, 5, 5)
 }
 
 func TestBeGreaterOrEqualThan_Succeeds_WithFloats(t *testing.T) {
 	t.Parallel()
 
-	Ensure(3.14).BeGreaterOrEqualThan(t, 3.14)
-	Ensure(3.15).BeGreaterOrEqualThan(t, 3.14)
+	BeGreaterOrEqualThan(t, 3.14, 3.14)
+	BeGreaterOrEqualThan(t, 3.15, 3.14)
 }
 
 func TestBeGreaterOrEqualThan_Fails_WithSmallerValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(5).BeGreaterOrEqualThan(t, 10)
+		BeGreaterOrEqualThan(t, 5, 10)
 	})
 
 	if !failed {
@@ -1154,7 +1154,7 @@ func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(0).BeGreaterOrEqualThan(t, 1, AssertionConfig{Message: "Score cannot be negative"})
+		BeGreaterOrEqualThan(t, 0, 1, AssertionConfig{Message: "Score cannot be negative"})
 	})
 
 	if !failed {
@@ -1177,7 +1177,7 @@ func TestBeGreaterOrEqualThan_Fails_WithNonNumericTypes(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeGreaterOrEqualThan(t, "world")
+		BeGreaterOrEqualThan(t, "hello", "world")
 	})
 
 	if !failed {
@@ -1194,7 +1194,7 @@ func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(5.0).BeGreaterOrEqualThan(t, 5.1, AssertionConfig{Message: "Integer vs float comparison"})
+		BeGreaterOrEqualThan(t, 5.0, 5.1, AssertionConfig{Message: "Integer vs float comparison"})
 	})
 
 	if !failed {
@@ -1219,21 +1219,21 @@ func TestBeNil_Succeeds_WithNilPointer(t *testing.T) {
 	t.Parallel()
 
 	var ptr *int
-	Ensure(ptr).BeNil(t)
+	BeNil(t, ptr)
 }
 
 func TestBeNil_Succeeds_WithNilSlice(t *testing.T) {
 	t.Parallel()
 
 	var slice []int
-	Ensure(slice).BeNil(t)
+	BeNil(t, slice)
 }
 
 func TestBeNil_Succeeds_WithNilMap(t *testing.T) {
 	t.Parallel()
 
 	var m map[string]int
-	Ensure(m).BeNil(t)
+	BeNil(t, m)
 }
 
 // TestBeNil_Succeeds_WithNilInterface removed due to reflect.Value issue
@@ -1245,7 +1245,7 @@ func TestBeNil_Fails_WithNonNilPointer(t *testing.T) {
 	ptr := &value
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ptr).BeNil(t)
+		BeNil(t, ptr)
 	})
 
 	if !failed {
@@ -1263,14 +1263,14 @@ func TestBeNotNil_Succeeds_WithNonNilPointer(t *testing.T) {
 
 	value := 42
 	ptr := &value
-	Ensure(ptr).BeNotNil(t)
+	BeNotNil(t, ptr)
 }
 
 func TestBeNotNil_Succeeds_WithNonNilSlice(t *testing.T) {
 	t.Parallel()
 
 	slice := make([]int, 0)
-	Ensure(slice).BeNotNil(t)
+	BeNotNil(t, slice)
 }
 
 func TestBeNotNil_Fails_WithNilPointer(t *testing.T) {
@@ -1279,7 +1279,7 @@ func TestBeNotNil_Fails_WithNilPointer(t *testing.T) {
 	var ptr *int
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ptr).BeNotNil(t)
+		BeNotNil(t, ptr)
 	})
 
 	if !failed {
@@ -1298,7 +1298,7 @@ func TestBeTrue_Fails_WithNonBooleanType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("true").BeTrue(t)
+		BeTrue(t, "true")
 	})
 
 	if !failed {
@@ -1315,7 +1315,7 @@ func TestBeTrue_Fails_WithFalseValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(false).BeTrue(t)
+		BeTrue(t, false)
 	})
 
 	if !failed {
@@ -1332,7 +1332,7 @@ func TestBeFalse_Fails_WithNonBooleanType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(0).BeFalse(t)
+		BeFalse(t, 0)
 	})
 
 	if !failed {
@@ -1349,7 +1349,7 @@ func TestBeFalse_Fails_WithTrueValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(true).BeFalse(t)
+		BeFalse(t, true)
 	})
 
 	if !failed {
@@ -1368,7 +1368,7 @@ func TestContainFunc_Fails_WithNonSliceType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("not a slice").ContainFunc(t, func(item any) bool {
+		ContainFunc(t, "not a slice", func(item any) bool {
 			return true
 		})
 	})
@@ -1398,14 +1398,14 @@ func TestContainFunc_WithComplexPredicate(t *testing.T) {
 	}
 
 	// Should succeed - finding adult user
-	Ensure(users).ContainFunc(t, func(item any) bool {
+	ContainFunc(t, users, func(item any) bool {
 		user := item.(User)
 		return user.Age >= 18
 	})
 
 	// Should fail - no elderly users
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(users).ContainFunc(t, func(item any) bool {
+		ContainFunc(t, users, func(item any) bool {
 			user := item.(User)
 			return user.Age >= 65
 		})
@@ -1427,7 +1427,7 @@ func TestContain_Fails_WithNonSliceType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("not a slice").Contain(t, "something")
+		Contain(t, "not a slice", "something")
 	})
 
 	if !failed {
@@ -1444,7 +1444,7 @@ func TestNotContain_Fails_WithNonSliceType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(42).NotContain(t, "something")
+		NotContain(t, 42, "something")
 	})
 
 	if !failed {
@@ -1463,7 +1463,7 @@ func TestBeTrue_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(false).BeTrue(t, AssertionConfig{Message: "User must be active"})
+		BeTrue(t, false, AssertionConfig{Message: "User must be active"})
 	})
 
 	if !failed {
@@ -1486,7 +1486,7 @@ func TestBeFalse_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(true).BeFalse(t, AssertionConfig{Message: "User should not be deleted"})
+		BeFalse(t, true, AssertionConfig{Message: "User should not be deleted"})
 	})
 
 	if !failed {
@@ -1514,7 +1514,7 @@ func TestBeNil_WithCustomMessage(t *testing.T) {
 	ptr := &value
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ptr).BeNil(t, AssertionConfig{Message: "Pointer should be nil"})
+		BeNil(t, ptr, AssertionConfig{Message: "Pointer should be nil"})
 	})
 
 	if !failed {
@@ -1539,7 +1539,7 @@ func TestBeNotNil_WithCustomMessage(t *testing.T) {
 	var ptr *int
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(ptr).BeNotNil(t, AssertionConfig{Message: "User must not be nil"})
+		BeNotNil(t, ptr, AssertionConfig{Message: "User must not be nil"})
 	})
 
 	if !failed {
@@ -1558,17 +1558,51 @@ func TestBeNotNil_WithCustomMessage(t *testing.T) {
 	}
 }
 
+func TestBeNil_Fails_WithNonNillableType(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeNil(t, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "BeNil can only be used with nillable types, but got int"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeNotNil_Fails_WithNonNillableType(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeNotNil(t, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "BeNotNil can only be used with nillable types, but got int"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
 // === Tests for numeric slice contain with different types ===
 
 func TestContain_WithInt8Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with int8 slice - success case
-	Ensure([]int8{1, 2, 3}).Contain(t, int8(2))
+	Contain(t, []int8{1, 2, 3}, int8(2))
 
 	// Test with int8 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int8{1, 2, 4, 5}).Contain(t, int8(3))
+		Contain(t, []int8{1, 2, 4, 5}, int8(3))
 	})
 
 	if !failed {
@@ -1585,11 +1619,11 @@ func TestContain_WithInt16Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with int16 slice - success case
-	Ensure([]int16{1, 2, 3}).Contain(t, int16(2))
+	Contain(t, []int16{1, 2, 3}, int16(2))
 
 	// Test with int16 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int16{1, 2, 4, 5}).Contain(t, int16(3))
+		Contain(t, []int16{1, 2, 4, 5}, int16(3))
 	})
 
 	if !failed {
@@ -1606,11 +1640,11 @@ func TestContain_WithInt32Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with int32 slice - success case
-	Ensure([]int32{1, 2, 3}).Contain(t, int32(2))
+	Contain(t, []int32{1, 2, 3}, int32(2))
 
 	// Test with int32 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int32{1, 2, 4, 5}).Contain(t, int32(3))
+		Contain(t, []int32{1, 2, 4, 5}, int32(3))
 	})
 
 	if !failed {
@@ -1627,11 +1661,11 @@ func TestContain_WithInt64Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with int64 slice - success case
-	Ensure([]int64{1, 2, 3}).Contain(t, int64(2))
+	Contain(t, []int64{1, 2, 3}, int64(2))
 
 	// Test with int64 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int64{1, 2, 4, 5}).Contain(t, int64(3))
+		Contain(t, []int64{1, 2, 4, 5}, int64(3))
 	})
 
 	if !failed {
@@ -1648,11 +1682,11 @@ func TestContain_WithUintSlices(t *testing.T) {
 	t.Parallel()
 
 	// Test with uint slice - success case
-	Ensure([]uint{1, 2, 3}).Contain(t, uint(2))
+	Contain(t, []uint{1, 2, 3}, uint(2))
 
 	// Test with uint slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]uint{1, 2, 4, 5}).Contain(t, uint(3))
+		Contain(t, []uint{1, 2, 4, 5}, uint(3))
 	})
 
 	if !failed {
@@ -1669,11 +1703,11 @@ func TestContain_WithUint8Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with uint8 slice - success case
-	Ensure([]uint8{1, 2, 3}).Contain(t, uint8(2))
+	Contain(t, []uint8{1, 2, 3}, uint8(2))
 
 	// Test with uint8 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]uint8{1, 2, 4, 5}).Contain(t, uint8(3))
+		Contain(t, []uint8{1, 2, 4, 5}, uint8(3))
 	})
 
 	if !failed {
@@ -1690,11 +1724,11 @@ func TestContain_WithUint16Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with uint16 slice - success case
-	Ensure([]uint16{1, 2, 3}).Contain(t, uint16(2))
+	Contain(t, []uint16{1, 2, 3}, uint16(2))
 
 	// Test with uint16 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]uint16{1, 2, 4, 5}).Contain(t, uint16(3))
+		Contain(t, []uint16{1, 2, 4, 5}, uint16(3))
 	})
 
 	if !failed {
@@ -1711,11 +1745,11 @@ func TestContain_WithUint32Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with uint32 slice - success case
-	Ensure([]uint32{1, 2, 3}).Contain(t, uint32(2))
+	Contain(t, []uint32{1, 2, 3}, uint32(2))
 
 	// Test with uint32 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]uint32{1, 2, 4, 5}).Contain(t, uint32(3))
+		Contain(t, []uint32{1, 2, 4, 5}, uint32(3))
 	})
 
 	if !failed {
@@ -1732,11 +1766,11 @@ func TestContain_WithUint64Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with uint64 slice - success case
-	Ensure([]uint64{1, 2, 3}).Contain(t, uint64(2))
+	Contain(t, []uint64{1, 2, 3}, uint64(2))
 
 	// Test with uint64 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]uint64{1, 2, 4, 5}).Contain(t, uint64(3))
+		Contain(t, []uint64{1, 2, 4, 5}, uint64(3))
 	})
 
 	if !failed {
@@ -1753,11 +1787,11 @@ func TestContain_WithFloat32Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with float32 slice - success case
-	Ensure([]float32{1.1, 2.2, 3.3}).Contain(t, float32(2.2))
+	Contain(t, []float32{1.1, 2.2, 3.3}, float32(2.2))
 
 	// Test with float32 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]float32{1.1, 2.2, 4.4, 5.5}).Contain(t, float32(3.3))
+		Contain(t, []float32{1.1, 2.2, 4.4, 5.5}, float32(3.3))
 	})
 
 	if !failed {
@@ -1774,11 +1808,11 @@ func TestContain_WithFloat64Slices(t *testing.T) {
 	t.Parallel()
 
 	// Test with float64 slice - success case
-	Ensure([]float64{1.1, 2.2, 3.3}).Contain(t, 2.2)
+	Contain(t, []float64{1.1, 2.2, 3.3}, 2.2)
 
 	// Test with float64 slice - failure case
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]float64{1.1, 2.2, 4.4, 5.5}).Contain(t, 3.3)
+		Contain(t, []float64{1.1, 2.2, 4.4, 5.5}, 3.3)
 	})
 
 	if !failed {
@@ -1798,7 +1832,7 @@ func TestContain_WithUnsupportedNumericTypeCombination(t *testing.T) {
 
 	// Test with int slice but float target (should fall back to generic contain)
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure([]int{1, 2, 3}).Contain(t, 2.5)
+		Contain(t, []int{1, 2, 3}, 2.5)
 	})
 
 	if !failed {
@@ -1817,7 +1851,7 @@ func TestBeLessThan_Fails_WithNonNumericActual(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeLessThan(t, "world")
+		BeLessThan(t, "hello", "world")
 	})
 
 	if !failed {
@@ -1834,7 +1868,7 @@ func TestBeLessThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(10).BeLessThan(t, 5, AssertionConfig{Message: "Value should be smaller"})
+		BeLessThan(t, 10, 5, AssertionConfig{Message: "Value should be smaller"})
 	})
 
 	if !failed {
@@ -1859,7 +1893,7 @@ func TestBeGreaterThan_Fails_WithNonNumericExpected(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure("hello").BeGreaterThan(t, "world")
+		BeGreaterThan(t, "hello", "world")
 	})
 
 	if !failed {
@@ -1907,7 +1941,7 @@ func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
 	}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(person1).BeEqual(t, person2, AssertionConfig{Message: "Person objects should be identical"})
+		BeEqual(t, person1, person2, AssertionConfig{Message: "Person objects should be identical"})
 	})
 
 	if !failed {
@@ -1954,7 +1988,7 @@ func TestNumericTypeConversions_AllTypes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// This will exercise the toFloat64 function through BeGreaterThan
-			Ensure(tc.value).BeGreaterThan(t, tc.expected-1)
+			BeGreaterThan(t, tc.value, interface{}(tc.expected-1))
 		})
 	}
 }
@@ -1973,7 +2007,7 @@ func TestIsNumericType_Coverage(t *testing.T) {
 	}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Ensure(structs).Contain(t, CustomStruct{Name: "test3"})
+		Contain(t, structs, CustomStruct{Name: "test3"})
 	})
 
 	if !failed {

@@ -24,18 +24,20 @@ func (m *mockTB) FailNow() {
 	panic("FailNow called")
 }
 
-func TestEnsure(t *testing.T) {
-	t.Run("should return a non-nil assertion object", func(t *testing.T) {
-		assertion := Ensure("some value")
-		if assertion == nil {
-			t.Fatal("should.Ensure() returned nil")
-		}
-		// A simple check to see if we can chain an assertion.
-		// The assertion logic itself is tested in the assert package.
+func TestAssertions(t *testing.T) {
+	t.Run("BeEqual should pass for equal values", func(t *testing.T) {
 		mockT := &mockTB{}
-		assertion.BeEqual(mockT, "some value")
+		BeEqual(mockT, "some value", "some value")
 		if mockT.failed {
-			t.Error("Expected BeEqual to pass, but it failed")
+			t.Errorf("Expected BeEqual to pass, but it failed with message: %q", mockT.lastMessage)
+		}
+	})
+
+	t.Run("BeEqual should fail for unequal values", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeEqual(mockT, "some value", "another value")
+		if !mockT.failed {
+			t.Error("Expected BeEqual to fail, but it passed")
 		}
 	})
 }

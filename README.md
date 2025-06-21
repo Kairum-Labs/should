@@ -36,30 +36,30 @@ import (
 
 func TestBasicAssertions(t *testing.T) {
 	// Boolean assertions
-	should.Ensure(true).BeTrue(t)
-	should.Ensure(false).BeFalse(t)
+	should.BeTrue(t, true)
+	should.BeFalse(t, false)
 
 	// Equality checks
-	should.Ensure("hello").BeEqual(t, "hello")
-	should.Ensure(42).BeEqual(t, 42)
+	should.BeEqual(t, "hello", "hello")
+	should.BeEqual(t, 42, 42)
 
 	// Numeric comparisons
-	should.Ensure(10).BeGreaterThan(t, 5)
-	should.Ensure(3).BeLessThan(t, 7)
+	should.BeGreaterThan(t, 10, 5)
+	should.BeLessThan(t, 3, 7)
 
 	// Numeric comparisons with custom messages
-	should.Ensure(user.Age).BeGreaterThan(t, 18, should.AssertionConfig{Message: "User must be adult"})
-	should.Ensure(score).BeGreaterOrEqualThan(t, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+	should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{Message: "User must be adult"})
+	should.BeGreaterOrEqualThan(t, score, 0, should.AssertionConfig{Message: "Score cannot be negative"})
 
 	// Empty/Non-empty checks
-	should.Ensure("").BeEmpty(t)
-	should.Ensure([]int{1, 2, 3}).BeNotEmpty(t)
+	should.BeEmpty(t, "")
+	should.BeNotEmpty(t, []int{1, 2, 3})
 
 	// Collection operations
 	users := []string{"Alice", "Bob", "Charlie"}
-	should.Ensure(users).Contain(t, "Alice")
-	should.Ensure(users).NotContain(t, "David")
-	should.Ensure(userIDs).Contain(t, targetID, should.AssertionConfig{Message: "User ID must exist in the system"})
+	should.Contain(t, users, "Alice")
+	should.NotContain(t, users, "David")
+	should.Contain(t, userIDs, targetID, should.AssertionConfig{Message: "User ID must exist in the system"})
 }
 ```
 
@@ -71,7 +71,7 @@ func TestBasicAssertions(t *testing.T) {
 
 ```go
 // Short string
-should.Ensure("Hello World!").BeEmpty(t)
+should.BeEmpty(t, "Hello World!")
 // Output:
 // Expected value to be empty, but it was not:
 //         Type    : string
@@ -80,7 +80,7 @@ should.Ensure("Hello World!").BeEmpty(t)
 
 // Long string (automatically formatted)
 longText := "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
-should.Ensure(longText).BeEmpty(t)
+should.BeEmpty(t, longText)
 // Output:
 // Length: 516 characters, 9 lines
 // 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
@@ -96,7 +96,7 @@ should.Ensure(longText).BeEmpty(t)
 
 // Large slice (shows truncated content)
 largeSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-should.Ensure(largeSlice).BeEmpty(t)
+should.BeEmpty(t, largeSlice)
 // Output:
 // Expected value to be empty, but it was not:
 //         Type    : []int
@@ -104,7 +104,7 @@ should.Ensure(largeSlice).BeEmpty(t)
 //         Content : [1, 2, 3, ...] (showing first 3 of 15)
 
 // Empty slice
-should.Ensure([]int{}).BeNotEmpty(t)
+should.BeNotEmpty(t, []int{})
 // Output:
 // Expected value to be not empty, but it was empty:
 //         Type    : []int
@@ -117,7 +117,7 @@ Get detailed information about numeric comparison failures:
 
 ```go
 // Basic comparison with custom message
-should.Ensure(5).BeGreaterThan(t, 10, should.AssertionConfig{Message: "Score validation failed"})
+should.BeGreaterThan(t, 5, 10, should.AssertionConfig{Message: "Score validation failed"})
 // Output:
 // Score validation failed
 // Expected value to be greater than threshold:
@@ -127,7 +127,7 @@ should.Ensure(5).BeGreaterThan(t, 10, should.AssertionConfig{Message: "Score val
 //         Hint   : Value should be larger than threshold
 
 // Equal values
-should.Ensure(42).BeGreaterThan(t, 42)
+should.BeGreaterThan(t, 42, 42)
 // Output:
 // Expected value to be greater than threshold:
 //         Value     : 42
@@ -136,7 +136,7 @@ should.Ensure(42).BeGreaterThan(t, 42)
 //         Hint   : Value should be larger than threshold
 
 // Float precision
-should.Ensure(3.14).BeLessThan(t, 2.71)
+should.BeLessThan(t, 3.14, 2.71)
 // Output:
 // Expected value to be less than threshold:
 //         Value     : 3.14
@@ -145,7 +145,7 @@ should.Ensure(3.14).BeLessThan(t, 2.71)
 //         Hint   : Value should be smaller than threshold
 
 // Large numbers
-should.Ensure(1000000).BeLessThan(t, 999999)
+should.BeLessThan(t, 1000000, 999999)
 // Output:
 // Expected value to be less than threshold:
 //         Value     : 1000000
@@ -166,7 +166,7 @@ type Person struct {
 
 p1 := Person{Name: "John", Age: 30}
 p2 := Person{Name: "Jane", Age: 25}
-should.Ensure(p1).BeEqual(t, p2)
+should.BeEqual(t, p1, p2)
 
 // Output:
 // Differences found:
@@ -185,7 +185,7 @@ When checking for strings in slices, `Should` helps you find typos:
 
 ```go
 users := []string{"user-one", "user_two", "UserThree", "user-3", "userThree"}
-should.Ensure(users).Contain(t, "user3")
+should.Contain(t, users, "user3")
 
 // Output includes helpful suggestions:
 // Expected collection to contain element:
@@ -203,7 +203,7 @@ When checking for integers in slices, `Should` shows where the value would fit:
 
 ```go
 numbers := []int{1, 2, 4, 5, 7, 10}
-should.Ensure(numbers).Contain(t, 6)
+should.Contain(t, numbers, 6)
 
 // Output includes context information:
 // Collection: [..., 4, 5, 7, 10] (showing a window of 6 elements)
@@ -214,26 +214,26 @@ should.Ensure(numbers).Contain(t, 6)
 
 ### Core Assertions
 
-- `BeTrue(t)` / `BeFalse(t)` - Boolean value checks
-- `BeEqual(t, expected)` - Deep equality comparison with detailed diffs
-- `BeNil(t)` / `BeNotNil(t)` - Nil pointer checks
+- `BeTrue(t, actual)` / `BeFalse(t, actual)` - Boolean value checks
+- `BeEqual(t, actual, expected)` - Deep equality comparison with detailed diffs
+- `BeNil(t, actual)` / `BeNotNil(t, actual)` - Nil pointer checks
 
 ### Empty/Non-Empty Checks
 
-- `BeEmpty(t)` - Checks if strings, slices, arrays, maps, channels, or pointers are empty
-- `BeNotEmpty(t)` - Checks if values are not empty
+- `BeEmpty(t, actual)` - Checks if strings, slices, arrays, maps, channels, or pointers are empty
+- `BeNotEmpty(t, actual)` - Checks if values are not empty
 
 ### Numeric Comparisons
 
-- `BeGreaterThan(t, threshold)` - Numeric greater-than comparison
-- `BeLessThan(t, threshold)` - Numeric less-than comparison
-- `BeGreaterOrEqualThan(t, threshold)` - Numeric greater-than-or-equal comparison
+- `BeGreaterThan(t, actual, threshold)` - Numeric greater-than comparison
+- `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
+- `BeGreaterOrEqualThan(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 
 ### Collection Operations
 
-- `Contain(t, element)` - Check if slice/array contains an element
-- `NotContain(t, element)` - Check if slice/array does not contain an element
-- `ContainFunc(t, predicate)` - Check if any element matches a custom predicate
+- `Contain(t, collection, element)` - Check if slice/array contains an element
+- `NotContain(t, collection, element)` - Check if slice/array does not contain an element
+- `ContainFunc(t, collection, predicate)` - Check if any element matches a custom predicate
 
 ### Panic Handling
 
@@ -262,21 +262,21 @@ The `should.AssertionConfig` struct provides a scalable way to configure asserti
 
 ```go
 // Basic usage with custom message
-should.Ensure(user.Age).BeGreaterThan(t, 18, should.AssertionConfig{
+should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{
     Message: "User must be at least 18 years old",
 })
 
 // Multiple assertions with different messages
-should.Ensure(account.Balance).BeGreaterOrEqualThan(t, 0, should.AssertionConfig{
+should.BeGreaterOrEqualThan(t, account.Balance, 0, should.AssertionConfig{
     Message: "Account balance cannot be negative",
 })
 
-should.Ensure(userList).Contain(t, expectedUser, should.AssertionConfig{
+should.Contain(t, userList, expectedUser, should.AssertionConfig{
     Message: "Expected user not found in the list",
 })
 
 // Future extensibility (planned features)
-// should.Ensure(value).BeEqual(t, expected, should.AssertionConfig{
+// should.BeEqual(t, value, expected, should.AssertionConfig{
 //     Message: "Custom error message",
 //     Timeout: 5 * time.Second,
 //     Retries: 3,
@@ -293,7 +293,7 @@ people := []Person{
 }
 
 // Find people over 30
-should.Ensure(people).ContainFunc(t, func(item any) bool {
+should.ContainFunc(t, people, func(item any) bool {
     person, ok := item.(Person)
     if !ok {
         return false
@@ -302,7 +302,7 @@ should.Ensure(people).ContainFunc(t, func(item any) bool {
 })
 
 // With custom error message
-should.Ensure(people).ContainFunc(t, func(item any) bool {
+should.ContainFunc(t, people, func(item any) bool {
     person, ok := item.(Person)
     if !ok {
         return false
@@ -315,11 +315,11 @@ should.Ensure(people).ContainFunc(t, func(item any) bool {
 
 ```go
 // This won't compile - type mismatch
-// should.Ensure("hello").BeGreaterThan(t, 42)
+// should.BeGreaterThan(t, "hello", 42)
 
 // This works - same types
-should.Ensure(42).BeGreaterThan(t, 30)
-should.Ensure(3.14).BeLessThan(t, 4.0)
+should.BeGreaterThan(t, 42, 30)
+should.BeLessThan(t, 3.14, 4.0)
 ```
 
 ## Contributing
