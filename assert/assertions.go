@@ -223,6 +223,11 @@ func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
+
+	if !v.IsValid() {
+		return // A nil interface is considered nil.
+	}
+
 	kind := v.Kind()
 	nillable := kind == reflect.Chan ||
 		kind == reflect.Func ||
@@ -265,20 +270,25 @@ func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
-	kind := v.Kind()
-	nillable := kind == reflect.Chan ||
-		kind == reflect.Func ||
-		kind == reflect.Interface ||
-		kind == reflect.Map ||
-		kind == reflect.Ptr ||
-		kind == reflect.Slice
 
-	if !nillable {
-		fail(t, "BeNotNil can only be used with nillable types, but got %T", actual)
-		return
+	isNil := !v.IsValid()
+	if v.IsValid() {
+		kind := v.Kind()
+		nillable := kind == reflect.Chan ||
+			kind == reflect.Func ||
+			kind == reflect.Interface ||
+			kind == reflect.Map ||
+			kind == reflect.Ptr ||
+			kind == reflect.Slice
+
+		if !nillable {
+			fail(t, "BeNotNil can only be used with nillable types, but got %T", actual)
+			return
+		}
+		isNil = v.IsNil()
 	}
 
-	if v.IsNil() {
+	if isNil {
 		var customMsg string
 		if len(config) > 0 {
 			customMsg = config[0].Message

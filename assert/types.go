@@ -1,10 +1,5 @@
 package assert
 
-// Assertion is a struct that contains the value to be asserted.
-type Assertion[T any] struct {
-	value T // The value to be asserted.
-}
-
 // AssertionConfig provides configuration options for assertions.
 // It allows for custom error messages and future extensibility.
 type AssertionConfig struct {
