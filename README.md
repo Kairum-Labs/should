@@ -5,11 +5,10 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Kairum-Labs/should)](https://goreportcard.com/report/github.com/Kairum-Labs/should)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-`Should` is a lightweight, intuitive, and fluent assertion library for Go, designed to make your tests more readable and expressive. It provides **exceptionally detailed error messages** to help you debug failures faster and understand exactly what went wrong.
+`Should` is a lightweight and intuitive assertion library for Go, designed to make your tests more readable and expressive. It provides **exceptionally detailed error messages** to help you debug failures faster and understand exactly what went wrong.
 
 ## Features
 
-- **Fluent API**: Chain assertions in a natural, readable way.
 - **Detailed Error Messages**: Get comprehensive, contextual error information for every assertion type.
 - **Smart String Handling**: Automatic multiline formatting for long strings and truncation with context.
 - **Numeric Comparisons**: Detailed difference calculations with helpful hints for numeric assertions.
@@ -264,6 +263,11 @@ should.BeOneOf(t, "pending", []string{"active", "inactive", "suspended"})
 
 - `BeEmpty(t, actual)` - Checks if strings, slices, arrays, maps, channels, or pointers are empty
 - `BeNotEmpty(t, actual)` - Checks if values are not empty
+
+### Numeric Comparisons
+
+- `BeGreaterThan(t, actual, threshold)` - Numeric greater-than comparison
+- `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
 - `BeGreaterOrEqualThan(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 
 ### Collection Operations
@@ -347,17 +351,6 @@ should.ContainFunc(t, people, func(item any) bool {
     }
     return person.Age >= 65
 }, should.AssertionConfig{Message: "No elderly users found"})
-```
-
-### Type Safety
-
-```go
-// This won't compile - type mismatch
-// should.BeGreaterThan(t, "hello", 42)
-
-// This works - same types
-should.BeGreaterThan(t, 42, 30)
-should.BeLessThan(t, 3.14, 4.0)
 ```
 
 ## Contributing

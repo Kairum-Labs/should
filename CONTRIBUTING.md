@@ -100,10 +100,10 @@ git commit -m "fix: handle nil pointers in BeEmpty"
 - Always call `t.Helper()` for proper stack traces
 
 ```go
-func (a *Assertion[T]) BeEqual(t testing.TB, expected T, config ...AssertionConfig) {
+func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
     t.Helper()
     if !reflect.DeepEqual(a.value, expected) {
-        fail(t, formatError(a.value, expected, msgAndArgs...))
+        fail(t, formatError(a.value, expected))
     }
 }
 ```
