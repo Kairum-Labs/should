@@ -193,7 +193,7 @@ func TestNotContain_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		NotContain(t, []string{"apple", "banana"}, "apple", AssertionConfig{Message: "Apple should not be in basket"})
+		NotContain(t, []string{"apple", "banana"}, "apple", WithMessage("Apple should not be in basket"))
 	})
 
 	if !failed {
@@ -210,7 +210,7 @@ func TestContain_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		Contain(t, []string{"apple", "banana"}, "orange", AssertionConfig{Message: "Fruit not found in basket"})
+		Contain(t, []string{"apple", "banana"}, "orange", WithMessage("Fruit not found in basket"))
 	})
 
 	if !failed {
@@ -435,7 +435,7 @@ func TestBeEmpty_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeEmpty(t, "hello", AssertionConfig{Message: "This is a custom message"})
+		BeEmpty(t, "hello", WithMessage("This is a custom message"))
 	})
 
 	if !failed {
@@ -597,7 +597,7 @@ func TestBeEmpty_WithChannelBuffered(t *testing.T) {
 	// Test non-empty buffered channel
 	ch <- 42
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeEmpty(t, ch, AssertionConfig{Message: "Channel should be empty"})
+		BeEmpty(t, ch, WithMessage("Channel should be empty"))
 	})
 
 	if !failed {
@@ -749,7 +749,7 @@ func TestBeNotEmpty_WithChannelBuffered(t *testing.T) {
 	// Test empty buffered channel
 	emptyChannel := make(chan int, 1)
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, emptyChannel, AssertionConfig{Message: "Channel should have data"})
+		BeNotEmpty(t, emptyChannel, WithMessage("Channel should have data"))
 	})
 
 	if !failed {
@@ -856,7 +856,7 @@ func TestBeGreaterThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterThan(t, 0.0, 0.1, AssertionConfig{Message: "Score validation failed"})
+		BeGreaterThan(t, 0.0, 0.1, WithMessage("Score validation failed"))
 	})
 
 	if !failed {
@@ -1033,7 +1033,7 @@ func TestPanic_WithCustomMessage(t *testing.T) {
 	failed, message := assertFails(t, func(t testing.TB) {
 		Panic(t, func() {
 			// No panic
-		}, AssertionConfig{Message: "Division by zero should panic"})
+		}, WithMessage("Division by zero should panic"))
 	})
 
 	if !failed {
@@ -1092,7 +1092,7 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 	failed, message := assertFails(t, func(t testing.TB) {
 		NotPanic(t, func() {
 			panic("error occurred")
-		}, AssertionConfig{Message: "Save operation should not panic"})
+		}, WithMessage("Save operation should not panic"))
 	})
 
 	if !failed {
@@ -1154,7 +1154,7 @@ func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, 0, 1, AssertionConfig{Message: "Score cannot be negative"})
+		BeGreaterOrEqualThan(t, 0, 1, WithMessage("Score cannot be negative"))
 	})
 
 	if !failed {
@@ -1194,7 +1194,7 @@ func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, 5.0, 5.1, AssertionConfig{Message: "Integer vs float comparison"})
+		BeGreaterOrEqualThan(t, 5.0, 5.1, WithMessage("Integer vs float comparison"))
 	})
 
 	if !failed {
@@ -1463,7 +1463,7 @@ func TestBeTrue_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeTrue(t, false, AssertionConfig{Message: "User must be active"})
+		BeTrue(t, false, WithMessage("User must be active"))
 	})
 
 	if !failed {
@@ -1486,7 +1486,7 @@ func TestBeFalse_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeFalse(t, true, AssertionConfig{Message: "User should not be deleted"})
+		BeFalse(t, true, WithMessage("User should not be deleted"))
 	})
 
 	if !failed {
@@ -1514,7 +1514,7 @@ func TestBeNil_WithCustomMessage(t *testing.T) {
 	ptr := &value
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNil(t, ptr, AssertionConfig{Message: "Pointer should be nil"})
+		BeNil(t, ptr, WithMessage("Pointer should be nil"))
 	})
 
 	if !failed {
@@ -1539,7 +1539,7 @@ func TestBeNotNil_WithCustomMessage(t *testing.T) {
 	var ptr *int
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotNil(t, ptr, AssertionConfig{Message: "User must not be nil"})
+		BeNotNil(t, ptr, WithMessage("User must not be nil"))
 	})
 
 	if !failed {
@@ -1868,7 +1868,7 @@ func TestBeLessThan_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeLessThan(t, 10, 5, AssertionConfig{Message: "Value should be smaller"})
+		BeLessThan(t, 10, 5, WithMessage("Value should be smaller"))
 	})
 
 	if !failed {
@@ -1941,7 +1941,7 @@ func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
 	}
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeEqual(t, person1, person2, AssertionConfig{Message: "Person objects should be identical"})
+		BeEqual(t, person1, person2, WithMessage("Person objects should be identical"))
 	})
 
 	if !failed {
@@ -2049,7 +2049,7 @@ func TestHaveLength(t *testing.T) {
 
 	t.Run("should fail for incorrect length with custom message", func(t *testing.T) {
 		mockT := &mockT{}
-		HaveLength(mockT, []int{1, 2}, 3, AssertionConfig{Message: "Custom message"})
+		HaveLength(mockT, []int{1, 2}, 3, WithMessage("Custom message"))
 		if !mockT.failed {
 			t.Fatal("Expected HaveLength to fail, but it passed")
 		}

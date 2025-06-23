@@ -21,13 +21,17 @@ import (
 	"github.com/Kairum-Labs/should/assert"
 )
 
-// AssertionConfig provides configuration options for assertions.
-// It allows for custom error messages.
+// Option is a functional option for configuring assertions.
+type Option = assert.Option
+
+// WithMessage creates an option for setting a custom error message.
 //
 // Example:
 //
-//	should.BeEqual(t, value, expected, should.AssertionConfig{Message: "Custom message"})
-type AssertionConfig = assert.AssertionConfig
+//	should.BeEqual(t, value, expected, should.WithMessage("Custom message"))
+func WithMessage(message string) Option {
+	return assert.WithMessage(message)
+}
 
 // BeTrue reports a test failure if the value is not true.
 //
@@ -38,12 +42,12 @@ type AssertionConfig = assert.AssertionConfig
 //
 //	should.BeTrue(t, true)
 //
-//	should.BeTrue(t, user.IsActive, should.AssertionConfig{Message: "User must be active"})
+//	should.BeTrue(t, user.IsActive, should.WithMessage("User must be active"))
 //
 // If the input is not a boolean, the test fails immediately.
-func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeTrue(t, actual, config...)
+	assert.BeTrue(t, actual, opts...)
 }
 
 // BeFalse reports a test failure if the value is not false.
@@ -55,12 +59,12 @@ func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeFalse(t, false)
 //
-//	should.BeFalse(t, user.IsDeleted, should.AssertionConfig{Message: "User should not be deleted"})
+//	should.BeFalse(t, user.IsDeleted, should.WithMessage("User should not be deleted"))
 //
 // If the input is not a boolean, the test fails immediately.
-func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeFalse[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeFalse(t, actual, config...)
+	assert.BeFalse(t, actual, opts...)
 }
 
 // BeEmpty reports a test failure if the value is not empty.
@@ -74,14 +78,14 @@ func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeEmpty(t, "")
 //
-//	should.BeEmpty(t, []int{}, should.AssertionConfig{Message: "List should be empty"})
+//	should.BeEmpty(t, []int{}, should.WithMessage("List should be empty"))
 //
 //	should.BeEmpty(t, map[string]int{})
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeEmpty(t, actual, config...)
+	assert.BeEmpty(t, actual, opts...)
 }
 
 // BeNotEmpty reports a test failure if the value is empty.
@@ -94,14 +98,14 @@ func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeNotEmpty(t, "hello")
 //
-//	should.BeNotEmpty(t, []int{1, 2, 3}, should.AssertionConfig{Message: "List must have items"})
+//	should.BeNotEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
 //
 //	should.BeNotEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNotEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeNotEmpty(t, actual, config...)
+	assert.BeNotEmpty(t, actual, opts...)
 }
 
 // BeNil reports a test failure if the value is not nil.
@@ -115,12 +119,12 @@ func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //	should.BeNil(t, ptr)
 //
 //	var slice []int
-//	should.BeNil(t, slice, should.AssertionConfig{Message: "Slice should be nil"})
+//	should.BeNil(t, slice, should.WithMessage("Slice should be nil"))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeNil(t, actual, config...)
+	assert.BeNil(t, actual, opts...)
 }
 
 // BeNotNil reports a test failure if the value is nil.
@@ -131,73 +135,73 @@ func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 // Example:
 //
 //	user := &User{Name: "John"}
-//	should.BeNotNil(t, user, should.AssertionConfig{Message: "User must not be nil"})
+//	should.BeNotNil(t, user, should.WithMessage("User must not be nil"))
 //
 //	should.BeNotNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNotNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeNotNil(t, actual, config...)
+	assert.BeNotNil(t, actual, opts...)
 }
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
 // This assertion works with all numeric types (int, float, etc.) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
-// It supports optional custom error messages through AssertionConfig.
+// It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeGreaterThan(t, 10, 5)
 //
-//	should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{Message: "User must be adult"})
+//	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeGreaterThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+func BeGreaterThan[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
-	assert.BeGreaterThan(t, actual, expected, config...)
+	assert.BeGreaterThan(t, actual, expected, opts...)
 }
 
 // BeLessThan reports a test failure if the value is not less than the expected threshold.
 //
 // This assertion works with all numeric types (int, float, etc.) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
-// It supports optional custom error messages through AssertionConfig.
+// It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeLessThan(t, 5, 10)
 //
-//	should.BeLessThan(t, user.Age, 65, should.AssertionConfig{Message: "User must be under retirement age"})
+//	should.BeLessThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeLessThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+func BeLessThan[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
-	assert.BeLessThan(t, actual, expected, config...)
+	assert.BeLessThan(t, actual, expected, opts...)
 }
 
 // BeGreaterOrEqualThan reports a test failure if the value is not greater than or equal to the expected threshold.
 //
 // This assertion works with all numeric types (int, float, etc.) and provides
-// detailed error messages when the assertion fails. It supports optional custom error messages through AssertionConfig.
+// detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeGreaterOrEqualThan(t, 10, 10)
 //
-//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.WithMessage("Score cannot be negative"))
 //
 //	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
-	assert.BeGreaterOrEqualThan(t, actual, expected, config...)
+	assert.BeGreaterOrEqualThan(t, actual, expected, opts...)
 }
 
 // BeEqual reports a test failure if the two values are not deeply equal.
@@ -212,12 +216,12 @@ func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, config ...Ass
 //
 //	should.BeEqual(t, 42, 42)
 //
-//	should.BeEqual(t, user, expectedUser, should.AssertionConfig{Message: "User objects should match"})
+//	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual[T any](t testing.TB, actual, expected T, config ...AssertionConfig) {
+func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
-	assert.BeEqual(t, actual, expected, config...)
+	assert.BeEqual(t, actual, expected, opts...)
 }
 
 // Contain reports a test failure if the slice or array does not contain the expected value.
@@ -234,14 +238,14 @@ func BeEqual[T any](t testing.TB, actual, expected T, config ...AssertionConfig)
 //
 //	should.Contain(t, []int{1, 2, 3}, 2)
 //
-//	should.Contain(t, []float64{1.1, 2.2}, 1.5, should.AssertionConfig{Message: "Expected value missing"})
+//	should.Contain(t, []float64{1.1, 2.2}, 1.5, should.WithMessage("Expected value missing"))
 //
 //	should.Contain(t, []string{"apple", "banana"}, "apple")
 //
 // If the input is not a slice or array, the test fails immediately.
-func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 	t.Helper()
-	assert.Contain(t, actual, expected, config...)
+	assert.Contain(t, actual, expected, opts...)
 }
 
 // NotContain reports a test failure if the slice or array contains the expected value.
@@ -255,12 +259,12 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 //
 //	should.NotContain(t, []int{1, 2, 3}, 4)
 //
-//	should.NotContain(t, []string{"apple", "banana"}, "orange", should.AssertionConfig{Message: "Should not have orange"})
+//	should.NotContain(t, []string{"apple", "banana"}, "orange", should.WithMessage("Should not have orange"))
 //
 // If the input is not a slice or array, the test fails immediately.
-func NotContain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+func NotContain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 	t.Helper()
-	assert.NotContain(t, actual, expected, config...)
+	assert.NotContain(t, actual, expected, opts...)
 }
 
 // ContainFunc reports a test failure if no element in the slice or array matches the predicate function.
@@ -278,12 +282,12 @@ func NotContain[T any](t testing.TB, actual T, expected any, config ...Assertion
 //
 //	should.ContainFunc(t, numbers, func(item any) bool {
 //		return item.(int) % 2 == 0
-//	}, should.AssertionConfig{Message: "No even numbers found"})
+//	}, should.WithMessage("No even numbers found"))
 //
 // If the input is not a slice or array, the test fails immediately.
-func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, config ...AssertionConfig) {
+func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, opts ...Option) {
 	t.Helper()
-	assert.ContainFunc(t, actual, predicate, config...)
+	assert.ContainFunc(t, actual, predicate, opts...)
 }
 
 // Panic asserts that the given function panics when executed.
@@ -294,9 +298,9 @@ func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, c
 //	should.Panic(t, func() {
 //		panic("expected panic")
 //	})
-func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
+func Panic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
-	assert.Panic(t, fn, config...)
+	assert.Panic(t, fn, opts...)
 }
 
 // NotPanic asserts that the given function does not panic when executed.
@@ -308,9 +312,9 @@ func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
 //		result := safeOperation()
 //		_ = result
 //	})
-func NotPanic(t testing.TB, fn func(), config ...AssertionConfig) {
+func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
-	assert.NotPanic(t, fn, config...)
+	assert.NotPanic(t, fn, opts...)
 }
 
 // HaveLength reports a test failure if the collection does not have the expected length.
@@ -323,9 +327,9 @@ func NotPanic(t testing.TB, fn func(), config ...AssertionConfig) {
 //
 //	should.HaveLength(t, []int{1, 2, 3}, 3)
 //	should.HaveLength(t, "hello", 5)
-func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfig) {
+func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	t.Helper()
-	assert.HaveLength(t, actual, expected, config...)
+	assert.HaveLength(t, actual, expected, opts...)
 }
 
 // BeOfType reports a test failure if the value is not of the expected type.
@@ -338,9 +342,9 @@ func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfi
 //	type MyType struct{}
 //	var v MyType
 //	should.BeOfType(t, MyType{}, v)
-func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
+func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 	t.Helper()
-	assert.BeOfType(t, actual, expected, config...)
+	assert.BeOfType(t, actual, expected, opts...)
 }
 
 // BeOneOf reports a test failure if the value is not one of the provided options.
@@ -353,7 +357,7 @@ func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
 //	status := "pending"
 //	allowedStatus := []string{"active", "inactive"}
 //	should.BeOneOf(t, status, allowedStatus)
-func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConfig) {
+func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	t.Helper()
-	assert.BeOneOf(t, actual, options, config...)
+	assert.BeOneOf(t, actual, options, opts...)
 }

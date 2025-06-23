@@ -96,11 +96,11 @@ git commit -m "fix: handle nil pointers in BeEmpty"
 ### Assertion Methods
 
 - Use "Be" prefix: `BeEqual`, `BeTrue`, `BeEmpty`
-- Support custom messages: `config ...AssertionConfig`
+- Support custom messages: `opts ...Option`
 - Always call `t.Helper()` for proper stack traces
 
 ```go
-func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
+func BeEqual[T any](t testing.TB, actual T, expected T, opts ...Option) {
     t.Helper()
     if !reflect.DeepEqual(a.value, expected) {
         fail(t, formatError(a.value, expected))

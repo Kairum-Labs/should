@@ -11,6 +11,14 @@ import (
 	"testing"
 )
 
+func processOptions(opts ...Option) *Config {
+	cfg := &Config{}
+	for _, opt := range opts {
+		opt.Apply(cfg)
+	}
+	return cfg
+}
+
 func fail(t testing.TB, message string, args ...any) {
 	t.Helper()
 	t.Errorf(message, args...)
@@ -25,10 +33,10 @@ func fail(t testing.TB, message string, args ...any) {
 //
 //	should.BeTrue(t, true)
 //
-//	should.BeTrue(t, user.IsActive, should.AssertionConfig{Message: "User must be active"})
+//	should.BeTrue(t, user.IsActive, should.WithMessage("User must be active"))
 //
 // If the input is not a boolean, the test fails immediately.
-func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	val, ok := any(actual).(bool)
 	if !ok {
@@ -37,12 +45,9 @@ func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	}
 
 	if !val {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
-		if customMsg != "" {
-			fail(t, "%s\nExpected true, got false", customMsg)
+		cfg := processOptions(opts...)
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected true, got false", cfg.Message)
 		} else {
 			fail(t, "Expected true, got false")
 		}
@@ -58,10 +63,10 @@ func BeTrue[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeFalse(t, false)
 //
-//	should.BeFalse(t, user.IsDeleted, should.AssertionConfig{Message: "User should not be deleted"})
+//	should.BeFalse(t, user.IsDeleted, should.WithMessage("User should not be deleted"))
 //
 // If the input is not a boolean, the test fails immediately.
-func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeFalse[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	val, ok := any(actual).(bool)
 	if !ok {
@@ -70,12 +75,9 @@ func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	}
 
 	if val {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
-		if customMsg != "" {
-			fail(t, "%s\nExpected false, got true", customMsg)
+		cfg := processOptions(opts...)
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected false, got true", cfg.Message)
 		} else {
 			fail(t, "Expected false, got true")
 		}
@@ -93,12 +95,12 @@ func BeFalse[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeEmpty(t, "")
 //
-//	should.BeEmpty(t, []int{}, should.AssertionConfig{Message: "List should be empty"})
+//	should.BeEmpty(t, []int{}, should.WithMessage("List should be empty"))
 //
 //	should.BeEmpty(t, map[string]int{})
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	actualValue := reflect.ValueOf(actual)
 
@@ -111,13 +113,10 @@ func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	switch actualValue.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		if actualValue.Len() > 0 {
-			var customMsg string
-			if len(config) > 0 {
-				customMsg = config[0].Message
-			}
+			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, true)
-			if customMsg != "" {
-				fail(t, "%s\n%s", customMsg, errorMsg)
+			if cfg.Message != "" {
+				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
 				fail(t, "%s", errorMsg)
 			}
@@ -126,13 +125,10 @@ func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 		if actualValue.IsNil() {
 			return // nil pointer is considered empty
 		}
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatEmptyError(actual, true)
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -151,24 +147,21 @@ func BeEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 //	should.BeNotEmpty(t, "hello")
 //
-//	should.BeNotEmpty(t, []int{1, 2, 3}, should.AssertionConfig{Message: "List must have items"})
+//	should.BeNotEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
 //
 //	should.BeNotEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNotEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	actualValue := reflect.ValueOf(actual)
 
 	// Handle nil values
 	if !actualValue.IsValid() {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatEmptyError(actual, false)
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -179,26 +172,20 @@ func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	switch actualValue.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		if actualValue.Len() == 0 {
-			var customMsg string
-			if len(config) > 0 {
-				customMsg = config[0].Message
-			}
+			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, false)
-			if customMsg != "" {
-				fail(t, "%s\n%s", customMsg, errorMsg)
+			if cfg.Message != "" {
+				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
 				fail(t, "%s", errorMsg)
 			}
 		}
 	case reflect.Ptr:
 		if actualValue.IsNil() {
-			var customMsg string
-			if len(config) > 0 {
-				customMsg = config[0].Message
-			}
+			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, false)
-			if customMsg != "" {
-				fail(t, "%s\n%s", customMsg, errorMsg)
+			if cfg.Message != "" {
+				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
 				fail(t, "%s", errorMsg)
 			}
@@ -219,10 +206,10 @@ func BeNotEmpty[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //	should.BeNil(t, ptr)
 //
 //	var slice []int
-//	should.BeNil(t, slice, should.AssertionConfig{Message: "Slice should be nil"})
+//	should.BeNil(t, slice, should.WithMessage("Slice should be nil"))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
 
@@ -244,12 +231,9 @@ func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	}
 
 	if !v.IsNil() {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
-		if customMsg != "" {
-			fail(t, "%s\nExpected nil, but was not", customMsg)
+		cfg := processOptions(opts...)
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected nil, but was not", cfg.Message)
 		} else {
 			fail(t, "Expected nil, but was not")
 		}
@@ -264,12 +248,12 @@ func BeNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 // Example:
 //
 //	user := &User{Name: "John"}
-//	should.BeNotNil(t, user, should.AssertionConfig{Message: "User must not be nil"})
+//	should.BeNotNil(t, user, should.WithMessage("User must not be nil"))
 //
 //	should.BeNotNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
+func BeNotNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
 
@@ -291,12 +275,9 @@ func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 	}
 
 	if isNil {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
-		if customMsg != "" {
-			fail(t, "%s\nExpected not nil, but was nil", customMsg)
+		cfg := processOptions(opts...)
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected not nil, but was nil", cfg.Message)
 		} else {
 			fail(t, "Expected not nil, but was nil")
 		}
@@ -307,18 +288,18 @@ func BeNotNil[T any](t testing.TB, actual T, config ...AssertionConfig) {
 //
 // This assertion works with all numeric types (int, float, etc.) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
-// It supports optional custom error messages through AssertionConfig.
+// It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeGreaterThan(t, 10, 5)
 //
-//	should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{Message: "User must be adult"})
+//	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeGreaterThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
+func BeGreaterThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
@@ -337,13 +318,10 @@ func BeGreaterThan[T any](t testing.TB, actual T, expected T, config ...Assertio
 	}
 
 	if actualAsFloat <= expectedAsFloat {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatNumericComparisonError(actual, expected, "greater")
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -354,18 +332,18 @@ func BeGreaterThan[T any](t testing.TB, actual T, expected T, config ...Assertio
 //
 // This assertion works with all numeric types (int, float, etc.) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
-// It supports optional custom error messages through AssertionConfig.
+// It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeLessThan(t, 5, 10)
 //
-//	should.BeLessThan(t, user.Age, 65, should.AssertionConfig{Message: "User must be under retirement age"})
+//	should.BeLessThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeLessThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
+func BeLessThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
@@ -384,13 +362,10 @@ func BeLessThan[T any](t testing.TB, actual T, expected T, config ...AssertionCo
 	}
 
 	if actualAsFloat >= expectedAsFloat {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatNumericComparisonError(actual, expected, "less")
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -400,18 +375,18 @@ func BeLessThan[T any](t testing.TB, actual T, expected T, config ...AssertionCo
 // BeGreaterOrEqualThan reports a test failure if the value is not greater than or equal to the expected threshold.
 //
 // This assertion works with all numeric types (int, float, etc.) and provides
-// detailed error messages when the assertion fails. It supports optional custom error messages through AssertionConfig.
+// detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
 //
 //	should.BeGreaterOrEqualThan(t, 10, 10)
 //
-//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.WithMessage("Score cannot be negative"))
 //
 //	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
 //
 // Only works with numeric types. Both values must be numeric.
-func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
+func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	actualV := reflect.ValueOf(actual)
 	expectedV := reflect.ValueOf(expected)
@@ -430,10 +405,8 @@ func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, config ...A
 	}
 
 	if actualAsFloat < expectedAsFloat {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
+		customMsg := cfg.Message
 		if customMsg != "" {
 			customMsg += "\n"
 		}
@@ -453,10 +426,10 @@ func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, config ...A
 //
 //	should.BeEqual(t, 42, 42)
 //
-//	should.BeEqual(t, user, expectedUser, should.AssertionConfig{Message: "User objects should match"})
+//	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfig) {
+func BeEqual[T any](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
 	if reflect.DeepEqual(actual, expected) {
@@ -471,10 +444,8 @@ func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfi
 		differencesOutput += fmt.Sprintf("  └─ %s: %s ≠ %s\n", diff.Path, formatDiffValue(diff.Expected), formatDiffValue(diff.Actual))
 	}
 
-	var customMsg string
-	if len(config) > 0 {
-		customMsg = config[0].Message
-	}
+	cfg := processOptions(opts...)
+	customMsg := cfg.Message
 	if customMsg != "" {
 		customMsg += "\n"
 	}
@@ -506,12 +477,12 @@ func BeEqual[T any](t testing.TB, actual T, expected T, config ...AssertionConfi
 //
 //	should.Contain(t, []int{1, 2, 3}, 2)
 //
-//	should.Contain(t, []float64{1.1, 2.2}, 1.5, should.AssertionConfig{Message: "Expected value missing"})
+//	should.Contain(t, []float64{1.1, 2.2}, 1.5, should.WithMessage("Expected value missing"))
 //
 //	should.Contain(t, []string{"apple", "banana"}, "apple")
 //
 // If the input is not a slice or array, the test fails immediately.
-func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
@@ -525,13 +496,10 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 			if result.Found {
 				return
 			}
-			var customMsg string
-			if len(config) > 0 {
-				customMsg = config[0].Message
-			}
+			cfg := processOptions(opts...)
 			output := formatContainsError(target, result)
-			if customMsg != "" {
-				fail(t, "%s\n%s", customMsg, output)
+			if cfg.Message != "" {
+				fail(t, "%s\n%s", cfg.Message, output)
 			} else {
 				fail(t, "%s", output)
 			}
@@ -549,12 +517,9 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 		if found {
 			return
 		}
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, output)
+		cfg := processOptions(opts...)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, output)
 		} else {
 			fail(t, "%s", output)
 		}
@@ -570,15 +535,12 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 	}
 
 	// If not found, fail with a detailed message
-	var customMsg string
-	if len(config) > 0 {
-		customMsg = config[0].Message
-	}
+	cfg := processOptions(opts...)
 	baseMsg := fmt.Sprintf("Expected collection to contain element:\n  Collection: %s\n  Missing   : %s",
 		formatSlice(actual), formatComparisonValue(expected))
 
-	if customMsg != "" {
-		fail(t, "%s\n%s", customMsg, baseMsg)
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, baseMsg)
 	} else {
 		fail(t, "%s", baseMsg)
 	}
@@ -595,10 +557,10 @@ func Contain[T any](t testing.TB, actual T, expected any, config ...AssertionCon
 //
 //	should.NotContain(t, []int{1, 2, 3}, 4)
 //
-//	should.NotContain(t, []string{"apple", "banana"}, "orange", should.AssertionConfig{Message: "Should not have orange"})
+//	should.NotContain(t, []string{"apple", "banana"}, "orange", should.WithMessage("Should not have orange"))
 //
 // If the input is not a slice or array, the test fails immediately.
-func NotContain[T any](t testing.TB, actual T, expected any, config ...AssertionConfig) {
+func NotContain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
@@ -635,10 +597,10 @@ func NotContain[T any](t testing.TB, actual T, expected any, config ...Assertion
 //
 //	should.ContainFunc(t, numbers, func(item any) bool {
 //		return item.(int) % 2 == 0
-//	}, should.AssertionConfig{Message: "No even numbers found"})
+//	}, should.WithMessage("No even numbers found"))
 //
 // If the input is not a slice or array, the test fails immediately.
-func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, config ...AssertionConfig) {
+func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, opts ...Option) {
 	t.Helper()
 	if !isSliceOrArray(actual) {
 		fail(t, "expected a slice or array, but got %T", actual)
@@ -667,7 +629,7 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, c
 //
 //	should.HaveLength(t, []int{1, 2, 3}, 3)
 //	should.HaveLength(t, "hello", 5)
-func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfig) {
+func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
 	var actualLen int
@@ -681,13 +643,10 @@ func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfi
 	}
 
 	if actualLen != expected {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatLengthError(actual, expected, actualLen)
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -704,19 +663,16 @@ func HaveLength(t testing.TB, actual any, expected int, config ...AssertionConfi
 //	type MyType struct{}
 //	var v MyType
 //	should.BeOfType(t, MyType{}, v)
-func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
+func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 	t.Helper()
 	expectedType := reflect.TypeOf(expected)
 	actualType := reflect.TypeOf(actual)
 
 	if actualType != expectedType {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
 		errorMsg := formatTypeError(actual, expectedType, actualType)
-		if customMsg != "" {
-			fail(t, "%s\n%s", customMsg, errorMsg)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
 			fail(t, "%s", errorMsg)
 		}
@@ -733,7 +689,7 @@ func BeOfType(t testing.TB, actual, expected any, config ...AssertionConfig) {
 //	status := "pending"
 //	allowedStatus := []string{"active", "inactive"}
 //	should.BeOneOf(t, status, allowedStatus)
-func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConfig) {
+func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	t.Helper()
 	if len(options) == 0 {
 		fail(t, "Options list cannot be empty for BeOneOf assertion")
@@ -746,13 +702,10 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConf
 		}
 	}
 
-	var customMsg string
-	if len(config) > 0 {
-		customMsg = config[0].Message
-	}
+	cfg := processOptions(opts...)
 	errorMsg := formatOneOfError(actual, options)
-	if customMsg != "" {
-		fail(t, "%s\n%s", customMsg, errorMsg)
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
 	} else {
 		fail(t, "%s", errorMsg)
 	}
@@ -762,7 +715,7 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConf
 //
 // This assertion executes the provided function and expects it to panic.
 // It captures and recovers from the panic to prevent the test from crashing.
-// Supports optional custom error messages through AssertionConfig.
+// Supports optional custom error messages through Option.
 //
 // Example:
 //
@@ -772,17 +725,15 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, config ...AssertionConf
 //
 //	should.Panic(t, func() {
 //		divide(1, 0)
-//	}, should.AssertionConfig{Message: "Division by zero should panic"})
+//	}, should.WithMessage("Division by zero should panic"))
 //
 // The function parameter must not be nil.
-func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
+func Panic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
 	panicked, _ := didPanic(fn)
 	if !panicked {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
+		customMsg := cfg.Message
 		if customMsg != "" {
 			customMsg += "\n"
 		}
@@ -794,7 +745,7 @@ func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
 //
 // This assertion executes the provided function and expects it to complete normally
 // without panicking. If a panic occurs, it captures the panic value and includes it
-// in the error message. Supports optional custom error messages through AssertionConfig.
+// in the error message. Supports optional custom error messages through Option.
 //
 // Example:
 //
@@ -805,17 +756,15 @@ func Panic(t testing.TB, fn func(), config ...AssertionConfig) {
 //
 //	should.NotPanic(t, func() {
 //		user.Save()
-//	}, should.AssertionConfig{Message: "Save operation should not panic"})
+//	}, should.WithMessage("Save operation should not panic"))
 //
 // The function parameter must not be nil.
-func NotPanic(t testing.TB, fn func(), config ...AssertionConfig) {
+func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
 	panicked, r := didPanic(fn)
 	if panicked {
-		var customMsg string
-		if len(config) > 0 {
-			customMsg = config[0].Message
-		}
+		cfg := processOptions(opts...)
+		customMsg := cfg.Message
 		if customMsg != "" {
 			customMsg += "\n"
 		}

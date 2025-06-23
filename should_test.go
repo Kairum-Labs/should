@@ -46,7 +46,7 @@ func TestPanic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		fn          func()
-		config      []AssertionConfig
+		opts        []Option
 		shouldFail  bool
 		expectedMsg string
 	}{
@@ -64,8 +64,8 @@ func TestPanic(t *testing.T) {
 		{
 			name: "should fail with custom message when function does not panic",
 			fn:   func() {},
-			config: []AssertionConfig{
-				{Message: "custom message"},
+			opts: []Option{
+				WithMessage("custom message"),
 			},
 			shouldFail:  true,
 			expectedMsg: "custom message\nExpected panic, but did not panic",
@@ -75,7 +75,7 @@ func TestPanic(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockT := &mockTB{}
-			Panic(mockT, tc.fn, tc.config...)
+			Panic(mockT, tc.fn, tc.opts...)
 
 			if tc.shouldFail != mockT.failed {
 				t.Errorf("Expected test failure to be %v, but was %v", tc.shouldFail, mockT.failed)
@@ -92,7 +92,7 @@ func TestNotPanic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		fn          func()
-		config      []AssertionConfig
+		opts        []Option
 		shouldFail  bool
 		expectedMsg string
 	}{
@@ -110,8 +110,8 @@ func TestNotPanic(t *testing.T) {
 		{
 			name: "should fail with custom message when function panics",
 			fn:   func() { panic("some panic") },
-			config: []AssertionConfig{
-				{Message: "custom message"},
+			opts: []Option{
+				WithMessage("custom message"),
 			},
 			shouldFail:  true,
 			expectedMsg: "custom message\nExpected for the function to not panic, but it panicked with: some panic",
@@ -121,7 +121,7 @@ func TestNotPanic(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockT := &mockTB{}
-			NotPanic(mockT, tc.fn, tc.config...)
+			NotPanic(mockT, tc.fn, tc.opts...)
 
 			if tc.shouldFail != mockT.failed {
 				t.Errorf("Expected test failure to be %v, but was %v", tc.shouldFail, mockT.failed)

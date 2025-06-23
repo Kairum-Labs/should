@@ -1,9 +1,31 @@
 package assert
 
-// AssertionConfig provides configuration options for assertions.
+// Option is a functional option for configuring assertions.
+type Option interface {
+	Apply(config *Config)
+}
+
+// Config provides configuration options for assertions.
 // It allows for custom error messages and future extensibility.
-type AssertionConfig struct {
-	Message string // Custom error message to display when assertion fails
+type Config struct {
+	Message string
+	/*
+		 	Description    string
+			DeepComparison bool
+	*/
+}
+
+// message implements the Option interface for custom messages.
+type message string
+
+// Apply sets the custom message in the config.
+func (m message) Apply(c *Config) {
+	c.Message = string(m)
+}
+
+// WithMessage creates an option for setting a custom error message.
+func WithMessage(msg string) Option {
+	return message(msg)
 }
 
 // fieldDiff represents a single difference between two compared values.

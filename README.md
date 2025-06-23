@@ -47,8 +47,8 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeLessThan(t, 3, 7)
 
 	// Numeric comparisons with custom messages
-	should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{Message: "User must be adult"})
-	should.BeGreaterOrEqualThan(t, score, 0, should.AssertionConfig{Message: "Score cannot be negative"})
+	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
+	should.BeGreaterOrEqualThan(t, score, 0, should.WithMessage("Score cannot be negative"))
 
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
@@ -58,7 +58,7 @@ func TestBasicAssertions(t *testing.T) {
 	users := []string{"Alice", "Bob", "Charlie"}
 	should.Contain(t, users, "Alice")
 	should.NotContain(t, users, "David")
-	should.Contain(t, userIDs, targetID, should.AssertionConfig{Message: "User ID must exist in the system"})
+	should.Contain(t, userIDs, targetID, should.WithMessage("User ID must exist in the system"))
 }
 ```
 
@@ -116,7 +116,7 @@ Get detailed information about numeric comparison failures:
 
 ```go
 // Basic comparison with custom message
-should.BeGreaterThan(t, 5, 10, should.AssertionConfig{Message: "Score validation failed"})
+should.BeGreaterThan(t, 5, 10, should.WithMessage("Score validation failed"))
 // Output:
 // Score validation failed
 // Expected value to be greater than threshold:
@@ -288,41 +288,30 @@ Example with custom messages:
 // Assert function panics with custom message
 should.Panic(t, func() {
     divide(1, 0)
-}, should.AssertionConfig{Message: "Division by zero should panic"})
+}, should.WithMessage("Division by zero should panic"))
 
 // Assert function doesn't panic with custom message
 should.NotPanic(t, func() {
     user.Save()
-}, should.AssertionConfig{Message: "Save operation should not panic"})
+}, should.WithMessage("Save operation should not panic"))
 ```
 
 ## Advanced Usage
 
-### AssertionConfig for Custom Messages
+### Functional Options for Assertions
 
-The `should.AssertionConfig` struct provides a scalable way to configure assertions. Currently, it supports custom error messages, with room for future extensions:
+`Should` uses functional options to provide a scalable way to configure assertions. This allows you to chain multiple configurations in a readable way.
+
+#### Custom Messages with `WithMessage`
+
+You can add custom messages to any assertion using `should.WithMessage()`:
 
 ```go
-// Basic usage with custom message
-should.BeGreaterThan(t, user.Age, 18, should.AssertionConfig{
-    Message: "User must be at least 18 years old",
-})
+// Basic usage with a custom message
+should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be at least 18 years old"))
 
-// Multiple assertions with different messages
-should.BeGreaterOrEqualThan(t, account.Balance, 0, should.AssertionConfig{
-    Message: "Account balance cannot be negative",
-})
-
-should.Contain(t, userList, expectedUser, should.AssertionConfig{
-    Message: "Expected user not found in the list",
-})
-
-// Future extensibility (planned features)
-// should.BeEqual(t, value, expected, should.AssertionConfig{
-//     Message: "Custom error message",
-//     Timeout: 5 * time.Second,
-//     Retries: 3,
-// })
+// Another example
+should.BeGreaterOrEqualThan(t, account.Balance, 0, should.WithMessage("Account balance cannot be negative"))
 ```
 
 ### Custom Predicate Functions
@@ -350,7 +339,7 @@ should.ContainFunc(t, people, func(item any) bool {
         return false
     }
     return person.Age >= 65
-}, should.AssertionConfig{Message: "No elderly users found"})
+}, should.WithMessage("No elderly users found"))
 ```
 
 ## Contributing
