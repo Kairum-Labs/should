@@ -14,7 +14,7 @@
 - **Numeric Comparisons**: Detailed difference calculations with helpful hints for numeric assertions.
 - **Empty/Non-Empty Checks**: Rich context about collection types, sizes, and content.
 - **String Similarity**: When a string assertion fails, `Should` suggests similar strings from your collection to help you spot typos.
-- **Integer Context**: When an integer assertion fails, `Should` shows the nearest values to help you understand the context.
+- **Numeric Context**: When a numeric assertion fails, `Should` shows nearby values in the collection to help you reason about missing or unexpected numbers.
 - **Type-Safe**: Uses Go generics for type safety while maintaining a clean API.
 
 ## Installation
@@ -223,17 +223,21 @@ should.Contain(t, users, "user3")
 //           └─ userThree (at index 4) - case difference
 ```
 
-### Integer Context Information
+### Numeric Context Information
 
-When checking for integers in slices, `Should` shows where the value would fit:
+When checking for numeric in slices, `Should` shows where the value would fit:
 
 ```go
-numbers := []int{1, 2, 4, 5, 7, 10}
-should.Contain(t, numbers, 6)
+numbers := []int{10, 80, 20, 70, 30, 60, 40, 50, 0, 100, 90, 120, 110} // 13 elements, unsorted
+should.Contain(t, numbers, 55)
 
 // Output includes context information:
-// Collection: [..., 4, 5, 7, 10] (showing a window of 6 elements)
-// Missing   : 6
+// Expected collection to contain element:
+// Collection: [10, 80, 20, 70, 30, ..., 90, 120, 110] (showing first 5 and last 5 of 13 elements)
+// Missing   : 55
+//
+// Element 55 would fit between 50 and 60 in sorted order
+// └─ Sorted view: [..., 40, 50, 60, 70, ...]
 ```
 
 ### Set Membership Assertions

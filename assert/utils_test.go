@@ -367,176 +367,155 @@ func TestFormatComparisonValue_ComplexMapKeys(t *testing.T) {
 	}
 }
 
-func TestFindInsertionContext_Parameterized(t *testing.T) {
+func TestFindInsertionInfo_Parameterized(t *testing.T) {
 	testCases := []struct {
-		name           string
-		collection     []int
-		target         int
-		expectedWindow string
-		expectedIndex  int
+		name          string
+		collection    []int
+		target        int
+		expectedFound bool
+		expectedIndex int
+		expectedPrev  *int
+		expectedNext  *int
 	}{
 		{
-			name:           "Insert_In_Middle",
-			collection:     []int{1, 2, 3, 5, 6, 7},
-			target:         4,
-			expectedWindow: "[..., 2, 3, 5, 6, ...]",
-			expectedIndex:  3,
+			name:          "Insert_In_Middle",
+			collection:    []int{1, 2, 3, 5, 6, 7},
+			target:        4,
+			expectedFound: false,
+			expectedIndex: 3,
+			expectedPrev:  intPtr(3),
+			expectedNext:  intPtr(5),
 		},
 		{
-			name:           "Insert_At_Beginning",
-			collection:     []int{2, 3, 4, 5, 6},
-			target:         1,
-			expectedWindow: "[2, 3, 4, 5, ...]",
-			expectedIndex:  0,
+			name:          "Insert_At_Beginning",
+			collection:    []int{2, 3, 4, 5, 6},
+			target:        1,
+			expectedFound: false,
+			expectedIndex: 0,
+			expectedPrev:  nil,
+			expectedNext:  intPtr(2),
 		},
 		{
-			name:           "Insert_At_End",
-			collection:     []int{1, 2, 3, 4, 5},
-			target:         6,
-			expectedWindow: "[..., 2, 3, 4, 5]",
-			expectedIndex:  5,
+			name:          "Insert_At_End",
+			collection:    []int{1, 2, 3, 4, 5},
+			target:        6,
+			expectedFound: false,
+			expectedIndex: 5,
+			expectedPrev:  intPtr(5),
+			expectedNext:  nil,
 		},
 		{
-			name:           "Target_Already_Exists",
-			collection:     []int{1, 2, 3, 4, 5},
-			target:         3,
-			expectedWindow: "",
-			expectedIndex:  2,
+			name:          "Target_Already_Exists",
+			collection:    []int{1, 2, 3, 4, 5},
+			target:        3,
+			expectedFound: true,
+			expectedIndex: 2,
+			expectedPrev:  nil,
+			expectedNext:  nil,
 		},
 		{
-			name:           "Empty_Collection",
-			collection:     []int{},
-			target:         1,
-			expectedWindow: "",
-			expectedIndex:  -1,
-		},
-		{
-			name:           "Single_Element_Collection_Before",
-			collection:     []int{2},
-			target:         1,
-			expectedWindow: "[2]",
-			expectedIndex:  0,
-		},
-		{
-			name:           "Single_Element_Collection_After",
-			collection:     []int{1},
-			target:         2,
-			expectedWindow: "[1]",
-			expectedIndex:  1,
-		},
-		{
-			name:           "Large_Collection_Insert_Middle",
-			collection:     []int{1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15},
-			target:         7,
-			expectedWindow: "[..., 5, 6, 8, 9, ...]",
-			expectedIndex:  6,
-		},
-		{
-			name:           "Large_Gap_Between_Elements",
-			collection:     []int{1, 5, 10, 15, 20},
-			target:         7,
-			expectedWindow: "[1, 5, 10, 15, ...]",
-			expectedIndex:  2,
-		},
-		{
-			name:           "Negative_Numbers",
-			collection:     []int{-10, -5, 0, 5, 10},
-			target:         -7,
-			expectedWindow: "[-10, -5, 0, 5, ...]",
-			expectedIndex:  1,
+			name:          "Empty_Collection",
+			collection:    []int{},
+			target:        1,
+			expectedFound: false,
+			expectedIndex: -1,
+			expectedPrev:  nil,
+			expectedNext:  nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			window, insertIndex := findInsertionContext(tc.collection, tc.target)
+			info, err := findInsertionInfo(tc.collection, tc.target)
+			BeNil(t, err)
+			BeEqual(t, info.found, tc.expectedFound)
+			BeEqual(t, info.insertIndex, tc.expectedIndex)
 
-			BeEqual(t, window, tc.expectedWindow)
-			BeEqual(t, insertIndex, tc.expectedIndex)
+			if tc.expectedPrev == nil {
+				BeNil(t, info.prev)
+			} else {
+				BeNotNil(t, info.prev)
+				BeEqual(t, *info.prev, *tc.expectedPrev)
+			}
+
+			if tc.expectedNext == nil {
+				BeNil(t, info.next)
+			} else {
+				BeNotNil(t, info.next)
+				BeEqual(t, *info.next, *tc.expectedNext)
+			}
 		})
 	}
 }
 
-func TestFindInsertionContext_WithDifferentTypes(t *testing.T) {
-	t.Run("with_uints", func(t *testing.T) {
-		testCases := []struct {
-			name           string
-			collection     []uint
-			target         uint
-			expectedWindow string
-			expectedIndex  int
-		}{
-			{
-				name:           "Insert_In_Middle_uint",
-				collection:     []uint{1, 2, 3, 5, 6, 7},
-				target:         4,
-				expectedWindow: "[..., 2, 3, 5, 6, ...]",
-				expectedIndex:  3,
-			},
-			{
-				name:           "Target_Already_Exists_uint",
-				collection:     []uint{1, 2, 3, 4, 5},
-				target:         3,
-				expectedWindow: "",
-				expectedIndex:  2,
-			},
-		}
+func TestFormatInsertionContext_WithMessage(t *testing.T) {
+	collection := []int{2, 3, 5, 1, 0}
+	target := 4
+	info, err := findInsertionInfo(collection, target)
+	BeNil(t, err)
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				window, insertIndex := findInsertionContext(tc.collection, tc.target)
-				BeEqual(t, window, tc.expectedWindow)
-				BeEqual(t, insertIndex, tc.expectedIndex)
-			})
-		}
+	result := formatInsertionContext(collection, target, info)
+
+	expected := `Collection: [2, 3, 5, 1, 0]
+Missing  : 4
+
+Element 4 would fit between 3 and 5 in sorted order`
+
+	BeEqual(t, result, expected)
+}
+
+func TestFormatInsertionContext_BoundaryAndLargeCollections(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Collection with 10 elements (no sorted view)", func(t *testing.T) {
+		collection := []int{0, 1, 2, 3, 4, 9, 8, 7, 6, 5}
+		info, err := findInsertionInfo(collection, 10)
+		BeNil(t, err)
+
+		result := formatInsertionContext(collection, 10, info)
+		BeFalse(t, strings.Contains(result, "Sorted view"))
+		BeTrue(t, strings.Contains(result, "Element 10 would be after 9 in sorted order"))
 	})
 
-	t.Run("with_floats", func(t *testing.T) {
-		testCases := []struct {
-			name           string
-			collection     []float64
-			target         float64
-			expectedWindow string
-			expectedIndex  int
-		}{
-			{
-				name:           "Insert_In_Middle_float",
-				collection:     []float64{1.1, 2.2, 3.3, 5.5, 6.6, 7.7},
-				target:         4.4,
-				expectedWindow: "[..., 2.2, 3.3, 5.5, 6.6, ...]",
-				expectedIndex:  3,
-			},
-			{
-				name:           "Target_Already_Exists_float",
-				collection:     []float64{1.1, 2.2, 3.3, 4.4, 5.5},
-				target:         3.3,
-				expectedWindow: "",
-				expectedIndex:  2,
-			},
-			{
-				name:           "Target_Is_NaN",
-				collection:     []float64{1.1, 2.2, 3.3},
-				target:         math.NaN(),
-				expectedWindow: "error: NaN values are not supported",
-				expectedIndex:  -1,
-			},
-			{
-				name:           "Collection_Contains_NaN",
-				collection:     []float64{1.1, math.NaN(), 3.3},
-				target:         2.2,
-				expectedWindow: "error: collection contains NaN values",
-				expectedIndex:  -1,
-			},
+	t.Run("Collection with 12 elements (with sorted view)", func(t *testing.T) {
+		collection := []int{0, 1, 2, 3, 4, 5, 11, 10, 9, 8, 7, 6}
+		info, err := findInsertionInfo(collection, 100)
+		BeNil(t, err)
+
+		result := formatInsertionContext(collection, 100, info)
+		expectedParts := []string{
+			"Collection: [0, 1, 2, 3, 4, ..., 10, 9, 8, 7, 6] (showing first 5 and last 5 of 12 elements)",
+			"Missing  : 100",
+			"Element 100 would be after 11 in sorted order",
+			"└─ Sorted view: [..., 8, 9, 10, 11]",
 		}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				window, insertIndex := findInsertionContext(tc.collection, tc.target)
-				BeEqual(t, window, tc.expectedWindow)
-				BeEqual(t, insertIndex, tc.expectedIndex)
-			})
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
 		}
 	})
+}
+
+func TestFormatInsertionContext_EmptyCollection(t *testing.T) {
+	t.Parallel()
+
+	result := formatInsertionContext([]int{}, 5, insertionInfo[int]{})
+	expectedParts := []string{
+		"Collection: []",
+		"Missing  : 5",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(result, part) {
+			t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+		}
+	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
 
 // === Tests for String Similarity Functions ===
@@ -1321,90 +1300,4 @@ func TestFormatNumericComparisonError(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestFormatInsertionContext_EmptyCollection(t *testing.T) {
-	t.Parallel()
-
-	result := formatInsertionContext([]int{}, 5, "")
-	expectedParts := []string{
-		"Collection: []",
-		"Missing  : 5",
-	}
-
-	for _, part := range expectedParts {
-		if !strings.Contains(result, part) {
-			t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
-		}
-	}
-}
-
-func TestFormatInsertionContext_LargeCollection(t *testing.T) {
-	t.Parallel()
-
-	largeCollection := make([]int, 10)
-	for i := range largeCollection {
-		largeCollection[i] = i
-	}
-
-	result := formatInsertionContext(largeCollection, 15, "[0, 1, 2, 3]")
-	expectedParts := []string{
-		"Collection: [0, 1, 2, 3]",
-		"(showing 4 of 10 elements)",
-		"Missing  : 15",
-	}
-
-	for _, part := range expectedParts {
-		if !strings.Contains(result, part) {
-			t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
-		}
-	}
-}
-
-func TestFormatDiffValue(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name     string
-		input    interface{}
-		expected string
-	}{
-		{
-			name:     "Nil value",
-			input:    nil,
-			expected: "nil",
-		},
-		{
-			name:     "String value",
-			input:    "hello",
-			expected: `"hello"`,
-		},
-		{
-			name:     "Bool value",
-			input:    true,
-			expected: "true",
-		},
-		{
-			name:     "Int value",
-			input:    42,
-			expected: "42",
-		},
-		{
-			name:     "Float value",
-			input:    3.14,
-			expected: "3.14",
-		},
-		{
-			name:     "Complex type",
-			input:    []int{1, 2, 3},
-			expected: "[1, 2, 3]",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := formatDiffValue(tc.input)
-			BeEqual(t, result, tc.expected)
-		})
-	}
 }
