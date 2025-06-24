@@ -56,6 +56,20 @@ type ContainResult struct {
 	Total   int
 }
 
+// findInsertionInfo finds information about where a target would be inserted in a sorted collection.
+// It returns:
+// - found: boolean, true if the target is found in the collection.
+// - insertIndex: the index where the target is or would be inserted in the sorted collection.
+// - prev: the element just before the insertion point in the sorted collection (if any).
+// - next: the element at the insertion point in the sorted collection (if any).
+type insertionInfo[T Ordered] struct {
+	found        bool
+	insertIndex  int
+	prev         *T
+	next         *T
+	sortedWindow string
+}
+
 // Ordered is a type constraint for types that can be ordered.
 // It includes all integer and floating-point types.
 type Ordered interface {

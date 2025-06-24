@@ -645,22 +645,17 @@ func formatContainsError(target interface{}, result ContainResult) string {
 
 //  === THIS SECTION IS TO FIND SIMILAR INT IN A SLICE ===
 
-// findInsertionContext returns the context for inserting a target into a sorted version of the collection.
-//
-// If the target exists: returns ("", index).
-// If not: returns (window string, insertion index). The window shows up to 4 nearby sorted values.
-//
-// Example:
-//
-//	findInsertionContext([]int{10, 20, 40}, 30) => ("[..., 10, 20, 40]", 2)
-func findInsertionContext[T Ordered](collection []T, target T) (string, int) {
+func findInsertionInfo[T Ordered](collection []T, target T) (insertionInfo[T], error) {
+	info := insertionInfo[T]{}
+
 	if len(collection) == 0 {
-		return "", -1
+		info.insertIndex = -1
+		return info, nil
 	}
 
 	if isFloat(target) {
 		if math.IsNaN(float64(target)) {
-			return "error: NaN values are not supported", -1
+			return info, fmt.Errorf("NaN values are not supported")
 		}
 	}
 
@@ -671,35 +666,39 @@ func findInsertionContext[T Ordered](collection []T, target T) (string, int) {
 	if len(sortedCollection) > 0 && isFloat(sortedCollection[0]) {
 		for _, v := range sortedCollection {
 			if math.IsNaN(float64(v)) {
-				return "error: collection contains NaN values", -1
+				return info, fmt.Errorf("collection contains NaN values")
 			}
 		}
 	}
 
-	//we need to find the index where the target should be inserted in the sorted collection
 	insertIndex := sort.Search(len(sortedCollection), func(i int) bool {
 		return sortedCollection[i] >= target
 	})
 
+	info.insertIndex = insertIndex
+
 	if insertIndex < len(sortedCollection) && sortedCollection[insertIndex] == target {
-		return "", insertIndex
+		info.found = true
+		return info, nil
 	}
 
-	windowSize := 4
+	if insertIndex > 0 {
+		info.prev = &sortedCollection[insertIndex-1]
+	}
 
-	leftSide := windowSize / 2
-	rightSide := windowSize / 2
+	if insertIndex < len(sortedCollection) {
+		info.next = &sortedCollection[insertIndex]
+	}
 
-	startIndex := max(0, insertIndex-leftSide)
-	endIndex := min(len(sortedCollection), insertIndex+rightSide)
+	if len(collection) > 10 {
+		windowSize := 4
+		leftSide := windowSize / 2
+		rightSide := windowSize / 2
 
-	// Adjust window boundaries to maximize element count within windowSize limit
-	if len(sortedCollection) <= windowSize {
-		// For small collections, show all elements
-		startIndex = 0
-		endIndex = len(sortedCollection)
-	} else {
-		// For larger collections, ensure we have windowSize elements when possible
+		startIndex := max(0, insertIndex-leftSide)
+		endIndex := min(len(sortedCollection), insertIndex+rightSide)
+
+		// Adjust window boundaries to maximize element count within windowSize limit
 		actualSize := endIndex - startIndex
 		if actualSize < windowSize {
 			if startIndex == 0 {
@@ -710,64 +709,85 @@ func findInsertionContext[T Ordered](collection []T, target T) (string, int) {
 				startIndex = max(0, len(sortedCollection)-windowSize)
 			}
 		}
-	}
 
-	// extracting elements from the collection
-	window := sortedCollection[startIndex:endIndex]
+		window := sortedCollection[startIndex:endIndex]
 
-	builder := strings.Builder{}
-
-	builder.WriteString("[")
-
-	if startIndex > 0 {
-		builder.WriteString("..., ")
-	}
-
-	for i, val := range window {
-		builder.WriteString(fmt.Sprintf("%v", val))
-		if i < len(window)-1 {
-			builder.WriteString(", ")
+		var builder strings.Builder
+		builder.WriteString("[")
+		if startIndex > 0 {
+			builder.WriteString("..., ")
 		}
+
+		var elements []string
+		for _, val := range window {
+			elements = append(elements, fmt.Sprintf("%v", val))
+		}
+		builder.WriteString(strings.Join(elements, ", "))
+
+		if endIndex < len(sortedCollection) {
+			builder.WriteString(", ...")
+		}
+		builder.WriteString("]")
+		info.sortedWindow = builder.String()
 	}
 
-	if endIndex < len(sortedCollection) {
-		builder.WriteString(", ...")
-	}
-
-	builder.WriteString("]")
-
-	return builder.String(), insertIndex
+	return info, nil
 }
 
-func formatInsertionContext[T Ordered](collection []T, target T, window string) string {
+func formatInsertionContext[T Ordered](collection []T, target T, info insertionInfo[T]) string {
 	collectionLength := len(collection)
 	builder := strings.Builder{}
 
 	if collectionLength == 0 {
-		builder.WriteString("\nCollection: []")
-		builder.WriteString("\nMissing  : ")
+		builder.WriteString("Collection: []\n")
+		builder.WriteString("Missing  : ")
 		builder.WriteString(fmt.Sprint(target))
 		return builder.String()
 	}
 
-	windowSize := 4
-	var elementsShown int
+	builder.WriteString("Collection: ")
 
-	if collectionLength <= windowSize {
-		// Small collections show all elements
-		elementsShown = collectionLength
+	var elements []string
+	if collectionLength <= 10 {
+		// Show all elements
+		for _, item := range collection {
+			elements = append(elements, fmt.Sprintf("%v", item))
+		}
+		builder.WriteString(fmt.Sprintf("[%s]", strings.Join(elements, ", ")))
 	} else {
-		// Large collections show up to windowSize elements
-		elementsShown = windowSize
+		// Show first 5
+		for i := 0; i < 5; i++ {
+			elements = append(elements, fmt.Sprintf("%v", collection[i]))
+		}
+		// Show last 5
+		lastElements := []string{}
+		for i := collectionLength - 5; i < collectionLength; i++ {
+			lastElements = append(lastElements, fmt.Sprintf("%v", collection[i]))
+		}
+		builder.WriteString(fmt.Sprintf("[%s, ..., %s]", strings.Join(elements, ", "), strings.Join(lastElements, ", ")))
+		builder.WriteString(fmt.Sprintf(" (showing first 5 and last 5 of %d elements)", collectionLength))
 	}
 
-	builder.WriteString("\nCollection: ")
-	builder.WriteString(window)
-	if collectionLength > elementsShown {
-		builder.WriteString(fmt.Sprintf(" (showing %d of %d elements)", elementsShown, collectionLength))
-	}
 	builder.WriteString("\nMissing  : ")
 	builder.WriteString(fmt.Sprint(target))
+
+	if info.prev != nil || info.next != nil {
+		builder.WriteString("\n\n")
+		if info.prev != nil && info.next != nil {
+			builder.WriteString(fmt.Sprintf("Element %v would fit between %v and %v in sorted order", target, *info.prev, *info.next))
+		} else if info.prev != nil {
+			builder.WriteString(fmt.Sprintf("Element %v would be after %v in sorted order", target, *info.prev))
+		} else if info.next != nil {
+			builder.WriteString(fmt.Sprintf("Element %v would be before %v in sorted order", target, *info.next))
+		}
+	}
+
+	if info.sortedWindow != "" {
+		if info.prev == nil && info.next == nil {
+			builder.WriteString("\n")
+		}
+		builder.WriteString(fmt.Sprintf("\n└─ Sorted view: %s", info.sortedWindow))
+	}
 
 	return builder.String()
 }

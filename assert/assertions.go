@@ -809,106 +809,58 @@ func isNumericType(t reflect.Type) bool {
 	}
 }
 
+func processNumericContain[T Ordered](coll []T, targ any) (bool, string) {
+	if t, ok := targ.(T); ok {
+		info, err := findInsertionInfo(coll, t)
+		if err != nil {
+			return false, fmt.Sprintf("Error checking collection: %v", err)
+		}
+		if info.found {
+			return true, ""
+		}
+		return false, formatInsertionContext(coll, t, info)
+	}
+	return false, ""
+}
+
 // handleNumericSliceContain handles contain operations for numeric slices with insertion context
 func handleNumericSliceContain(collection any, target any) (found bool, output string) {
 	// Handle different numeric slice types
 	switch coll := collection.(type) {
 	case []int:
-		if t, ok := target.(int); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []int8:
-		if t, ok := target.(int8); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []int16:
-		if t, ok := target.(int16); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []int32:
-		if t, ok := target.(int32); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []int64:
-		if t, ok := target.(int64); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []uint:
-		if t, ok := target.(uint); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []uint8:
-		if t, ok := target.(uint8); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []uint16:
-		if t, ok := target.(uint16); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []uint32:
-		if t, ok := target.(uint32); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []uint64:
-		if t, ok := target.(uint64); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []float32:
-		if t, ok := target.(float32); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
 	case []float64:
-		if t, ok := target.(float64); ok {
-			window, insertIndex := findInsertionContext(coll, t)
-			if window == "" && insertIndex != -1 {
-				return true, ""
-			}
-			return false, formatInsertionContext(coll, t, window)
-		}
+		found, output = processNumericContain(coll, target)
+	}
+
+	// If element was found, return success with no error message
+	if found {
+		return true, ""
+	}
+
+	// If not found and we have insertion context, return formatted error
+	if output != "" {
+		return false, "Expected collection to contain element:\n" + output
 	}
 
 	// Fallback for unsupported numeric types or type mismatches
