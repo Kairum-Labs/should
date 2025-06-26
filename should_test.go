@@ -313,6 +313,22 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("StartsWith passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		StartsWith(mockT, "Hello, world!", "Hello")
+		if mockT.failed {
+			t.Error("StartsWith should pass")
+		}
+	})
+
+	t.Run("EndsWith passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		EndsWith(mockT, "Hello, world", "world")
+		if mockT.failed {
+			t.Error("EndsWith should pass")
+		}
+	})
+
 	// ContainFunc
 	t.Run("ContainFunc passes", func(t *testing.T) {
 		mockT := &mockTB{}
@@ -376,4 +392,26 @@ func TestWrappers(t *testing.T) {
 			t.Error("BeOneOf should fail")
 		}
 	})
+}
+
+func TestContainKey_Integration(t *testing.T) {
+	t.Parallel()
+
+	// Test successful cases
+	userMap := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainKey(t, userMap, "email")
+
+	intMap := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainKey(t, intMap, 2)
+}
+
+func TestContainValue_Integration(t *testing.T) {
+	t.Parallel()
+
+	// Test successful cases
+	userMap := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainValue(t, userMap, 2)
+
+	intMap := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainValue(t, intMap, "two")
 }

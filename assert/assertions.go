@@ -546,6 +546,82 @@ func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 	}
 }
 
+// ContainKey reports a test failure if the map does not contain the expected key.
+//
+// This assertion works with maps of any key type and provides intelligent error messages:
+// - For string keys: Shows similar keys and typo detection
+// - For numeric keys: Shows similar keys with numeric differences
+// - For other types: Shows formatted keys with clear error messages
+// Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.ContainKey(t, userMap, "email")
+//
+//	should.ContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key must exist"))
+//
+// If the input is not a map, the test fails immediately.
+func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+	t.Helper()
+
+	if !isMap(actual) {
+		fail(t, "expected a map, but got %T", actual)
+		return
+	}
+
+	result := containsMapKey(actual, expectedKey)
+	if result.Found {
+		return
+	}
+
+	cfg := processOptions(opts...)
+	errorMsg := formatMapContainKeyError(expectedKey, result)
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
+	} else {
+		fail(t, "%s", errorMsg)
+	}
+}
+
+// ContainValue reports a test failure if the map does not contain the expected value.
+//
+// This assertion works with maps of any value type and provides intelligent error messages:
+// - For string values: Shows similar values and typo detection
+// - For numeric values: Shows similar values with numeric differences
+// - For other types: Shows formatted values with clear error messages
+// Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.ContainValue(t, userMap, 3)
+//
+//	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
+//
+// If the input is not a map, the test fails immediately.
+func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+	t.Helper()
+
+	if !isMap(actual) {
+		fail(t, "expected a map, but got %T", actual)
+		return
+	}
+
+	result := containsMapValue(actual, expectedValue)
+	if result.Found {
+		return
+	}
+
+	cfg := processOptions(opts...)
+	errorMsg := formatMapContainValueError(expectedValue, result)
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
+	} else {
+		fail(t, "%s", errorMsg)
+	}
+}
+
 // NotContain reports a test failure if the slice or array contains the expected value.
 //
 // This assertion works with slices and arrays of any type and provides detailed
@@ -580,6 +656,50 @@ func NotContain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 			return
 		}
 	}
+}
+
+// NotContainDuplicates reports a test failure if the slice or array contains duplicate values.
+//
+// This assertion works with slices and arrays of any type and provides detailed
+// error messages showing where the duplicate values were found.
+//
+// Example:
+//
+//	should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4})
+//
+//	should.NotContainDuplicates(t, []User{User{Name: "John"}, User{Name: "John"}})
+//
+// If the input is not a slice or array, the test fails immediately.
+func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {
+	t.Helper()
+	if !isSliceOrArray(actual) {
+		fail(t, "expected a slice or array, but got %T", actual)
+		return
+	}
+
+	collection := reflect.ValueOf(actual).Interface()
+
+	duplicates := findDuplicates(collection)
+
+	cfg := processOptions(opts...)
+	customMsg := cfg.Message
+
+	if len(duplicates) == 0 {
+		return
+	}
+
+	if customMsg != "" {
+		customMsg = fmt.Sprintf("%s\n", customMsg)
+	}
+
+	if len(duplicates) == 1 {
+		fail(t, "%sExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
+		return
+	}
+
+	errorsMsg := formatDuplicatesErrors(duplicates)
+
+	fail(t, "%sExpected no duplicates, but found %d duplicate values: %s", customMsg, len(duplicates), errorsMsg)
 }
 
 // ContainFunc reports a test failure if no element in the slice or array matches the predicate function.
@@ -617,6 +737,134 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 	}
 
 	fail(t, "\nPredicate does not match any item in the slice")
+}
+
+// StartsWith reports a test failure if the string does not start with the expected substring.
+//
+// This assertion checks if the actual string starts with the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// along with a note if the case mismatch is detected.
+//
+// Example:
+//
+//	should.StartsWith(t, "Hello, world!", "hello")
+//
+//	should.StartsWith(t, "Hello, world!", "hello", should.IgnoreCase())
+//
+//	should.StartsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if actual == expected || (cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected))) {
+		return
+	}
+
+	if strings.TrimSpace(actual) == "" {
+		actual = "<empty>"
+	}
+
+	if strings.TrimSpace(expected) == "" {
+		expected = "<empty>"
+	}
+
+	if len(actual) > 56 {
+		actual = actual[:56] + "... (truncated)"
+	}
+
+	if len(expected) > 56 {
+		expected = expected[:56] + "... (truncated)"
+	}
+
+	var startWith string
+
+	if len(actual) > len(expected) {
+		startWith = actual[:len(expected)]
+	} else {
+		startWith = actual
+	}
+
+	noteMsg := ""
+	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
+		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+	}
+
+	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg, cfg)
+	if errorMsg != "" {
+		customMsg := cfg.Message
+		if customMsg != "" {
+			fail(t, "%s\n%s", customMsg, errorMsg)
+			return
+		}
+		fail(t, "%s", errorMsg)
+	}
+}
+
+// EndsWith reports a test failure if the string does not end with the expected substring.
+//
+// This assertion checks if the actual string ends with the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// along with a note if the case mismatch is detected.
+//
+// Example:
+//
+//	should.EndsWith(t, "Hello, world!", "world")
+//
+//	should.EndsWith(t, "Hello, world", "WORLD", should.IgnoreCase())
+//
+//	should.EndsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	actualEndSufix := ""
+
+	if len(actual) > len(expected) {
+		actualEndSufix = actual[len(actual)-len(expected):]
+	} else {
+		actualEndSufix = actual
+	}
+
+	if actual == expected || (cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actualEndSufix), strings.ToLower(expected))) {
+		return
+	}
+
+	if strings.TrimSpace(actual) == "" {
+		actual = "<empty>"
+	}
+
+	if strings.TrimSpace(expected) == "" {
+		expected = "<empty>"
+	}
+
+	if len(actual) > 56 {
+		actual = "... (truncated)" + actual[56:]
+	}
+
+	if len(expected) > 56 {
+		expected = "... (truncated)" + expected[56:]
+	}
+
+	noteMsg := ""
+	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {
+		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+	}
+
+	errorMsg := formatEndsWithError(actual, expected, actualEndSufix, noteMsg, cfg)
+	if errorMsg != "" {
+		customMsg := cfg.Message
+		if customMsg != "" {
+			fail(t, "%s\n%s", customMsg, errorMsg)
+			return
+		}
+		fail(t, "%s", errorMsg)
+	}
 }
 
 // HaveLength reports a test failure if the collection does not have the expected length.

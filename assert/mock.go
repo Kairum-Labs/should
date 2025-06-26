@@ -20,6 +20,10 @@ func (m *mockT) Helper() {
 	// No-op for mock implementation
 }
 
+func (m *mockT) Failed() bool {
+	return m.failed
+}
+
 func assertFails(t *testing.T, test func(t testing.TB)) (failed bool, message string) {
 	t.Helper()
 	mock := &mockT{T: t}

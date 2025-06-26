@@ -1825,8 +1825,6 @@ func TestContain_WithFloat64Slices(t *testing.T) {
 	}
 }
 
-// === Tests for unsupported numeric type combinations ===
-
 func TestContain_WithUnsupportedNumericTypeCombination(t *testing.T) {
 	t.Parallel()
 
@@ -1843,6 +1841,152 @@ func TestContain_WithUnsupportedNumericTypeCombination(t *testing.T) {
 	if !strings.Contains(message, expected) {
 		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
 	}
+}
+
+// === Tests for NotContainDuplicates ===
+
+func TestNotContainDuplicates_Fails_WhenDuplicatesExist(t *testing.T) {
+	t.Parallel()
+
+	// Test that it correctly identifies duplicates in int slice
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4})
+	})
+	if !failed {
+		t.Fatal("Expected test to fail due to duplicates, but it passed")
+	}
+	if !strings.Contains(message, "duplicate values") {
+		t.Errorf("Expected error message to mention duplicates, got: %s", message)
+	}
+
+	// Test that it correctly identifies duplicates in string slice
+	failed, message = assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, []string{"a", "b", "c", "c", "d", "d", "e", "e", "e", "e", "e"})
+	})
+	if !failed {
+		t.Fatal("Expected test to fail due to duplicates, but it passed")
+	}
+	if !strings.Contains(message, "duplicate values") {
+		t.Errorf("Expected error message to mention duplicates, got: %s", message)
+	}
+
+	// Test that it correctly identifies duplicates in complex structs
+	type Address struct {
+		Street string
+		City   string
+		ZIP    string
+	}
+
+	type User struct {
+		ID       int
+		Name     string
+		Email    string
+		Address  Address
+		Metadata map[string]interface{}
+	}
+
+	users := []User{
+		{
+			ID:    1,
+			Name:  "John Doe",
+			Email: "john@example.com",
+			Address: Address{
+				Street: "123 Main St",
+				City:   "New York",
+				ZIP:    "10001",
+			},
+			Metadata: map[string]interface{}{
+				"role":      "admin",
+				"lastLogin": "2024-01-15",
+			},
+		},
+		{
+			ID:    2,
+			Name:  "Jane Smith",
+			Email: "jane@example.com",
+			Address: Address{
+				Street: "456 Oak Ave",
+				City:   "Los Angeles",
+				ZIP:    "90210",
+			},
+			Metadata: map[string]interface{}{
+				"role":      "user",
+				"lastLogin": "2024-01-14",
+			},
+		},
+		{
+			ID:    1,
+			Name:  "John Doe",
+			Email: "john@example.com",
+			Address: Address{
+				Street: "123 Main St",
+				City:   "New York",
+				ZIP:    "10001",
+			},
+			Metadata: map[string]interface{}{
+				"role":      "admin",
+				"lastLogin": "2024-01-15",
+			},
+		},
+		{
+			ID:    3,
+			Name:  "Bob Wilson",
+			Email: "bob@example.com",
+			Address: Address{
+				Street: "789 Pine Rd",
+				City:   "Chicago",
+				ZIP:    "60601",
+			},
+			Metadata: map[string]interface{}{
+				"role":      "user",
+				"lastLogin": "2024-01-13",
+			},
+		},
+		{
+			ID:    2,
+			Name:  "Jane Smith",
+			Email: "jane@example.com",
+			Address: Address{
+				Street: "456 Oak Ave",
+				City:   "Los Angeles",
+				ZIP:    "90210",
+			},
+			Metadata: map[string]interface{}{
+				"role":      "user",
+				"lastLogin": "2024-01-14",
+			},
+		},
+	}
+
+	failed, message = assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, users)
+	})
+	if !failed {
+		t.Fatal("Expected test to fail due to struct duplicates, but it passed")
+	}
+	if !strings.Contains(message, "duplicate values") {
+		t.Errorf("Expected error message to mention duplicates, got: %s", message)
+	}
+}
+
+func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
+	t.Parallel()
+
+	NotContainDuplicates(t, []int{1, 2, 3, 4, 5})
+	NotContainDuplicates(t, []string{"a", "b", "c", "d", "e"})
+
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	users := []User{
+		{ID: 1, Name: "John"},
+		{ID: 2, Name: "Jane"},
+		{ID: 3, Name: "Bob"},
+	}
+
+	NotContainDuplicates(t, users)
 }
 
 // === Tests for BeLessThan error handling ===
@@ -1862,6 +2006,407 @@ func TestBeLessThan_Fails_WithNonNumericActual(t *testing.T) {
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
+}
+
+// === Tests for StartsWith ===
+
+func TestStartsWith_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		StartsWith(t, "Hello, world!", "world", WithMessage("String should start with 'world'"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected string to start with 'world'",
+		"but it starts with 'Hello'",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestStartsWith(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should pass if string starts with prefix",
+				actual:     "Hello, world!",
+				expected:   "Hello",
+				shouldFail: false,
+			},
+			{
+				name:       "should fail if string does not start with prefix",
+				actual:     "Hello, world!",
+				expected:   "world",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, `Expected string to start with 'world', but it starts with 'Hello'`) ||
+						!strings.Contains(message, `Actual   : 'Hello, world!'`) ||
+						!strings.Contains(message, `Expected : 'world'`) {
+						t.Errorf("Incorrect error message:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should show actual prefix in error message",
+				actual:     "Hello, world!",
+				expected:   "Hi",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, `(actual prefix)`) {
+						t.Errorf("Expected error message to contain '(actual prefix)' indicator, got:\n%s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				StartsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected StartsWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Case sensitivity", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should pass with ignore case enabled",
+				actual:     "Hello, world!",
+				expected:   "hello",
+				opts:       []Option{IgnoreCase()},
+				shouldFail: false,
+			},
+			{
+				name:       "should fail if ignore case is disabled and case mismatch is detected",
+				actual:     "Hello",
+				expected:   "hello",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, `Note: Case mismatch detected (use should.IgnoreCase() if intended)`) {
+						t.Errorf("Expected message to contain note message, but got %q", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				StartsWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected StartsWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+		}{
+			{
+				name:       "should pass with custom message",
+				actual:     "Hello, world!",
+				expected:   "Hello",
+				opts:       []Option{WithMessage("Expected string to start with 'Hello'")},
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				StartsWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected StartsWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should fail for empty prefix",
+				actual:     "data",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, `Expected string to start with '<empty>'`) {
+						t.Errorf("Expected error message for empty prefix, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "should fail if actual is empty",
+				actual:     "",
+				expected:   "test",
+				shouldFail: true,
+			},
+			{
+				name:       "should handle exact match",
+				actual:     "test",
+				expected:   "test",
+				shouldFail: false,
+			},
+			{
+				name:       "should handle prefix longer than actual",
+				actual:     "abc",
+				expected:   "abcdef",
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				StartsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected StartsWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+}
+
+// === Tests for EndsWith ===
+
+func TestEndsWith(t *testing.T) {
+	t.Run("Basic functionality", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Success when actual ends with expected",
+				actual:     "Hello, world!",
+				expected:   "world!",
+				shouldFail: false,
+			},
+			{
+				name:       "Exact match passes",
+				actual:     "world",
+				expected:   "world",
+				shouldFail: false,
+			},
+			{
+				name:       "Fails when actual does not end with expected",
+				actual:     "Hello, world!",
+				expected:   "planet",
+				shouldFail: true,
+			},
+			{
+				name:       "Fails when expected is longer than actual",
+				actual:     "abc",
+				expected:   "abcdef",
+				shouldFail: true,
+			},
+			{
+				name:       "should show actual suffix in error message",
+				actual:     "Hello, world!",
+				expected:   "world",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, `(actual suffix)`) {
+						t.Errorf("Expected error message to contain '(actual suffix)' indicator, got:\n%s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				EndsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Case sensitivity", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+		}{
+			{
+				name:       "Success with ignore case enabled",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{IgnoreCase()},
+				shouldFail: false,
+			},
+			{
+				name:       "Fails with ignore case disabled",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{},
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				EndsWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		t.Run("Fails with custom message", func(t *testing.T) {
+			mockT := &mockT{}
+			EndsWith(mockT, "Hello, world!", "planet", WithMessage("String should end with 'planet'"))
+
+			if !mockT.Failed() {
+				t.Errorf("Expected failure but test passed")
+			}
+
+			expectedStrings := []string{
+				"Expected string to end with 'planet'",
+				"but it ends with 'world!'",
+			}
+
+			for _, expectedString := range expectedStrings {
+				if !strings.Contains(mockT.message, expectedString) {
+					t.Errorf("Expected message to contain %q, but got %q", expectedString, mockT.message)
+				}
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+		}{
+			{
+				name:       "Empty strings",
+				actual:     "",
+				expected:   "",
+				shouldFail: false,
+			},
+			{
+				name:       "Empty expected with non-empty actual",
+				actual:     "hello",
+				expected:   "",
+				shouldFail: true,
+			},
+			{
+				name:       "Non-empty expected with empty actual",
+				actual:     "",
+				expected:   "hello",
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				EndsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+			})
+		}
+	})
 }
 
 func TestBeLessThan_WithCustomMessage(t *testing.T) {
@@ -2207,4 +2752,429 @@ func TestBeOneOf(t *testing.T) {
 			t.Errorf("Expected truncation note in message, got:\n%s", mockT.message)
 		}
 	})
+}
+
+// === Tests for ContainKey ===
+
+func TestContainKey_Succeeds_WhenKeyIsPresent(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainKey(t, m, "email")
+}
+
+func TestContainKey_Succeeds_WithIntKeys(t *testing.T) {
+	t.Parallel()
+
+	m := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainKey(t, m, 2)
+}
+
+func TestContainKey_Fails_WhenKeyIsNotPresent(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"name": 1, "age": 2}
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, m, "email")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain key 'email', but key was not found",
+		"Available keys:",
+		"Missing: 'email'",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_ShowsSimilarKeys_ForStringKeys(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{
+		"id":           1,
+		"name":         2,
+		"mail":         3,
+		"e_mail":       4,
+		"emailAddress": 5,
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, m, "email")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain key 'email', but key was not found",
+		"Available keys:",
+		"Missing: 'email'",
+		"Similar keys found:",
+		"└─ 'mail'",
+		"└─ 'e_mail'",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_ShowsSimilarKeys_ForIntKeys(t *testing.T) {
+	t.Parallel()
+
+	m := map[int]string{
+		1:   "one",
+		24:  "twenty-four",
+		43:  "forty-three",
+		100: "hundred",
+		420: "four-twenty",
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, m, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain key 42, but key was not found",
+		"Available keys:",
+		"Missing: 42",
+		"Similar keys found:",
+		"└─ 43 - differs by 1",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"name": 1}
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, m, "email", WithMessage("User profile must have email field"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"User profile must have email field",
+		"Expected map to contain key 'email', but key was not found",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_Fails_WithNonMapType(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, []string{"not", "a", "map"}, "key")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a map, but got []string"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+// === Tests for ContainValue ===
+
+func TestContainValue_Succeeds_WhenValueIsPresent(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainValue(t, m, 2)
+}
+
+func TestContainValue_Succeeds_WithStringValues(t *testing.T) {
+	t.Parallel()
+
+	m := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainValue(t, m, "two")
+}
+
+func TestContainValue_Fails_WhenValueIsNotPresent(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"name": 1, "age": 2}
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, m, 3)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain value 3, but value was not found",
+		"Available values: [1, 2]",
+		"Missing: 3",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_ShowsSimilarValues_ForStringValues(t *testing.T) {
+	t.Parallel()
+
+	m := map[int]string{
+		1: "admin",
+		2: "user",
+		3: "guest",
+		4: "moderator",
+		5: "administrator",
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, m, "adm")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain value 'adm', but value was not found",
+		"Available values:",
+		"Missing: 'adm'",
+		"Similar values found:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_ShowsSimilarValues_ForIntValues(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{
+		"first":  10,
+		"second": 25,
+		"third":  30,
+		"fourth": 45,
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, m, 24)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain value 24, but value was not found",
+		"Available values:",
+		"Missing: 24",
+		"Similar values found:",
+		"└─ 25 - differs by 1",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]int{"score": 100}
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, m, 95, WithMessage("Score must be achievable"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Score must be achievable",
+		"Expected map to contain value 95, but value was not found",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_Fails_WithNonMapType(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, "not a map", "value")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a map, but got string"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+// === Edge Cases Tests for ContainKey ===
+
+func TestContainKey_EdgeCases_WithNilMap(t *testing.T) {
+	t.Parallel()
+
+	var nilMap map[string]int
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, nilMap, "test")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain key 'test', but key was not found",
+		"Available keys: nil",
+		"Missing: 'test'",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_EdgeCases_WithEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	emptyMap := make(map[string]int)
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainKey(t, emptyMap, "test")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain key 'test', but key was not found",
+		"Available keys: []",
+		"Missing: 'test'",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainKey_EdgeCases_WithZeroValues(t *testing.T) {
+	t.Parallel()
+
+	// Test with zero value keys
+	m := map[int]string{0: "zero", 1: "one"}
+	ContainKey(t, m, 0)
+
+	m2 := map[string]int{"": 42, "test": 1}
+	ContainKey(t, m2, "")
+}
+
+// === Edge Cases Tests for ContainValue ===
+
+func TestContainValue_EdgeCases_WithNilMap(t *testing.T) {
+	t.Parallel()
+
+	var nilMap map[string]int
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, nilMap, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain value 42, but value was not found",
+		"Available values: nil",
+		"Missing: 42",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_EdgeCases_WithEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	emptyMap := make(map[string]int)
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, emptyMap, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected map to contain value 42, but value was not found",
+		"Available values: []",
+		"Missing: 42",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainValue_EdgeCases_WithZeroValues(t *testing.T) {
+	t.Parallel()
+
+	// Test with zero value values
+	m := map[string]int{"zero": 0, "one": 1}
+	ContainValue(t, m, 0)
+
+	m2 := map[int]string{1: "", 2: "test"}
+	ContainValue(t, m2, "")
 }

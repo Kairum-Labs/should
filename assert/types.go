@@ -8,7 +8,8 @@ type Option interface {
 // Config provides configuration options for assertions.
 // It allows for custom error messages and future extensibility.
 type Config struct {
-	Message string
+	Message    string
+	IgnoreCase bool
 	/*
 		 	Description    string
 			DeepComparison bool
@@ -18,14 +19,24 @@ type Config struct {
 // message implements the Option interface for custom messages.
 type message string
 
+type ignoreCase bool
+
 // Apply sets the custom message in the config.
 func (m message) Apply(c *Config) {
 	c.Message = string(m)
 }
 
+func (i ignoreCase) Apply(c *Config) {
+	c.IgnoreCase = bool(i)
+}
+
 // WithMessage creates an option for setting a custom error message.
 func WithMessage(msg string) Option {
 	return message(msg)
+}
+
+func IgnoreCase() Option {
+	return ignoreCase(true)
 }
 
 // fieldDiff represents a single difference between two compared values.
@@ -70,10 +81,25 @@ type insertionInfo[T Ordered] struct {
 	sortedWindow string
 }
 
+type duplicateGroup struct {
+	Value   any
+	Indexes []int
+}
+
 // Ordered is a type constraint for types that can be ordered.
 // It includes all integer and floating-point types.
 type Ordered interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
 		~float32 | ~float64
+}
+
+// MapContainResult represents the result of checking if a map contains a key or value
+type MapContainResult struct {
+	Found   bool
+	Exact   bool
+	MaxShow int
+	Total   int
+	Context []interface{}
+	Similar []SimilarItem
 }

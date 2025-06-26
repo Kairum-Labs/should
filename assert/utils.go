@@ -1010,3 +1010,663 @@ func formatOneOfError[T any](actual T, options []T) string {
 	msg.WriteString(fmt.Sprintf("Count   : 0 of %d options matched\n", len(options)))
 	return msg.String()
 }
+
+func findUnhashableDuplicates(collection any) []duplicateGroup {
+	rv := reflect.ValueOf(collection)
+	length := rv.Len()
+	visitedIndices := make([]bool, length)
+	var duplicates []duplicateGroup
+
+	for i := 0; i < length; i++ {
+		if visitedIndices[i] {
+			continue
+		}
+
+		item := rv.Index(i).Interface()
+		var foundIndices []int
+
+		for j := i + 1; j < length; j++ {
+			if visitedIndices[j] {
+				continue
+			}
+
+			candidate := rv.Index(j).Interface()
+			if reflect.DeepEqual(item, candidate) {
+				if len(foundIndices) == 0 {
+					foundIndices = append(foundIndices, i)
+					visitedIndices[i] = true
+				}
+				foundIndices = append(foundIndices, j)
+				visitedIndices[j] = true
+			}
+		}
+
+		if len(foundIndices) > 0 {
+			duplicates = append(duplicates, duplicateGroup{Value: item, Indexes: foundIndices})
+		}
+	}
+	return duplicates
+}
+
+func findDuplicates(collection any) []duplicateGroup {
+	rv := reflect.ValueOf(collection)
+
+	// Check if the type is comparable to use the fast path with maps
+	if rv.Type().Elem().Comparable() {
+		return findComparableDuplicates(collection)
+	}
+
+	// Fallback to deep equality for unhashable types
+	return findUnhashableDuplicates(collection)
+}
+
+func findComparableDuplicates(collection any) []duplicateGroup {
+	rv := reflect.ValueOf(collection)
+	indexes := make(map[any][]int)
+	length := rv.Len()
+
+	for i := 0; i < length; i++ {
+		item := rv.Index(i).Interface()
+		indexes[item] = append(indexes[item], i)
+	}
+
+	var duplicates []duplicateGroup
+	for item, idxs := range indexes {
+		if len(idxs) > 1 {
+			duplicates = append(duplicates, duplicateGroup{Value: item, Indexes: idxs})
+		}
+	}
+	return duplicates
+}
+
+func formatDuplicatesErrors(duplicates []duplicateGroup) string {
+	var msg strings.Builder
+
+	for _, group := range duplicates {
+		if len(group.Indexes) > 4 {
+			windowMsg := formatIndexesWindow(group.Indexes, 4)
+
+			msg.WriteString(fmt.Sprintf("\n└─ %s appears %d times at indexes %v", formatDuplicateItem(group.Value), len(group.Indexes), windowMsg))
+			continue
+		}
+
+		msg.WriteString(fmt.Sprintf("\n└─ %s appears %d times at indexes %v",
+			formatDuplicateItem(group.Value), len(group.Indexes), formatComparisonValue(group.Indexes)))
+	}
+
+	return msg.String()
+}
+
+func formatDuplicateItem(item any) string {
+	if item == nil {
+		return "nil"
+	}
+
+	rv := reflect.ValueOf(item)
+	rt := reflect.TypeOf(item)
+
+	// For structs, use special formatting
+	if rv.Kind() == reflect.Struct {
+		return formatStructForDuplicates(rv, rt)
+	}
+
+	// For other types, use the existing formatComparisonValue
+	return formatComparisonValue(item)
+}
+
+func formatStructForDuplicates(rv reflect.Value, rt reflect.Type) string {
+	var parts []string
+	charCount := 0
+	maxChars := 80
+
+	typeName := rt.Name()
+	if typeName == "" {
+		typeName = "struct"
+	}
+
+	result := typeName + "{"
+
+	for i := 0; i < rv.NumField(); i++ {
+		field := rt.Field(i)
+		fieldValue := rv.Field(i)
+
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldStr := fmt.Sprintf("%s: %v", field.Name, formatFieldForDuplicates(fieldValue))
+
+		if charCount+len(fieldStr) > maxChars && len(parts) > 0 {
+			parts = append(parts, "...")
+			break
+		}
+
+		parts = append(parts, fieldStr)
+		charCount += len(fieldStr)
+	}
+
+	result += strings.Join(parts, ", ") + "}"
+	return result
+}
+
+func formatFieldForDuplicates(rv reflect.Value) string {
+	switch rv.Kind() {
+	case reflect.String:
+		str := rv.String()
+		if len(str) > 20 {
+			return fmt.Sprintf("%q", str[:17]+"...")
+		}
+		return fmt.Sprintf("%q", str)
+	case reflect.Struct:
+		return fmt.Sprintf("%s{...}", rv.Type().Name())
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return fmt.Sprintf("%s(...)", rv.Type().String())
+	default:
+		return fmt.Sprintf("%v", rv.Interface())
+	}
+}
+
+func formatIndexesWindow(indexes []int, windowSize int) string {
+	windowMsg := strings.Builder{}
+
+	// If the number of indexes is less than or equal to the window size, return the indexes as is
+	if len(indexes) <= windowSize {
+		return formatComparisonValue(indexes)
+	}
+
+	/* windowMsg.WriteString(fmt.Sprintf("[%d, %d, %d, %d, ...]", indexes[0], indexes[1], indexes[2], indexes[3])) */
+
+	windowMsg.WriteString("[")
+	for i := range windowSize {
+		windowMsg.WriteString(fmt.Sprintf("%d, ", indexes[i]))
+	}
+
+	windowMsg.WriteString("...")
+	windowMsg.WriteString("]")
+
+	return windowMsg.String()
+}
+
+/* func convertSliceToAny(slice interface{}) []any {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array {
+		return nil
+	}
+
+	result := make([]any, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		result[i] = rv.Index(i).Interface()
+	}
+	return result
+} */
+
+func addPrefixHighlight(msg *strings.Builder, actual, expected string) {
+	prefixLength := len(expected)
+	if len(actual) >= prefixLength {
+		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLength))
+		msg.WriteString("\n          (actual prefix)")
+	}
+}
+
+func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
+	prefixLength := len(expected)
+	if len(actual) >= prefixLength {
+		blanksToAdd := len(actual) - prefixLength
+		blanks := strings.Repeat(" ", blanksToAdd)
+		fmt.Fprintf(msg, "\n            ")
+		msg.WriteString(blanks)
+		msg.WriteString(strings.Repeat("^", prefixLength))
+		msg.WriteString("\n")
+		msg.WriteString("            ")
+		msg.WriteString(blanks)
+		msg.WriteString("(actual suffix)")
+	}
+}
+
+func formatStartsWithError(actual string, expected string, startWith string, noteMsg string, cfg *Config) string {
+	var msg strings.Builder
+
+	if cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
+		msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
+		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+		addPrefixHighlight(&msg, actual, expected)
+		msg.WriteString(noteMsg)
+		return msg.String()
+	}
+
+	if !strings.HasPrefix(actual, expected) {
+		msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
+		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+		addPrefixHighlight(&msg, actual, expected)
+		msg.WriteString(noteMsg)
+		return msg.String()
+	}
+
+	return ""
+}
+
+// formatEndsWithError formats a detailed error message for EndsWith assertions.
+func formatEndsWithError(actual string, expected string, actualEndSufix string, noteMsg string, cfg *Config) string {
+	var msg strings.Builder
+	if cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {
+		msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSufix))
+		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+		addPrefixHighlight(&msg, actual, expected)
+		msg.WriteString(noteMsg)
+		return msg.String()
+	}
+
+	if !strings.HasSuffix(actualEndSufix, expected) {
+		msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSufix))
+		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+		addPrefixHighlightToEnd(&msg, actual, expected)
+		msg.WriteString(noteMsg)
+		return msg.String()
+	}
+
+	return ""
+}
+
+// formatMapValuesList formats a slice of interface{} values for map error messages
+// This function handles interface{} elements properly by getting their concrete values
+func formatMapValuesList(values []interface{}) string {
+	if values == nil {
+		return "nil"
+	}
+
+	if len(values) == 0 {
+		return "[]"
+	}
+
+	var elements []string
+	for _, value := range values {
+		// For strings, use single quotes to match existing test expectations
+		if str, ok := value.(string); ok {
+			elements = append(elements, fmt.Sprintf("'%s'", str))
+		} else {
+			// Handle interface{} values by getting their concrete type
+			v := reflect.ValueOf(value)
+			if v.Kind() == reflect.Interface && !v.IsNil() {
+				v = v.Elem()
+			}
+			elements = append(elements, formatValueComparison(v))
+		}
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+}
+
+// isMap checks if the provided value is a map.
+func isMap(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	return reflect.TypeOf(v).Kind() == reflect.Map
+}
+
+// containsMapKey checks if a map contains a specific key with similarity detection
+func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResult {
+	const maxShow = 5
+	const maxSimilar = 3
+
+	result := MapContainResult{
+		MaxShow: maxShow,
+	}
+
+	v := reflect.ValueOf(mapValue)
+	if v.Kind() != reflect.Map {
+		return result
+	}
+
+	if v.IsNil() {
+		result.Total = 0
+		result.Context = nil
+		return result
+	}
+
+	keys := v.MapKeys()
+	result.Total = len(keys)
+
+	// Extract all keys as interface{}
+	allKeys := make([]interface{}, len(keys))
+	for i, key := range keys {
+		allKeys[i] = key.Interface()
+	}
+
+	// Check exact match
+	targetVal := reflect.ValueOf(targetKey)
+	for _, key := range keys {
+		if reflect.DeepEqual(key.Interface(), targetKey) {
+			result.Found = true
+			result.Exact = true
+			return result
+		}
+	}
+
+	// Prepare context (keys to show)
+	contextSize := maxShow
+	if len(allKeys) > contextSize {
+		result.Context = allKeys[:contextSize]
+	} else {
+		result.Context = allKeys
+	}
+
+	// Find similar keys based on type
+	if targetVal.Kind() == reflect.String {
+		// Handle string keys with similarity detection
+		stringKeys := []string{}
+		for _, key := range allKeys {
+			if keyStr, ok := key.(string); ok {
+				stringKeys = append(stringKeys, keyStr)
+			}
+		}
+		if len(stringKeys) > 0 {
+			targetStr := targetKey.(string)
+			similarItems := findSimilarStrings(targetStr, stringKeys, maxSimilar)
+			for _, item := range similarItems {
+				result.Similar = append(result.Similar, SimilarItem{
+					Value:      item.Value,
+					Index:      item.Index,
+					Similarity: item.Similarity,
+					DiffType:   item.DiffType,
+					Details:    item.Details,
+				})
+			}
+		}
+	} else if isNumericValue(targetKey) {
+		// Handle numeric keys with numeric similarity
+		result.Similar = findSimilarNumericKeys(allKeys, targetKey, maxSimilar)
+	}
+
+	return result
+}
+
+// containsMapValue checks if a map contains a specific value with similarity detection
+func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainResult {
+	const maxShow = 5
+	const maxSimilar = 3
+
+	result := MapContainResult{
+		MaxShow: maxShow,
+	}
+
+	v := reflect.ValueOf(mapValue)
+	if v.Kind() != reflect.Map {
+		return result
+	}
+
+	if v.IsNil() {
+		result.Total = 0
+		result.Context = nil
+		return result
+	}
+
+	keys := v.MapKeys()
+	result.Total = len(keys)
+
+	// Extract all values as interface{}
+	allValues := make([]interface{}, len(keys))
+	for i, key := range keys {
+		allValues[i] = v.MapIndex(key).Interface()
+	}
+
+	// Check exact match
+	targetVal := reflect.ValueOf(targetValue)
+	for _, value := range allValues {
+		if reflect.DeepEqual(value, targetValue) {
+			result.Found = true
+			result.Exact = true
+			return result
+		}
+	}
+
+	// Prepare context (values to show)
+	contextSize := maxShow
+	if len(allValues) > contextSize {
+		result.Context = allValues[:contextSize]
+	} else {
+		result.Context = allValues
+	}
+
+	// Find similar values based on type
+	if targetVal.Kind() == reflect.String {
+		// Handle string values with similarity detection
+		stringValues := []string{}
+		for _, value := range allValues {
+			if valueStr, ok := value.(string); ok {
+				stringValues = append(stringValues, valueStr)
+			}
+		}
+		if len(stringValues) > 0 {
+			targetStr := targetValue.(string)
+			similarItems := findSimilarStrings(targetStr, stringValues, maxSimilar)
+			for _, item := range similarItems {
+				result.Similar = append(result.Similar, SimilarItem{
+					Value:      item.Value,
+					Index:      item.Index,
+					Similarity: item.Similarity,
+					DiffType:   item.DiffType,
+					Details:    item.Details,
+				})
+			}
+		}
+	} else if isNumericValue(targetValue) {
+		// Handle numeric values with numeric similarity
+		result.Similar = findSimilarNumericKeys(allValues, targetValue, maxSimilar)
+	}
+
+	return result
+}
+
+// isNumericValue checks if a value is numeric
+func isNumericValue(v interface{}) bool {
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
+}
+
+// findSimilarNumericKeys finds numeric keys/values that are similar to the target
+func findSimilarNumericKeys(items []interface{}, target interface{}, maxResults int) []SimilarItem {
+	var results []SimilarItem
+
+	targetVal := reflect.ValueOf(target)
+	targetFloat, targetOk := toFloat64(targetVal)
+	if !targetOk {
+		return results
+	}
+
+	for i, item := range items {
+		itemVal := reflect.ValueOf(item)
+		itemFloat, itemOk := toFloat64(itemVal)
+		if !itemOk {
+			continue
+		}
+
+		if itemFloat == targetFloat {
+			continue // Skip exact matches
+		}
+
+		diff := itemFloat - targetFloat
+		absUltraDiff := diff
+		if diff < 0 {
+			absUltraDiff = -diff
+		}
+
+		// Consider numbers similar if they're within reasonable range
+		var similarity float64
+		var details string
+
+		if absUltraDiff <= 1 {
+			similarity = 0.9
+			if diff > 0 {
+				details = fmt.Sprintf("differs by %.0f", absUltraDiff)
+			} else {
+				details = fmt.Sprintf("differs by %.0f", absUltraDiff)
+			}
+		} else if absUltraDiff <= 10 {
+			similarity = 0.8
+			if diff > 0 {
+				details = fmt.Sprintf("differs by %.0f", absUltraDiff)
+			} else {
+				details = fmt.Sprintf("differs by %.0f", absUltraDiff)
+			}
+		} else {
+			// Check if target digits are contained in the item
+			targetStr := fmt.Sprintf("%.0f", targetFloat)
+			itemStr := fmt.Sprintf("%.0f", itemFloat)
+			if strings.Contains(itemStr, targetStr) {
+				similarity = 0.7
+				details = "contains target digits"
+			} else if strings.Contains(targetStr, itemStr) {
+				similarity = 0.65
+				details = "target contains these digits"
+			} else {
+				continue // Not similar enough
+			}
+		}
+
+		if similarity >= 0.6 {
+			results = append(results, SimilarItem{
+				Value:      item,
+				Index:      i,
+				Similarity: similarity,
+				DiffType:   "numeric",
+				Details:    details,
+			})
+		}
+	}
+
+	// Sort by similarity (highest first)
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[i].Similarity < results[j].Similarity {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+
+	// Limit results
+	if len(results) > maxResults {
+		results = results[:maxResults]
+	}
+
+	return results
+}
+
+// formatMapContainKeyError formats error message for ContainKey assertion
+func formatMapContainKeyError(target interface{}, result MapContainResult) string {
+	var msg strings.Builder
+
+	// Format target with single quotes for strings to match test expectations
+	var targetStr string
+	if str, ok := target.(string); ok {
+		targetStr = fmt.Sprintf("'%s'", str)
+	} else {
+		targetStr = formatComparisonValue(target)
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected map to contain key %s, but key was not found\n", targetStr))
+
+	// Show available keys - use formatMapValuesList for better formatting
+	msg.WriteString("Available keys: ")
+	msg.WriteString(formatMapValuesList(result.Context))
+	if len(result.Context) < result.Total {
+		msg.WriteString(fmt.Sprintf(" (showing %d of %d)", len(result.Context), result.Total))
+	}
+	msg.WriteString("\n")
+
+	msg.WriteString(fmt.Sprintf("Missing: %s\n", targetStr))
+
+	// Show similar keys if found
+	if len(result.Similar) > 0 {
+		msg.WriteString("\n")
+		if len(result.Similar) == 1 {
+			similar := result.Similar[0]
+			var similarStr string
+			if str, ok := similar.Value.(string); ok {
+				similarStr = fmt.Sprintf("'%s'", str)
+			} else {
+				similarStr = formatComparisonValue(similar.Value)
+			}
+			msg.WriteString("Similar key found:\n")
+			msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+		} else {
+			msg.WriteString("Similar keys found:\n")
+			for _, similar := range result.Similar {
+				var similarStr string
+				if str, ok := similar.Value.(string); ok {
+					similarStr = fmt.Sprintf("'%s'", str)
+				} else {
+					similarStr = formatComparisonValue(similar.Value)
+				}
+				msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+			}
+		}
+	}
+
+	return msg.String()
+}
+
+// formatMapContainValueError formats error message for ContainValue assertion
+func formatMapContainValueError(target interface{}, result MapContainResult) string {
+	var msg strings.Builder
+
+	// Format target with single quotes for strings to match test expectations
+	var targetStr string
+	if str, ok := target.(string); ok {
+		targetStr = fmt.Sprintf("'%s'", str)
+	} else {
+		targetStr = formatComparisonValue(target)
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected map to contain value %s, but value was not found\n", targetStr))
+
+	// Show available values - use formatMapValuesList for better formatting
+	msg.WriteString("Available values: ")
+	msg.WriteString(formatMapValuesList(result.Context))
+	if len(result.Context) < result.Total {
+		msg.WriteString(fmt.Sprintf(" (showing %d of %d)", len(result.Context), result.Total))
+	}
+	msg.WriteString("\n")
+
+	msg.WriteString(fmt.Sprintf("Missing: %s\n", targetStr))
+
+	// Show similar values if found
+	if len(result.Similar) > 0 {
+		msg.WriteString("\n")
+		if len(result.Similar) == 1 {
+			similar := result.Similar[0]
+			var similarStr string
+			if str, ok := similar.Value.(string); ok {
+				similarStr = fmt.Sprintf("'%s'", str)
+			} else {
+				similarStr = formatComparisonValue(similar.Value)
+			}
+			msg.WriteString("Similar value found:\n")
+			msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+		} else {
+			msg.WriteString("Similar values found:\n")
+			for _, similar := range result.Similar {
+				var similarStr string
+				if str, ok := similar.Value.(string); ok {
+					similarStr = fmt.Sprintf("'%s'", str)
+				} else {
+					similarStr = formatComparisonValue(similar.Value)
+				}
+				msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+			}
+		}
+	}
+
+	return msg.String()
+}

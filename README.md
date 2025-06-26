@@ -7,6 +7,8 @@
 
 `Should` is a lightweight and intuitive assertion library for Go, designed to make your tests more readable and expressive. It provides **exceptionally detailed error messages** to help you debug failures faster and understand exactly what went wrong.
 
+> **⚠️ Pre-Release Notice**: I'm actively working towards the first stable release (v1.0.0) in the coming weeks. Some changes to the API might still happen, but I'd really appreciate it if anyone could test the current assertions and share any feedback or suggestions!
+
 ## Features
 
 - **Detailed Error Messages**: Get comprehensive, contextual error information for every assertion type.
@@ -218,7 +220,7 @@ should.Contain(t, users, "user3")
 //         Collection: [user-one, user_two, UserThree, user-3, userThree]
 //         Missing   : user3
 //
-//         💡 Similar elements found:
+//           Similar elements found:
 //           └─ user-3 (at index 3) - 1 extra char
 //           └─ userThree (at index 4) - case difference
 ```
@@ -253,6 +255,118 @@ should.BeOneOf(t, "pending", []string{"active", "inactive", "suspended"})
 // Count   : 0 of 3 options matched
 ```
 
+### String Prefix and Suffix Assertions
+
+Check if strings start or end with specific substrings, with intelligent case handling:
+
+```go
+// Basic string prefix checking
+should.StartsWith(t, "Hello, World!", "Hello")
+
+// Case-sensitive by default
+should.StartsWith(t, "Hello, World!", "hello")
+// Output:
+// Expected string to start with 'hello', but it starts with 'Hello'
+// Expected : 'hello'
+// Actual   : 'Hello, World!'
+//             ^^^^^
+//           (actual prefix)
+// Note: Case mismatch detected (use should.IgnoreCase() if intended)
+
+// Case-insensitive option
+should.StartsWith(t, "Hello, World!", "hello", should.IgnoreCase())
+
+// String suffix checking
+should.EndsWith(t, "Hello, World!", "World!")
+
+// With custom messages
+should.StartsWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
+should.EndsWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
+```
+
+### Duplicate Detection
+
+Ensure collections contain no duplicate values with detailed reporting:
+
+```go
+// Check for duplicates in slices
+should.NotContainDuplicates(t, []int{1, 2, 3, 4, 5}) // passes
+
+should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
+// Output:
+// Expected no duplicates, but found 2 duplicate values:
+// └─ 2 appears 2 times at indexes [1, 2]
+// └─ 3 appears 3 times at indexes [3, 4, 5]
+
+// Works with complex types
+type User struct {
+    ID   int
+    Name string
+}
+users := []User{
+    {ID: 1, Name: "John"},
+    {ID: 2, Name: "Jane"},
+    {ID: 1, Name: "John"}, // duplicate
+}
+should.NotContainDuplicates(t, users)
+// Output:
+// Expected no duplicates, but found 1 duplicate value:
+// └─ User{ID: 1, Name: "John"} appears 2 times at indexes [0, 2]
+```
+
+### Map Key and Value Assertions
+
+Check if maps contain specific keys or values with intelligent similarity detection:
+
+```go
+userMap := map[string]int{
+    "name": 1,
+    "age":  2,
+    "email": 3,
+}
+
+// Check for map keys
+should.ContainKey(t, userMap, "name") // passes
+should.ContainKey(t, userMap, "phone")
+// Output:
+// Expected map to contain key 'phone', but key was not found
+// Available keys: ['name', 'age', 'email']
+// Missing: 'phone'
+
+// Check for map values
+should.ContainValue(t, userMap, 2) // passes
+should.ContainValue(t, userMap, 5)
+// Output:
+// Expected map to contain value 5, but value was not found
+// Available values: [1, 2, 3]
+// Missing: 5
+
+// With typo detection for string keys
+should.ContainKey(t, userMap, "nam")
+// Output:
+// Expected map to contain key 'nam', but key was not found
+// Available keys: ['name', 'age', 'email']
+// Missing: 'nam'
+//
+// Similar key found:
+//   └─ 'name' - 1 missing char
+
+// Numeric maps with similarity
+scoreMap := map[int]string{1: "first", 2: "second", 10: "tenth"}
+should.ContainKey(t, scoreMap, 9)
+// Output:
+// Expected map to contain key 9, but key was not found
+// Available keys: [1, 2, 10]
+// Missing: 9
+//
+// Similar key found:
+//   └─ 10 - differs by 1
+
+// With custom messages
+should.ContainKey(t, config, "database_url", should.WithMessage("Database URL must be configured"))
+should.ContainValue(t, statusCodes, 200, should.WithMessage("Success status code must be present"))
+```
+
 ## API Reference
 
 ### Core Assertions
@@ -274,12 +388,23 @@ should.BeOneOf(t, "pending", []string{"active", "inactive", "suspended"})
 - `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
 - `BeGreaterOrEqualThan(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 
+### String Operations
+
+- `StartsWith(t, actual, expected)` - Check if string starts with expected substring
+- `EndsWith(t, actual, expected)` - Check if string ends with expected substring
+
 ### Collection Operations
 
 - `BeOneOf(t, actual, options)` - Check if a value is one of a set of options
 - `Contain(t, collection, element)` - Check if slice/array contains an element
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
+- `NotContainDuplicates(t, collection)` - Check if slice/array contains no duplicate values
 - `ContainFunc(t, collection, predicate)` - Check if any element matches a custom predicate
+
+### Map Operations
+
+- `ContainKey(t, map, key)` - Check if map contains a specific key
+- `ContainValue(t, map, value)` - Check if map contains a specific value
 
 ### Panic Handling
 

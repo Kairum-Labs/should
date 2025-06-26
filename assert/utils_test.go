@@ -1301,3 +1301,589 @@ func TestFormatNumericComparisonError(t *testing.T) {
 		}
 	})
 }
+
+// === Tests for formatMapValuesList ===
+
+func TestFormatMapValuesList(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name     string
+			values   []interface{}
+			expected string
+		}{
+			{
+				name:     "should format string values with single quotes",
+				values:   []interface{}{"apple", "banana"},
+				expected: "['apple', 'banana']",
+			},
+			{
+				name:     "should format integer values",
+				values:   []interface{}{1, 2, 3},
+				expected: "[1, 2, 3]",
+			},
+			{
+				name:     "should format mixed type values",
+				values:   []interface{}{"hello", 42, true},
+				expected: "['hello', 42, true]",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatMapValuesList(tt.values)
+				BeEqual(t, result, tt.expected)
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name     string
+			values   []interface{}
+			expected string
+		}{
+			{
+				name:     "should handle nil slice",
+				values:   nil,
+				expected: "nil",
+			},
+			{
+				name:     "should handle empty slice",
+				values:   []interface{}{},
+				expected: "[]",
+			},
+			{
+				name:     "should handle slice with nil values",
+				values:   []interface{}{"a", nil, "c"},
+				expected: "['a', nil, 'c']",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatMapValuesList(tt.values)
+				BeEqual(t, result, tt.expected)
+			})
+		}
+	})
+}
+
+// === Tests for isMap ===
+
+func TestIsMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected bool
+		}{
+			{"map type", map[string]int{}, true},
+			{"slice type", []int{}, false},
+			{"string type", "hello", false},
+			{"int type", 123, false},
+			{"struct type", struct{}{}, false},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := isMap(tt.input)
+				BeEqual(t, result, tt.expected)
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected bool
+		}{
+			{"nil value", nil, false},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := isMap(tt.input)
+				BeEqual(t, result, tt.expected)
+			})
+		}
+	})
+}
+
+// === Tests for containsMapKey ===
+
+func TestContainsMapKey(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]int{"one": 1, "two": 2}
+
+		t.Run("should return found when key exists", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapKey(m, "one")
+			BeTrue(t, result.Found)
+			BeTrue(t, result.Exact)
+		})
+
+		t.Run("should return not found when key does not exist", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapKey(m, "three")
+			BeFalse(t, result.Found)
+		})
+	})
+
+	t.Run("Similarity detection", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]int{"name": 1, "email_address": 2}
+
+		t.Run("should find similar string keys", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapKey(m, "email")
+			BeFalse(t, result.Found)
+			HaveLength(t, result.Similar, 1)
+			BeEqual(t, result.Similar[0].Value, "email_address")
+		})
+
+		numMap := map[int]string{10: "a", 25: "b", 100: "c"}
+		t.Run("should find similar numeric keys", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapKey(numMap, 24)
+			BeFalse(t, result.Found)
+			HaveLength(t, result.Similar, 1)
+			BeEqual(t, result.Similar[0].Value, 25)
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should handle nil map", func(t *testing.T) {
+			t.Parallel()
+			var m map[string]int
+			result := containsMapKey(m, "any")
+			BeFalse(t, result.Found)
+			BeEqual(t, result.Total, 0)
+			BeNil(t, result.Context)
+		})
+
+		t.Run("should handle empty map", func(t *testing.T) {
+			t.Parallel()
+			m := map[string]int{}
+			result := containsMapKey(m, "any")
+			BeFalse(t, result.Found)
+			BeEqual(t, result.Total, 0)
+			HaveLength(t, result.Context, 0)
+		})
+
+		t.Run("should handle non-map type", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapKey([]string{"not", "a", "map"}, "key")
+			BeFalse(t, result.Found)
+		})
+	})
+}
+
+// === Tests for containsMapValue ===
+
+func TestContainsMapValue(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]int{"one": 1, "two": 2}
+
+		t.Run("should return found when value exists", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapValue(m, 1)
+			BeTrue(t, result.Found)
+			BeTrue(t, result.Exact)
+		})
+
+		t.Run("should return not found when value does not exist", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapValue(m, 3)
+			BeFalse(t, result.Found)
+		})
+	})
+
+	t.Run("Similarity detection", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]string{"user": "tester", "role": "admin"}
+
+		t.Run("should find similar string values", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapValue(m, "administrator")
+			BeFalse(t, result.Found)
+			HaveLength(t, result.Similar, 1)
+			BeEqual(t, result.Similar[0].Value, "admin")
+		})
+
+		numMap := map[string]int{"a": 10, "b": 25, "c": 100}
+		t.Run("should find similar numeric values", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapValue(numMap, 24)
+			BeFalse(t, result.Found)
+			HaveLength(t, result.Similar, 1)
+			BeEqual(t, result.Similar[0].Value, 25)
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should handle nil map", func(t *testing.T) {
+			t.Parallel()
+			var m map[string]int
+			result := containsMapValue(m, 1)
+			BeFalse(t, result.Found)
+			BeEqual(t, result.Total, 0)
+			BeNil(t, result.Context)
+		})
+
+		t.Run("should handle empty map", func(t *testing.T) {
+			t.Parallel()
+			m := map[string]int{}
+			result := containsMapValue(m, 1)
+			BeFalse(t, result.Found)
+			BeEqual(t, result.Total, 0)
+			HaveLength(t, result.Context, 0)
+		})
+
+		t.Run("should handle non-map type", func(t *testing.T) {
+			t.Parallel()
+			result := containsMapValue("not-a-map", "value")
+			BeFalse(t, result.Found)
+		})
+	})
+}
+
+// === Tests for isNumericValue ===
+
+func TestIsNumericValue(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Numeric types", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name  string
+			value interface{}
+		}{
+			{"int", int(1)},
+			{"int8", int8(1)},
+			{"int16", int16(1)},
+			{"int32", int32(1)},
+			{"int64", int64(1)},
+			{"uint", uint(1)},
+			{"uint8", uint8(1)},
+			{"uint16", uint16(1)},
+			{"uint32", uint32(1)},
+			{"uint64", uint64(1)},
+			{"float32", float32(1.0)},
+			{"float64", float64(1.0)},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				BeTrue(t, isNumericValue(tt.value))
+			})
+		}
+	})
+
+	t.Run("Non-numeric types", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name  string
+			value interface{}
+		}{
+			{"string", "1"},
+			{"bool", true},
+			{"struct", struct{}{}},
+			{"slice", []int{}},
+			{"nil", nil},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				BeFalse(t, isNumericValue(tt.value))
+			})
+		}
+	})
+}
+
+// === Tests for findSimilarNumericKeys ===
+
+func TestFindSimilarNumericKeys(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		items := []interface{}{1, 12, 25, 100}
+
+		t.Run("should find numbers with small difference", func(t *testing.T) {
+			t.Parallel()
+			results := findSimilarNumericKeys(items, 10, 3)
+			// The function finds 1 (diff=9, similarity=0.8) and 12 (diff=2, similarity=0.8)
+			// 25 has diff=15 which is >10 and "10" is not contained in "25", so it's not similar
+			// 100 contains "10" so it gets similarity=0.7
+			HaveLength(t, results, 3)
+
+			// Check that we have the expected values (order may vary based on similarity)
+			values := []interface{}{results[0].Value, results[1].Value, results[2].Value}
+			Contain(t, values, 1)
+			Contain(t, values, 12)
+			Contain(t, values, 100) // 100 contains "10"
+		})
+
+		t.Run("should return sorted results by similarity", func(t *testing.T) {
+			t.Parallel()
+			items := []interface{}{9, 20}
+			results := findSimilarNumericKeys(items, 10, 2)
+			HaveLength(t, results, 2)
+			BeEqual(t, results[0].Value, 9)  // diff 1 -> similarity 0.9
+			BeEqual(t, results[1].Value, 20) // diff 10 -> similarity 0.8
+		})
+
+		t.Run("should limit results", func(t *testing.T) {
+			t.Parallel()
+			items := []interface{}{2, 3, 4, 5, 6}
+			results := findSimilarNumericKeys(items, 1, 2)
+			HaveLength(t, results, 2)
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should handle empty item slice", func(t *testing.T) {
+			t.Parallel()
+			results := findSimilarNumericKeys([]interface{}{}, 10, 3)
+			BeEmpty(t, results)
+		})
+
+		t.Run("should handle no similar numbers", func(t *testing.T) {
+			t.Parallel()
+			items := []interface{}{500, 600, 700}
+			results := findSimilarNumericKeys(items, 10, 3)
+			BeEmpty(t, results)
+		})
+
+		t.Run("should handle non-numeric target", func(t *testing.T) {
+			t.Parallel()
+			items := []interface{}{1, 2, 3}
+			results := findSimilarNumericKeys(items, "not a number", 3)
+			BeEmpty(t, results)
+		})
+
+		t.Run("should handle non-numeric items in slice", func(t *testing.T) {
+			t.Parallel()
+			items := []interface{}{1, "two", 3, true}
+			results := findSimilarNumericKeys(items, 2, 3)
+			HaveLength(t, results, 2) // Should find 1 and 3
+			Contain(t, []interface{}{results[0].Value, results[1].Value}, 1)
+			Contain(t, []interface{}{results[0].Value, results[1].Value}, 3)
+		})
+	})
+}
+
+// === Tests for formatMapContainKeyError ===
+
+func TestFormatMapContainKeyError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic formatting", func(t *testing.T) {
+		t.Parallel()
+		result := MapContainResult{
+			Context: []interface{}{"key1", "key2"},
+			Total:   2,
+		}
+		msg := formatMapContainKeyError("missingKey", result)
+
+		expected := "Expected map to contain key 'missingKey', but key was not found"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+
+		expected = "Available keys: ['key1', 'key2']"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+
+		expected = "Missing: 'missingKey'"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+
+		unexpected := "Similar key"
+		if strings.Contains(msg, unexpected) {
+			t.Errorf("Expected message not to contain %q, got %q", unexpected, msg)
+		}
+	})
+
+	t.Run("With similar keys", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should show one similar key", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Context: []interface{}{"email_address"},
+				Total:   1,
+				Similar: []SimilarItem{{Value: "email_address", Details: "some detail"}},
+			}
+			msg := formatMapContainKeyError("email", result)
+			expected := "Similar key found:"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'email_address' - some detail"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+
+		t.Run("should show multiple similar keys", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Similar: []SimilarItem{
+					{Value: "mail", Details: "detail1"},
+					{Value: "e-mail", Details: "detail2"},
+				},
+			}
+			msg := formatMapContainKeyError("email", result)
+			expected := "Similar keys found:"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'mail' - detail1"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'e-mail' - detail2"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should truncate long key list", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Context: []interface{}{"a", "b", "c", "d", "e"},
+				Total:   10,
+			}
+			msg := formatMapContainKeyError("z", result)
+			expected := "(showing 5 of 10)"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+
+		t.Run("should handle non-string keys", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Context: []interface{}{1, 2, 3},
+				Total:   3,
+			}
+			msg := formatMapContainKeyError(4, result)
+			expected := "Expected map to contain key 4, but key was not found"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "Available keys: [1, 2, 3]"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+	})
+}
+
+// === Tests for formatMapContainValueError ===
+
+func TestFormatMapContainValueError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic formatting", func(t *testing.T) {
+		t.Parallel()
+		result := MapContainResult{
+			Context: []interface{}{"val1", "val2"},
+			Total:   2,
+		}
+		msg := formatMapContainValueError("missingValue", result)
+		expected := "Expected map to contain value 'missingValue', but value was not found"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+		expected = "Available values: ['val1', 'val2']"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+		expected = "Missing: 'missingValue'"
+		if !strings.Contains(msg, expected) {
+			t.Errorf("Expected message to contain %q, got %q", expected, msg)
+		}
+		unexpected := "Similar value"
+		if strings.Contains(msg, unexpected) {
+			t.Errorf("Expected message not to contain %q, got %q", unexpected, msg)
+		}
+	})
+
+	t.Run("With similar values", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should show one similar value", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Similar: []SimilarItem{{Value: "admin", Details: "some detail"}},
+			}
+			msg := formatMapContainValueError("administrator", result)
+			expected := "Similar value found:"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'admin' - some detail"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+
+		t.Run("should show multiple similar values", func(t *testing.T) {
+			t.Parallel()
+			result := MapContainResult{
+				Similar: []SimilarItem{
+					{Value: "user", Details: "detail1"},
+					{Value: "guest", Details: "detail2"},
+				},
+			}
+			msg := formatMapContainValueError("customer", result)
+			expected := "Similar values found:"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'user' - detail1"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+			expected = "└─ 'guest' - detail2"
+			if !strings.Contains(msg, expected) {
+				t.Errorf("Expected message to contain %q, got %q", expected, msg)
+			}
+		})
+	})
+}

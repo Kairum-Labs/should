@@ -290,6 +290,46 @@ func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, o
 	assert.ContainFunc(t, actual, predicate, opts...)
 }
 
+// StartsWith reports a test failure if the string does not start with the expected substring.
+//
+// This assertion checks if the actual string starts with the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// along with a note if the case mismatch is detected.
+//
+// Example:
+//
+//	should.StartsWith(t, "Hello, world!", "hello")
+//
+//	should.StartsWith(t, "Hello, world!", "hello", should.IgnoreCase())
+//
+//	should.StartsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+	assert.StartsWith(t, actual, expected, opts...)
+}
+
+// EndsWith reports a test failure if the string does not end with the expected substring.
+//
+// This assertion checks if the actual string ends with the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// along with a note if the case mismatch is detected.
+//
+// Example:
+//
+//	should.EndsWith(t, "Hello, world!", "world")
+//
+//	should.EndsWith(t, "Hello, world", "WORLD", should.IgnoreCase())
+//
+//	should.EndsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+	assert.EndsWith(t, actual, expected, opts...)
+}
+
 // Panic asserts that the given function panics when executed.
 // If the function does not panic, the test will fail with a descriptive error message.
 //
@@ -360,4 +400,46 @@ func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	t.Helper()
 	assert.BeOneOf(t, actual, options, opts...)
+}
+
+// ContainKey reports a test failure if the map does not contain the expected key.
+//
+// This assertion works with maps of any key type and provides intelligent error messages:
+// - For string keys: Shows similar keys and typo detection
+// - For numeric keys: Shows similar keys with numeric differences
+// - For other types: Shows formatted keys with clear error messages
+// Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.ContainKey(t, userMap, "email")
+//
+//	should.ContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key must exist"))
+//
+// If the input is not a map, the test fails immediately.
+func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+	t.Helper()
+	assert.ContainKey(t, actual, expectedKey, opts...)
+}
+
+// ContainValue reports a test failure if the map does not contain the expected value.
+//
+// This assertion works with maps of any value type and provides intelligent error messages:
+// - For string values: Shows similar values and typo detection
+// - For numeric values: Shows similar values with numeric differences
+// - For other types: Shows formatted values with clear error messages
+// Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.ContainValue(t, userMap, 3)
+//
+//	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
+//
+// If the input is not a map, the test fails immediately.
+func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+	t.Helper()
+	assert.ContainValue(t, actual, expectedValue, opts...)
 }
