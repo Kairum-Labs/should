@@ -623,25 +623,25 @@ func TestBeEmpty_WithNilInterface(t *testing.T) {
 	BeEmpty(t, nilInterface)
 }
 
-// === Tests for BeNotEmpty ===
+// === Tests for NotBeEmpty ===
 
-func TestBeNotEmpty_Succeeds_WithNonEmptyString(t *testing.T) {
+func TestNotBeEmpty_Succeeds_WithNonEmptyString(t *testing.T) {
 	t.Parallel()
 
-	BeNotEmpty(t, "hello")
+	NotBeEmpty(t, "hello")
 }
 
-func TestBeNotEmpty_Succeeds_WithNonEmptySlice(t *testing.T) {
+func TestNotBeEmpty_Succeeds_WithNonEmptySlice(t *testing.T) {
 	t.Parallel()
 
-	BeNotEmpty(t, []int{1, 2, 3})
+	NotBeEmpty(t, []int{1, 2, 3})
 }
 
-func TestBeNotEmpty_Fails_WithEmptyString(t *testing.T) {
+func TestNotBeEmpty_Fails_WithEmptyString(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, "")
+		NotBeEmpty(t, "")
 	})
 
 	if !failed {
@@ -661,11 +661,11 @@ func TestBeNotEmpty_Fails_WithEmptyString(t *testing.T) {
 	}
 }
 
-func TestBeNotEmpty_Fails_WithEmptySlice(t *testing.T) {
+func TestNotBeEmpty_Fails_WithEmptySlice(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, []int{})
+		NotBeEmpty(t, []int{})
 	})
 
 	if !failed {
@@ -685,12 +685,12 @@ func TestBeNotEmpty_Fails_WithEmptySlice(t *testing.T) {
 	}
 }
 
-func TestBeNotEmpty_Fails_WithNilPointer(t *testing.T) {
+func TestNotBeEmpty_Fails_WithNilPointer(t *testing.T) {
 	t.Parallel()
 
 	var ptr *int
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, ptr)
+		NotBeEmpty(t, ptr)
 	})
 
 	if !failed {
@@ -703,12 +703,12 @@ func TestBeNotEmpty_Fails_WithNilPointer(t *testing.T) {
 	}
 }
 
-func TestBeNotEmpty_WithInvalidValue(t *testing.T) {
+func TestNotBeEmpty_WithInvalidValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
 		var v interface{}
-		BeNotEmpty(t, v)
+		NotBeEmpty(t, v)
 	})
 
 	if !failed {
@@ -721,35 +721,35 @@ func TestBeNotEmpty_WithInvalidValue(t *testing.T) {
 	}
 }
 
-func TestBeNotEmpty_WithUnsupportedType(t *testing.T) {
+func TestNotBeEmpty_WithUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, 42)
+		NotBeEmpty(t, 42)
 	})
 
 	if !failed {
 		t.Fatal("Expected test to fail, but it passed")
 	}
 
-	expected := "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
+	expected := "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
 }
 
-func TestBeNotEmpty_WithChannelBuffered(t *testing.T) {
+func TestNotBeEmpty_WithChannelBuffered(t *testing.T) {
 	t.Parallel()
 
 	// Test non-empty buffered channel
 	ch := make(chan int, 1)
 	ch <- 42
-	BeNotEmpty(t, ch)
+	NotBeEmpty(t, ch)
 
 	// Test empty buffered channel
 	emptyChannel := make(chan int, 1)
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, emptyChannel, WithMessage("Channel should have data"))
+		NotBeEmpty(t, emptyChannel, WithMessage("Channel should have data"))
 	})
 
 	if !failed {
@@ -768,19 +768,19 @@ func TestBeNotEmpty_WithChannelBuffered(t *testing.T) {
 	}
 }
 
-func TestBeNotEmpty_WithValidInterface(t *testing.T) {
+func TestNotBeEmpty_WithValidInterface(t *testing.T) {
 	t.Parallel()
 
 	var validInterface interface{} = 42
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotEmpty(t, validInterface)
+		NotBeEmpty(t, validInterface)
 	})
 
 	if !failed {
 		t.Fatal("Expected test to fail, but it passed")
 	}
 
-	expected := "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
+	expected := "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got int"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
@@ -1258,28 +1258,28 @@ func TestBeNil_Fails_WithNonNilPointer(t *testing.T) {
 	}
 }
 
-func TestBeNotNil_Succeeds_WithNonNilPointer(t *testing.T) {
+func TestNotBeNil_Succeeds_WithNonNilPointer(t *testing.T) {
 	t.Parallel()
 
 	value := 42
 	ptr := &value
-	BeNotNil(t, ptr)
+	NotBeNil(t, ptr)
 }
 
-func TestBeNotNil_Succeeds_WithNonNilSlice(t *testing.T) {
+func TestNotBeNil_Succeeds_WithNonNilSlice(t *testing.T) {
 	t.Parallel()
 
 	slice := make([]int, 0)
-	BeNotNil(t, slice)
+	NotBeNil(t, slice)
 }
 
-func TestBeNotNil_Fails_WithNilPointer(t *testing.T) {
+func TestNotBeNil_Fails_WithNilPointer(t *testing.T) {
 	t.Parallel()
 
 	var ptr *int
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotNil(t, ptr)
+		NotBeNil(t, ptr)
 	})
 
 	if !failed {
@@ -1505,7 +1505,7 @@ func TestBeFalse_WithCustomMessage(t *testing.T) {
 	}
 }
 
-// === Tests for BeNil/BeNotNil with custom messages ===
+// === Tests for BeNil/NotBeNil with custom messages ===
 
 func TestBeNil_WithCustomMessage(t *testing.T) {
 	t.Parallel()
@@ -1533,13 +1533,13 @@ func TestBeNil_WithCustomMessage(t *testing.T) {
 	}
 }
 
-func TestBeNotNil_WithCustomMessage(t *testing.T) {
+func TestNotBeNil_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	var ptr *int
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotNil(t, ptr, WithMessage("User must not be nil"))
+		NotBeNil(t, ptr, WithMessage("User must not be nil"))
 	})
 
 	if !failed {
@@ -1575,18 +1575,18 @@ func TestBeNil_Fails_WithNonNillableType(t *testing.T) {
 	}
 }
 
-func TestBeNotNil_Fails_WithNonNillableType(t *testing.T) {
+func TestNotBeNil_Fails_WithNonNillableType(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeNotNil(t, 42)
+		NotBeNil(t, 42)
 	})
 
 	if !failed {
 		t.Fatal("Expected test to fail, but it passed")
 	}
 
-	expected := "BeNotNil can only be used with nillable types, but got int"
+	expected := "NotBeNil can only be used with nillable types, but got int"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}

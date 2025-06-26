@@ -137,7 +137,7 @@ func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	}
 }
 
-// BeNotEmpty reports a test failure if the value is empty.
+// NotBeEmpty reports a test failure if the value is empty.
 //
 // This assertion works with strings, slices, arrays, maps, channels, and pointers.
 // For strings, non-empty means length > 0. For slices/arrays/maps/channels, non-empty means length > 0.
@@ -145,14 +145,14 @@ func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 //
 // Example:
 //
-//	should.BeNotEmpty(t, "hello")
+//	should.NotBeEmpty(t, "hello")
 //
-//	should.BeNotEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
+//	should.NotBeEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
 //
-//	should.BeNotEmpty(t, &user)
+//	should.NotBeEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeNotEmpty[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	actualValue := reflect.ValueOf(actual)
 
@@ -191,7 +191,7 @@ func BeNotEmpty[T any](t testing.TB, actual T, opts ...Option) {
 			}
 		}
 	default:
-		fail(t, "BeNotEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
+		fail(t, "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
 	}
 }
 
@@ -240,7 +240,7 @@ func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 	}
 }
 
-// BeNotNil reports a test failure if the value is nil.
+// NotBeNil reports a test failure if the value is nil.
 //
 // This assertion works with pointers, interfaces, channels, functions, slices, and maps.
 // It uses Go's reflection to check if the value is not nil.
@@ -248,12 +248,12 @@ func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 // Example:
 //
 //	user := &User{Name: "John"}
-//	should.BeNotNil(t, user, should.WithMessage("User must not be nil"))
+//	should.NotBeNil(t, user, should.WithMessage("User must not be nil"))
 //
-//	should.BeNotNil(t, make([]int, 0))
+//	should.NotBeNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNotNil[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
 	v := reflect.ValueOf(actual)
 
@@ -268,7 +268,7 @@ func BeNotNil[T any](t testing.TB, actual T, opts ...Option) {
 			kind == reflect.Slice
 
 		if !nillable {
-			fail(t, "BeNotNil can only be used with nillable types, but got %T", actual)
+			fail(t, "NotBeNil can only be used with nillable types, but got %T", actual)
 			return
 		}
 		isNil = v.IsNil()

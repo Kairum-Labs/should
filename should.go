@@ -88,7 +88,7 @@ func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	assert.BeEmpty(t, actual, opts...)
 }
 
-// BeNotEmpty reports a test failure if the value is empty.
+// NotBeEmpty reports a test failure if the value is empty.
 //
 // This assertion works with strings, slices, arrays, maps, channels, and pointers.
 // For strings, non-empty means length > 0. For slices/arrays/maps/channels, non-empty means length > 0.
@@ -96,16 +96,16 @@ func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 //
 // Example:
 //
-//	should.BeNotEmpty(t, "hello")
+//	should.NotBeEmpty(t, "hello")
 //
-//	should.BeNotEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
+//	should.NotBeEmpty(t, []int{1, 2, 3}, should.WithMessage("List must have items"))
 //
-//	should.BeNotEmpty(t, &user)
+//	should.NotBeEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeNotEmpty[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeNotEmpty(t, actual, opts...)
+	assert.NotBeEmpty(t, actual, opts...)
 }
 
 // BeNil reports a test failure if the value is not nil.
@@ -127,7 +127,7 @@ func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 	assert.BeNil(t, actual, opts...)
 }
 
-// BeNotNil reports a test failure if the value is nil.
+// NotBeNil reports a test failure if the value is nil.
 //
 // This assertion works with pointers, interfaces, channels, functions, slices, and maps.
 // It uses Go's reflection to check if the value is not nil.
@@ -135,14 +135,14 @@ func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 // Example:
 //
 //	user := &User{Name: "John"}
-//	should.BeNotNil(t, user, should.WithMessage("User must not be nil"))
+//	should.NotBeNil(t, user, should.WithMessage("User must not be nil"))
 //
-//	should.BeNotNil(t, make([]int, 0))
+//	should.NotBeNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNotNil[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 	t.Helper()
-	assert.BeNotNil(t, actual, opts...)
+	assert.NotBeNil(t, actual, opts...)
 }
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.

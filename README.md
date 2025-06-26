@@ -52,7 +52,7 @@ func TestBasicAssertions(t *testing.T) {
 
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
-	should.BeNotEmpty(t, []int{1, 2, 3})
+	should.NotBeEmpty(t, []int{1, 2, 3})
 
 	// Collection operations
 	users := []string{"Alice", "Bob", "Charlie"}
@@ -103,7 +103,7 @@ should.BeEmpty(t, largeSlice)
 //         Content : [1, 2, 3, ...] (showing first 3 of 15)
 
 // Empty slice
-should.BeNotEmpty(t, []int{})
+should.NotBeEmpty(t, []int{})
 // Output:
 // Expected value to be not empty, but it was empty:
 //         Type    : []int
@@ -259,14 +259,14 @@ should.BeOneOf(t, "pending", []string{"active", "inactive", "suspended"})
 
 - `BeTrue(t, actual)` / `BeFalse(t, actual)` - Boolean value checks
 - `BeEqual(t, actual, expected)` - Deep equality comparison with detailed diffs
-- `BeNil(t, actual)` / `BeNotNil(t, actual)` - Nil pointer checks
+- `BeNil(t, actual)` / `NotBeNil(t, actual)` - Nil pointer checks
 - `BeOfType(t, actual, expected)` - Checks if a value is of a specific type
 - `HaveLength(t, collection, length)` - Checks if a collection has a specific length
 
 ### Empty/Non-Empty Checks
 
 - `BeEmpty(t, actual)` - Checks if strings, slices, arrays, maps, channels, or pointers are empty
-- `BeNotEmpty(t, actual)` - Checks if values are not empty
+- `NotBeEmpty(t, actual)` - Checks if values are not empty
 
 ### Numeric Comparisons
 
@@ -353,4 +353,3 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
