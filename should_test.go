@@ -183,19 +183,19 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	// BeNotEmpty
-	t.Run("BeNotEmpty passes", func(t *testing.T) {
+	// NotBeEmpty
+	t.Run("NotBeEmpty passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeNotEmpty(mockT, "not empty")
+		NotBeEmpty(mockT, "not empty")
 		if mockT.failed {
-			t.Error("BeNotEmpty should pass")
+			t.Error("NotBeEmpty should pass")
 		}
 	})
-	t.Run("BeNotEmpty fails", func(t *testing.T) {
+	t.Run("NotBeEmpty fails", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeNotEmpty(mockT, "")
+		NotBeEmpty(mockT, "")
 		if !mockT.failed {
-			t.Error("BeNotEmpty should fail")
+			t.Error("NotBeEmpty should fail")
 		}
 	})
 
@@ -216,20 +216,20 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	// BeNotNil
-	t.Run("BeNotNil passes", func(t *testing.T) {
+	// NotBeNil
+	t.Run("NotBeNil passes", func(t *testing.T) {
 		mockT := &mockTB{}
 		var x = 1
-		BeNotNil(mockT, &x)
+		NotBeNil(mockT, &x)
 		if mockT.failed {
-			t.Error("BeNotNil should pass")
+			t.Error("NotBeNil should pass")
 		}
 	})
-	t.Run("BeNotNil fails", func(t *testing.T) {
+	t.Run("NotBeNil fails", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeNotNil[any](mockT, nil)
+		NotBeNil[any](mockT, nil)
 		if !mockT.failed {
-			t.Error("BeNotNil should fail")
+			t.Error("NotBeNil should fail")
 		}
 	})
 

@@ -434,14 +434,14 @@ func TestFindInsertionInfo_Parameterized(t *testing.T) {
 			if tc.expectedPrev == nil {
 				BeNil(t, info.prev)
 			} else {
-				BeNotNil(t, info.prev)
+				NotBeNil(t, info.prev)
 				BeEqual(t, *info.prev, *tc.expectedPrev)
 			}
 
 			if tc.expectedNext == nil {
 				BeNil(t, info.next)
 			} else {
-				BeNotNil(t, info.next)
+				NotBeNil(t, info.next)
 				BeEqual(t, *info.next, *tc.expectedNext)
 			}
 		})
