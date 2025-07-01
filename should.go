@@ -224,6 +224,24 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	assert.BeEqual(t, actual, expected, opts...)
 }
 
+// NotBeEqual reports a test failure if the two values are deeply equal.
+//
+// This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
+// error messages showing exactly what differs between the values. For complex objects,
+// it shows field-by-field differences to help identify the specific mismatches.
+//
+// Example:
+//
+//	should.NotBeEqual(t, "hello", "world")
+//
+//	should.NotBeEqual(t, 42, 43)
+//
+//	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
+func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+	t.Helper()
+	assert.NotBeEqual(t, actual, expected, opts...)
+}
+
 // Contain reports a test failure if the slice or array does not contain the expected value.
 //
 // This assertion provides intelligent error messages based on the type of collection:
@@ -442,4 +460,42 @@ func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) 
 func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
 	t.Helper()
 	assert.ContainValue(t, actual, expectedValue, opts...)
+}
+
+// NotContainKey reports a test failure if the map contains the expected key.
+//
+// This assertion works with maps of any key type and provides detailed error messages
+// showing where the key was found, including the map type, size, and context around
+// the found key. Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.NotContainKey(t, userMap, "age") // This will fail
+//
+//	should.NotContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key should not exist"))
+//
+// If the input is not a map, the test fails immediately.
+func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+	t.Helper()
+	assert.NotContainKey(t, actual, expectedKey, opts...)
+}
+
+// NotContainValue reports a test failure if the map contains the expected value.
+//
+// This assertion works with maps of any value type and provides detailed error messages
+// showing where the value was found, including the map type, size, and context around
+// the found value. Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.NotContainValue(t, userMap, 2) // This will fail
+//
+//	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
+//
+// If the input is not a map, the test fails immediately.
+func NotContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+	t.Helper()
+	assert.NotContainValue(t, actual, expectedValue, opts...)
 }

@@ -178,6 +178,12 @@ should.BeEqual(t, p1, p2)
 // Field differences:
 //   └─ Name: "Jane" ≠ "John"
 //   └─ Age: 25 ≠ 30
+
+// Ensure values are NOT equal
+p3 := Person{Name: "John", Age: 30}
+should.NotBeEqual(t, p1, p3)
+// Output when values are equal:
+// Expected values to be different, but they are equal:
 ```
 
 ### Length and Type Assertions
@@ -365,6 +371,28 @@ should.ContainKey(t, scoreMap, 9)
 // With custom messages
 should.ContainKey(t, config, "database_url", should.WithMessage("Database URL must be configured"))
 should.ContainValue(t, statusCodes, 200, should.WithMessage("Success status code must be present"))
+
+// Check that maps do NOT contain specific keys or values
+should.NotContainKey(t, userMap, "password") // passes if 'password' key is not present
+should.NotContainValue(t, userMap, 999) // passes if value 999 is not found
+
+// When key is found in NotContainKey
+should.NotContainKey(t, userSettings, "admin_access")
+// Output when key is found:
+// Expected map to NOT contain key, but it was found:
+// Map Type : map[string]string
+// Map Size : 3 entries
+// Found Key: "admin_access"
+// Found Value: "true"
+
+// When value is found in NotContainValue
+should.NotContainValue(t, userRoles, 3)
+// Output when value is found:
+// Expected map to NOT contain value, but it was found:
+// Map Type : map[string]int
+// Map Size : 3 entries
+// Found Value: 3
+// Found At: key "admin"
 ```
 
 ## API Reference
@@ -373,6 +401,7 @@ should.ContainValue(t, statusCodes, 200, should.WithMessage("Success status code
 
 - `BeTrue(t, actual)` / `BeFalse(t, actual)` - Boolean value checks
 - `BeEqual(t, actual, expected)` - Deep equality comparison with detailed diffs
+- `NotBeEqual(t, actual, unexpected)` - Ensure two values are not equal
 - `BeNil(t, actual)` / `NotBeNil(t, actual)` - Nil pointer checks
 - `BeOfType(t, actual, expected)` - Checks if a value is of a specific type
 - `HaveLength(t, collection, length)` - Checks if a collection has a specific length
@@ -404,7 +433,9 @@ should.ContainValue(t, statusCodes, 200, should.WithMessage("Success status code
 ### Map Operations
 
 - `ContainKey(t, map, key)` - Check if map contains a specific key
+- `NotContainKey(t, map, key)` - Check if map does not contain a specific key
 - `ContainValue(t, map, value)` - Check if map contains a specific value
+- `NotContainValue(t, map, value)` - Check if map does not contain a specific value
 
 ### Panic Handling
 

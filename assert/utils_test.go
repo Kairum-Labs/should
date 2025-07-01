@@ -1887,3 +1887,431 @@ func TestFormatMapContainValueError(t *testing.T) {
 		})
 	})
 }
+
+func TestFormatComplexType(t *testing.T) {
+	type SimpleStruct struct {
+		Name string
+		Age  int
+	}
+
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "nil value",
+			input:    nil,
+			expected: "nil",
+		},
+		{
+			name:     "simple struct",
+			input:    SimpleStruct{Name: "John", Age: 30},
+			expected: "SimpleStruct{Name: \"John\", Age: 30}",
+		},
+		{
+			name:     "pointer to struct",
+			input:    &SimpleStruct{Name: "Jane", Age: 25},
+			expected: "SimpleStruct{Name: \"Jane\", Age: 25}",
+		},
+		{
+			name:     "non-struct type",
+			input:    "hello",
+			expected: `"hello"`,
+		},
+	}
+
+	for _, test := range tests {
+		result := formatComplexType(test.input)
+		if result != test.expected {
+			t.Errorf("formatComplexType(%s): expected %q, got %q", test.name, test.expected, result)
+		}
+	}
+}
+
+func TestFormatStructWithTruncation(t *testing.T) {
+	type LongStruct struct {
+		Field1 string
+		Field2 string
+		Field3 string
+		Field4 string
+		Field5 string
+	}
+
+	longStruct := LongStruct{
+		Field1: "very long value that should cause truncation",
+		Field2: "another long value",
+		Field3: "yet another long value",
+		Field4: "and another one",
+		Field5: "final long value",
+	}
+
+	v := reflect.ValueOf(longStruct)
+	structType := reflect.TypeOf(longStruct)
+	result := formatStructWithTruncation(v, structType)
+
+	if !strings.Contains(result, "LongStruct{") {
+		t.Errorf("Expected result to contain struct name, got: %s", result)
+	}
+	if !strings.Contains(result, "...") {
+		t.Errorf("Expected result to be truncated with '...', got: %s", result)
+	}
+}
+
+func TestFormatFieldWithTruncation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "short string",
+			input:    "hello",
+			expected: `"hello"`,
+		},
+		{
+			name:     "long string",
+			input:    "this is a very long string that should be truncated",
+			expected: `"this is a very lo..."`,
+		},
+		{
+			name:     "nil pointer",
+			input:    (*string)(nil),
+			expected: "nil",
+		},
+		{
+			name:     "empty slice",
+			input:    []string{},
+			expected: "[]string{}",
+		},
+		{
+			name:     "slice with items",
+			input:    []string{"a", "b", "c"},
+			expected: "[]string(3 items)",
+		},
+		{
+			name:     "empty map",
+			input:    map[string]int{},
+			expected: "map[string]int{}",
+		},
+		{
+			name:     "map with items",
+			input:    map[string]int{"a": 1, "b": 2},
+			expected: "map[string]int(2 items)",
+		},
+		{
+			name:     "integer",
+			input:    42,
+			expected: "42",
+		},
+	}
+
+	for _, test := range tests {
+		v := reflect.ValueOf(test.input)
+		result := formatFieldWithTruncation(v)
+		if result != test.expected {
+			t.Errorf("formatFieldWithTruncation(%s): expected %q, got %q", test.name, test.expected, result)
+		}
+	}
+}
+
+func TestFormatDiffValueConcise(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name:     "nil value",
+			input:    nil,
+			expected: "nil",
+		},
+		{
+			name:     "short string",
+			input:    "hello",
+			expected: `"hello"`,
+		},
+		{
+			name:     "long string",
+			input:    "this is a very long string that exceeds thirty characters",
+			expected: `"this is a very long string ..."`,
+		},
+		{
+			name:     "empty map",
+			input:    map[string]int{},
+			expected: "map[]",
+		},
+		{
+			name:     "single entry map",
+			input:    map[string]int{"key": 42},
+			expected: `map["key": 42]`,
+		},
+		{
+			name:     "multi entry map",
+			input:    map[string]int{"a": 1, "b": 2, "c": 3},
+			expected: "map[3 entries]",
+		},
+		{
+			name:     "empty slice",
+			input:    []int{},
+			expected: "[]",
+		},
+		{
+			name:     "small slice",
+			input:    []int{1, 2, 3},
+			expected: "[1, 2, 3]",
+		},
+		{
+			name:     "large slice",
+			input:    []int{1, 2, 3, 4, 5},
+			expected: "[5 items]",
+		},
+		{
+			name:     "boolean",
+			input:    true,
+			expected: "true",
+		},
+		{
+			name:     "integer",
+			input:    42,
+			expected: "42",
+		},
+		{
+			name:     "float",
+			input:    3.14,
+			expected: "3.14",
+		},
+	}
+
+	for _, test := range tests {
+		result := formatDiffValueConcise(test.input)
+		if result != test.expected {
+			t.Errorf("formatDiffValueConcise(%s): expected %q, got %q", test.name, test.expected, result)
+		}
+	}
+}
+
+func TestContainsMapValue_CloseMatches(t *testing.T) {
+	type TestStruct struct {
+		Name string
+		Age  int
+	}
+
+	testMap := map[string]TestStruct{
+		"user1": {Name: "Alice", Age: 30},
+		"user2": {Name: "Bob", Age: 25},
+	}
+
+	target := TestStruct{Name: "Alice", Age: 31} // Similar to user1 but different age
+
+	result := containsMapValue(testMap, target)
+
+	if result.Found {
+		t.Error("Expected not to find exact match")
+	}
+
+	if len(result.CloseMatches) == 0 {
+		t.Error("Expected to find close matches")
+	}
+
+	if len(result.CloseMatches) > 0 {
+		match := result.CloseMatches[0]
+		if len(match.Differences) == 0 {
+			t.Error("Expected close match to have differences")
+		}
+	}
+}
+
+func TestContainsMapValue_NonStruct(t *testing.T) {
+	testMap := map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
+
+	target := "value3"
+
+	result := containsMapValue(testMap, target)
+
+	if result.Found {
+		t.Error("Expected not to find value")
+	}
+
+	// Should not have close matches for non-struct types
+	if len(result.CloseMatches) > 0 {
+		t.Error("Expected no close matches for non-struct types")
+	}
+}
+
+func TestFormatMapContainValueError_ComplexTypes(t *testing.T) {
+	type TestStruct struct {
+		Name string
+		Age  int
+	}
+
+	result := MapContainResult{
+		Found:   false,
+		Total:   2,
+		Context: []interface{}{TestStruct{Name: "Alice", Age: 30}},
+		CloseMatches: []CloseMatch{
+			{
+				Value:       TestStruct{Name: "Alice", Age: 30},
+				Differences: []string{"Age (31 ≠ 30)"},
+			},
+		},
+	}
+
+	target := TestStruct{Name: "Alice", Age: 31}
+	errorMsg := formatMapContainValueError(target, result)
+
+	if !strings.Contains(errorMsg, "Expected map to contain value, but it was not found") {
+		t.Error("Expected error message to contain main error text")
+	}
+
+	if !strings.Contains(errorMsg, "Close matches:") {
+		t.Error("Expected error message to contain close matches section")
+	}
+
+	if !strings.Contains(errorMsg, "Differs in: Age") {
+		t.Error("Expected error message to contain difference details")
+	}
+}
+
+func TestFormatMapContainValueError_SimpleTypes(t *testing.T) {
+	result := MapContainResult{
+		Found:   false,
+		Total:   2,
+		Context: []interface{}{"value1", "value2"},
+	}
+
+	target := "value3"
+	errorMsg := formatMapContainValueError(target, result)
+
+	if !strings.Contains(errorMsg, "Expected map to contain value 'value3'") {
+		t.Error("Expected error message to contain target value")
+	}
+
+	if !strings.Contains(errorMsg, "Available values:") {
+		t.Error("Expected error message to contain available values")
+	}
+}
+
+func TestFormatMapNotContainKeyError(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   interface{}
+		mapValue interface{}
+		expected string
+	}{
+		{
+			name:     "string key in string map",
+			target:   "age",
+			mapValue: map[string]int{"name": 1, "age": 30, "city": 2},
+			expected: `Expected map to NOT contain key, but key was found:
+Map Type : map[string]int
+Map Size : 3 entries
+Found Key: "age"
+Associated Value: 30`,
+		},
+		{
+			name:     "int key in int map",
+			target:   42,
+			mapValue: map[int]string{1: "one", 42: "forty-two", 3: "three"},
+			expected: `Expected map to NOT contain key, but key was found:
+Map Type : map[int]string
+Map Size : 3 entries
+Found Key: 42
+Associated Value: "forty-two"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatMapNotContainKeyError(tt.target, tt.mapValue)
+			if result != tt.expected {
+				t.Errorf("Expected:\n%s\n\nGot:\n%s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestFormatMapNotContainValueError_SimpleTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   interface{}
+		mapValue interface{}
+		contains string
+	}{
+		{
+			name:     "string value in map",
+			target:   "John",
+			mapValue: map[string]string{"user1": "Alice", "user2": "John", "user3": "Bob"},
+			contains: `Expected map to NOT contain value, but it was found:
+Map Type : map[string]string
+Map Size : 3 entries
+Found Value: "John"
+Found At: key "user2"`,
+		},
+		{
+			name:     "int value in map",
+			target:   42,
+			mapValue: map[string]int{"a": 10, "b": 42, "c": 30},
+			contains: `Expected map to NOT contain value, but it was found:
+Map Type : map[string]int
+Map Size : 3 entries
+Found Value: 42
+Found At: key "b"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatMapNotContainValueError(tt.target, tt.mapValue)
+			if !strings.Contains(result, tt.contains) {
+				t.Errorf("Expected result to contain:\n%s\n\nGot:\n%s", tt.contains, result)
+			}
+		})
+	}
+}
+
+func TestFormatMapNotContainValueError_ComplexTypes(t *testing.T) {
+	type User struct {
+		ID   int
+		Name string
+		Role string
+	}
+
+	targetUser := User{ID: 2, Name: "Bob", Role: "user"}
+	userMap := map[string]User{
+		"emp1": {ID: 1, Name: "Alice", Role: "admin"},
+		"emp2": {ID: 2, Name: "Bob", Role: "user"},
+		"emp3": {ID: 3, Name: "Charlie", Role: "user"},
+	}
+
+	result := formatMapNotContainValueError(targetUser, userMap)
+
+	expectedParts := []string{
+		"Expected map to NOT contain value, but it was found:",
+		"Map Type : map[string]assert.User",
+		"Map Size : 3 entries",
+		`Found Value: User{ID: 2, Name: "Bob", Role: "user"}`,
+		`Found At: key "emp2"`,
+	}
+
+	// Should NOT contain the verbose context section
+	unexpectedParts := []string{
+		"Context:",
+		"← Found here",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(result, part) {
+			t.Errorf("Expected result to contain '%s', but it was not found in:\n%s", part, result)
+		}
+	}
+
+	for _, part := range unexpectedParts {
+		if strings.Contains(result, part) {
+			t.Errorf("Expected result to NOT contain '%s', but it was found in:\n%s", part, result)
+		}
+	}
+}

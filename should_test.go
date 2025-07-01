@@ -233,6 +233,14 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("NotBeEqual passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		NotBeEqual(mockT, "a", "b")
+		if mockT.failed {
+			t.Error("NotBeEqual should pass")
+		}
+	})
+
 	// BeGreaterThan
 	t.Run("BeGreaterThan passes", func(t *testing.T) {
 		mockT := &mockTB{}
@@ -310,6 +318,22 @@ func TestWrappers(t *testing.T) {
 		NotContain(mockT, []int{1, 2, 3}, 2)
 		if !mockT.failed {
 			t.Error("NotContain should fail")
+		}
+	})
+
+	t.Run("NotContainKey passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		NotContainKey(mockT, map[string]int{"a": 1, "b": 2}, "c")
+		if mockT.failed {
+			t.Error("NotContainKey should pass")
+		}
+	})
+
+	t.Run("NotContainValue passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		NotContainValue(mockT, map[string]int{"a": 1, "b": 2}, "c")
+		if mockT.failed {
+			t.Error("NotContainValue should pass")
 		}
 	})
 

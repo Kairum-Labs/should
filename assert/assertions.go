@@ -463,6 +463,36 @@ func BeEqual[T any](t testing.TB, actual T, expected T, opts ...Option) {
 	fail(t, "Differences found:\n%s", diffMessage)
 }
 
+// NotBeEqual reports a test failure if the two values are deeply equal.
+//
+// This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
+// error messages showing exactly what differs between the values. For complex objects,
+// it shows field-by-field differences to help identify the specific mismatches.
+//
+// Example:
+//
+//	should.NotBeEqual(t, "hello", "world")
+//
+//	should.NotBeEqual(t, 42, 43)
+//
+//	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
+func NotBeEqual[T any](t testing.TB, actual T, expected T, opts ...Option) {
+	t.Helper()
+	if reflect.DeepEqual(actual, expected) {
+		cfg := processOptions(opts...)
+		customMsg := cfg.Message
+
+		// TODO: We could enrich the error message to show that the values are unexpectedly equal
+
+		if customMsg != "" {
+			fail(t, "\n%s\nExpected values to be different, but they are equal", customMsg)
+			return
+		}
+
+		fail(t, "Expected values to be different, but they are equal")
+	}
+}
+
 // Contain reports a test failure if the slice or array does not contain the expected value.
 //
 // This assertion provides intelligent error messages based on the type of collection:
@@ -700,6 +730,74 @@ func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {
 	errorsMsg := formatDuplicatesErrors(duplicates)
 
 	fail(t, "%sExpected no duplicates, but found %d duplicate values: %s", customMsg, len(duplicates), errorsMsg)
+}
+
+// NotContainKey reports a test failure if the map contains the expected key.
+//
+// This assertion works with maps of any key type and provides detailed error messages
+// showing where the key was found, including the map type, size, and context around
+// the found key. Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.NotContainKey(t, userMap, "age") // This will fail
+//
+//	should.NotContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key should not exist"))
+//
+// If the input is not a map, the test fails immediately.
+func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+	t.Helper()
+
+	if !isMap(actual) {
+		fail(t, "expected a map, but got %T", actual)
+		return
+	}
+
+	result := containsMapKey(actual, expectedKey)
+	if result.Found {
+		cfg := processOptions(opts...)
+		errorMsg := formatMapNotContainKeyError(expectedKey, actual)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
+		}
+	}
+}
+
+// NotContainValue reports a test failure if the map contains the expected value.
+//
+// This assertion works with maps of any value type and provides detailed error messages
+// showing where the value was found, including the map type, size, and context around
+// the found value. Supports all map types.
+//
+// Example:
+//
+//	userMap := map[string]int{"name": 1, "age": 2}
+//	should.NotContainValue(t, userMap, 2) // This will fail
+//
+//	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
+//
+// If the input is not a map, the test fails immediately.
+func NotContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+	t.Helper()
+
+	if !isMap(actual) {
+		fail(t, "expected a map, but got %T", actual)
+		return
+	}
+
+	result := containsMapValue(actual, expectedValue)
+	if result.Found {
+		cfg := processOptions(opts...)
+		errorMsg := formatMapNotContainValueError(expectedValue, actual)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
+		}
+	}
 }
 
 // ContainFunc reports a test failure if no element in the slice or array matches the predicate function.

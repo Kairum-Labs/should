@@ -96,10 +96,17 @@ type Ordered interface {
 
 // MapContainResult represents the result of checking if a map contains a key or value
 type MapContainResult struct {
-	Found   bool
-	Exact   bool
-	MaxShow int
-	Total   int
-	Context []interface{}
-	Similar []SimilarItem
+	Found        bool
+	Exact        bool
+	MaxShow      int
+	Total        int
+	Context      []interface{}
+	Similar      []SimilarItem
+	CloseMatches []CloseMatch
+}
+
+// CloseMatch holds information about a value that is partially similar to the target.
+type CloseMatch struct {
+	Value       interface{}
+	Differences []string
 }

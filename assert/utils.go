@@ -1287,6 +1287,8 @@ func formatMapValuesList(values []interface{}) string {
 		// For strings, use single quotes to match existing test expectations
 		if str, ok := value.(string); ok {
 			elements = append(elements, fmt.Sprintf("'%s'", str))
+		} else if value == nil {
+			elements = append(elements, "nil")
 		} else {
 			// Handle interface{} values by getting their concrete type
 			v := reflect.ValueOf(value)
@@ -1295,6 +1297,21 @@ func formatMapValuesList(values []interface{}) string {
 			}
 			elements = append(elements, formatValueComparison(v))
 		}
+	}
+
+	// Sort elements to ensure deterministic order for tests
+	// But preserve original order when nil values are present
+	hasNil := false
+	for _, element := range elements {
+		if element == "nil" {
+			hasNil = true
+			break
+		}
+	}
+
+	if !hasNil {
+		// Only sort when there are no nil values to preserve deterministic order
+		sort.Strings(elements)
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
@@ -1389,6 +1406,7 @@ func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResul
 func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainResult {
 	const maxShow = 5
 	const maxSimilar = 3
+	const maxCloseMatches = 2
 
 	result := MapContainResult{
 		MaxShow: maxShow,
@@ -1430,6 +1448,43 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainR
 		result.Context = allValues[:contextSize]
 	} else {
 		result.Context = allValues
+	}
+
+	isComplex := targetVal.Kind() == reflect.Struct || (targetVal.Kind() == reflect.Ptr && targetVal.Elem().Kind() == reflect.Struct)
+	if isComplex {
+		// Find close matches for structs
+		var closeMatches []struct {
+			match CloseMatch
+			diffs int
+		}
+
+		for _, val := range allValues {
+			diffs := findDifferences(targetValue, val)
+			if len(diffs) > 0 {
+				var diffStrings []string
+				for _, d := range diffs {
+					diffStrings = append(diffStrings, fmt.Sprintf("%s (%v ≠ %v)", d.Path, formatDiffValueConcise(d.Expected), formatDiffValueConcise(d.Actual)))
+				}
+				closeMatches = append(closeMatches, struct {
+					match CloseMatch
+					diffs int
+				}{
+					match: CloseMatch{Value: val, Differences: diffStrings},
+					diffs: len(diffs),
+				})
+			}
+		}
+
+		// Sort by number of differences (fewer is better)
+		sort.Slice(closeMatches, func(i, j int) bool {
+			return closeMatches[i].diffs < closeMatches[j].diffs
+		})
+
+		// Take the top N close matches
+		for i := 0; i < len(closeMatches) && i < maxCloseMatches; i++ {
+			result.CloseMatches = append(result.CloseMatches, closeMatches[i].match)
+		}
+		return result
 	}
 
 	// Find similar values based on type
@@ -1621,6 +1676,54 @@ func formatMapContainKeyError(target interface{}, result MapContainResult) strin
 func formatMapContainValueError(target interface{}, result MapContainResult) string {
 	var msg strings.Builder
 
+	targetV := reflect.ValueOf(target)
+	isComplex := targetV.Kind() == reflect.Struct || (targetV.Kind() == reflect.Ptr && targetV.Elem().Kind() == reflect.Struct)
+
+	// Use new formatting for complex types (structs)
+	if isComplex {
+		var typeName string
+		if targetV.Kind() == reflect.Ptr {
+			typeName = targetV.Elem().Type().Name()
+		} else {
+			typeName = targetV.Type().Name()
+		}
+
+		if typeName == "" {
+			typeName = "struct"
+		}
+
+		msg.WriteString("Expected map to contain value, but it was not found:\n")
+		msg.WriteString(fmt.Sprintf("Collection: %d values of type %s\n", result.Total, typeName))
+		msg.WriteString(fmt.Sprintf("Missing   : %s\n", formatComplexType(target)))
+
+		if len(result.Context) > 0 {
+			msg.WriteString("\nAvailable values:\n")
+			for i, v := range result.Context {
+				prefix := "├─"
+				if i == len(result.Context)-1 {
+					prefix = "└─"
+				}
+				msg.WriteString(fmt.Sprintf("%s %s\n", prefix, formatComplexType(v)))
+			}
+		}
+
+		if len(result.CloseMatches) > 0 {
+			msg.WriteString("\nClose matches:\n")
+			for i, match := range result.CloseMatches {
+				prefix := "├─"
+				if i == len(result.CloseMatches)-1 {
+					prefix = "└─"
+				}
+				msg.WriteString(fmt.Sprintf("%s Match #%d: %s\n", prefix, i+1, formatComplexType(match.Value)))
+				for _, diff := range match.Differences {
+					msg.WriteString(fmt.Sprintf("│   └─ Differs in: %s\n", diff))
+				}
+			}
+		}
+
+		return strings.TrimSuffix(msg.String(), "\n")
+	}
+
 	// Format target with single quotes for strings to match test expectations
 	var targetStr string
 	if str, ok := target.(string); ok {
@@ -1665,6 +1768,243 @@ func formatMapContainValueError(target interface{}, result MapContainResult) str
 				}
 				msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
 			}
+		}
+	}
+
+	return msg.String()
+}
+
+// formatComplexType formats a complex type (like a struct) with truncation for better readability.
+func formatComplexType(item any) string {
+	if item == nil {
+		return "nil"
+	}
+
+	rv := reflect.ValueOf(item)
+
+	// If it's a pointer, dereference it
+	if rv.Kind() == reflect.Ptr && !rv.IsNil() {
+		rv = rv.Elem()
+	}
+
+	rt := rv.Type()
+
+	if rv.Kind() == reflect.Struct {
+		return formatStructWithTruncation(rv, rt)
+	}
+
+	// Fallback for non-struct types
+	return formatComparisonValue(item)
+}
+
+// formatStructWithTruncation creates a truncated string representation of a struct.
+func formatStructWithTruncation(rv reflect.Value, rt reflect.Type) string {
+	var parts []string
+	charCount := 0
+	maxChars := 80 // Same as formatStructForDuplicates
+
+	typeName := rt.Name()
+	if typeName == "" {
+		typeName = "struct"
+	}
+
+	result := typeName + "{"
+
+	for i := 0; i < rv.NumField(); i++ {
+		field := rt.Field(i)
+		fieldValue := rv.Field(i)
+
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldStr := fmt.Sprintf("%s: %v", field.Name, formatFieldWithTruncation(fieldValue))
+
+		if charCount+len(fieldStr) > maxChars && len(parts) > 0 {
+			parts = append(parts, "...")
+			break
+		}
+
+		parts = append(parts, fieldStr)
+		charCount += len(fieldStr)
+	}
+
+	result += strings.Join(parts, ", ") + "}"
+	return result
+}
+
+// formatFieldWithTruncation creates a truncated string representation of a field's value.
+func formatFieldWithTruncation(rv reflect.Value) string {
+	if !rv.IsValid() {
+		return "nil"
+	}
+
+	switch rv.Kind() {
+	case reflect.String:
+		str := rv.String()
+		if len(str) > 20 {
+			return fmt.Sprintf("%q", str[:17]+"...")
+		}
+		return fmt.Sprintf("%q", str)
+	case reflect.Ptr:
+		if rv.IsNil() {
+			return "nil"
+		}
+		return formatFieldWithTruncation(rv.Elem())
+	case reflect.Struct:
+		if !rv.IsValid() || rv.IsZero() {
+			return fmt.Sprintf("%s{}", rv.Type().Name())
+		}
+		return fmt.Sprintf("%s{...}", rv.Type().Name())
+	case reflect.Map, reflect.Slice, reflect.Array:
+		if rv.IsNil() {
+			return "nil"
+		}
+		if rv.Len() == 0 {
+			return fmt.Sprintf("%s{}", rv.Type().String())
+		}
+		return fmt.Sprintf("%s(%d items)", rv.Type().String(), rv.Len())
+	default:
+		return fmt.Sprintf("%v", rv.Interface())
+	}
+}
+
+// formatDiffValueConcise formats a value for difference display with truncation for readability.
+func formatDiffValueConcise(value interface{}) string {
+	if value == nil {
+		return "nil"
+	}
+
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.String:
+		str := v.String()
+		if len(str) > 30 {
+			return fmt.Sprintf("%q", str[:27]+"...")
+		}
+		return fmt.Sprintf("%q", str)
+	case reflect.Map:
+		if v.IsNil() {
+			return "nil"
+		}
+		if v.Len() == 0 {
+			return "map[]"
+		}
+		if v.Len() == 1 {
+			// Show single entry maps completely
+			keys := v.MapKeys()
+			key := keys[0]
+			val := v.MapIndex(key)
+			return fmt.Sprintf("map[%v: %v]", formatDiffValueConcise(key.Interface()), formatDiffValueConcise(val.Interface()))
+		}
+		// For maps with multiple entries, show count
+		return fmt.Sprintf("map[%d entries]", v.Len())
+	case reflect.Slice, reflect.Array:
+		if v.IsNil() {
+			return "nil"
+		}
+		if v.Len() == 0 {
+			return "[]"
+		}
+		if v.Len() <= 3 {
+			// Show small slices completely
+			var elements []string
+			for i := 0; i < v.Len(); i++ {
+				elements = append(elements, formatDiffValueConcise(v.Index(i).Interface()))
+			}
+			return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+		}
+		// For larger slices, show count
+		return fmt.Sprintf("[%d items]", v.Len())
+	case reflect.Struct:
+		// Use the existing complex type formatting
+		return formatComplexType(value)
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return fmt.Sprint(value)
+	default:
+		// For other types, use a simple representation
+		str := fmt.Sprint(value)
+		if len(str) > 40 {
+			return str[:37] + "..."
+		}
+		return str
+	}
+}
+
+// formatMapNotContainKeyError formats error message for NotContainKey assertion
+func formatMapNotContainKeyError(target interface{}, mapValue interface{}) string {
+	var msg strings.Builder
+
+	v := reflect.ValueOf(mapValue)
+	mapType := v.Type().String()
+	mapSize := v.Len()
+
+	// Format target with single quotes for strings to match test expectations
+	var targetStr string
+	if str, ok := target.(string); ok {
+		targetStr = fmt.Sprintf(`"%s"`, str)
+	} else {
+		targetStr = formatComparisonValue(target)
+	}
+
+	msg.WriteString("Expected map to NOT contain key, but key was found:\n")
+	msg.WriteString(fmt.Sprintf("Map Type : %s\n", mapType))
+	msg.WriteString(fmt.Sprintf("Map Size : %d entries\n", mapSize))
+	msg.WriteString(fmt.Sprintf("Found Key: %s\n", targetStr))
+
+	// Find the key and show its associated value
+	keys := v.MapKeys()
+	for _, key := range keys {
+		if reflect.DeepEqual(key.Interface(), target) {
+			value := v.MapIndex(key)
+			var valueStr string
+			if str, ok := value.Interface().(string); ok {
+				valueStr = fmt.Sprintf(`"%s"`, str)
+			} else {
+				valueStr = formatComparisonValue(value.Interface())
+			}
+			msg.WriteString(fmt.Sprintf("Associated Value: %s\n", valueStr))
+			break
+		}
+	}
+
+	return strings.TrimSuffix(msg.String(), "\n")
+}
+
+// formatMapNotContainValueError formats error message for NotContainValue assertion
+func formatMapNotContainValueError(target interface{}, mapValue interface{}) string {
+	var msg strings.Builder
+
+	v := reflect.ValueOf(mapValue)
+	mapType := v.Type().String()
+	mapSize := v.Len()
+
+	msg.WriteString("Expected map to NOT contain value, but it was found:\n")
+	msg.WriteString(fmt.Sprintf("Map Type : %s\n", mapType))
+	msg.WriteString(fmt.Sprintf("Map Size : %d entries\n", mapSize))
+
+	// Format the found value
+	msg.WriteString(fmt.Sprintf("Found Value: %s\n", formatComplexType(target)))
+
+	// Find which key(s) contain this value
+	keys := v.MapKeys()
+	var foundKeys []string
+	for _, key := range keys {
+		val := v.MapIndex(key)
+		if reflect.DeepEqual(val.Interface(), target) {
+			foundKeys = append(foundKeys, formatComparisonValue(key.Interface()))
+		}
+	}
+
+	if len(foundKeys) == 1 {
+		msg.WriteString(fmt.Sprintf("Found At: key %s", foundKeys[0]))
+	} else if len(foundKeys) > 1 {
+		if len(foundKeys) <= 3 {
+			msg.WriteString(fmt.Sprintf("Found At: keys %s", strings.Join(foundKeys, ", ")))
+		} else {
+			msg.WriteString(fmt.Sprintf("Found At: %d keys (%s, ...)", len(foundKeys), strings.Join(foundKeys[:2], ", ")))
 		}
 	}
 
