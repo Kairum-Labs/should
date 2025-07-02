@@ -3,7 +3,6 @@
 #
 
 /assert/benchmark_test.go
-.github/workflows/compatibility.yml
 
 demo_test.go
 

@@ -1,0 +1,82 @@
+name: Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  compatibility:
+    name: Go Version Compatibility
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ["1.21", "1.22", "1.23", "1.24"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Run tests with race detector
+        run: go test -race -short ./...
+
+  minimum-version:
+    name: Minimum Go Version Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.21 (minimum)
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Verify go.mod minimum version
+        run: |
+          MIN_VERSION=$(grep '^go ' go.mod | awk '{print $2}')
+          echo "Minimum Go version in go.mod: $MIN_VERSION"
+
+          # Test basic functionality
+          go mod download
+          go build ./...
+          go test ./... -short
+
+      - name: Test basic API usage
+        run: |
+          cat > compatibility_test.go << 'EOF'
+          package main
+
+          import (
+              "testing"
+              "github.com/Kairum-Labs/should/assert"
+          )
+
+          func TestBasicCompatibility(t *testing.T) {
+              assert.BeTrue(t, true)
+              assert.BeEqual(t, 42, 42)
+              assert.NotBeEmpty(t, "hello")
+              assert.Contain(t, []int{1, 2, 3}, 2)
+              assert.ContainKey(t, map[string]int{"test": 1}, "test")
+              assert.ContainValue(t, map[string]int{"test": 1}, 1)
+          }
+          EOF
+
+          go test -v compatibility_test.go
