@@ -43,9 +43,7 @@ func WithMessage(message string) Option {
 //	should.BeTrue(t, true)
 //
 //	should.BeTrue(t, user.IsActive, should.WithMessage("User must be active"))
-//
-// If the input is not a boolean, the test fails immediately.
-func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
+func BeTrue(t testing.TB, actual bool, opts ...Option) {
 	t.Helper()
 	assert.BeTrue(t, actual, opts...)
 }
@@ -60,9 +58,7 @@ func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
 //	should.BeFalse(t, false)
 //
 //	should.BeFalse(t, user.IsDeleted, should.WithMessage("User should not be deleted"))
-//
-// If the input is not a boolean, the test fails immediately.
-func BeFalse[T any](t testing.TB, actual T, opts ...Option) {
+func BeFalse(t testing.TB, actual bool, opts ...Option) {
 	t.Helper()
 	assert.BeFalse(t, actual, opts...)
 }
@@ -434,9 +430,7 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 //	should.ContainKey(t, userMap, "email")
 //
 //	should.ContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key must exist"))
-//
-// If the input is not a map, the test fails immediately.
-func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K, opts ...Option) {
 	t.Helper()
 	assert.ContainKey(t, actual, expectedKey, opts...)
 }
@@ -455,9 +449,7 @@ func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) 
 //	should.ContainValue(t, userMap, 3)
 //
 //	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
-//
-// If the input is not a map, the test fails immediately.
-func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+func ContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 	assert.ContainValue(t, actual, expectedValue, opts...)
 }
@@ -474,9 +466,7 @@ func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Opti
 //	should.NotContainKey(t, userMap, "age") // This will fail
 //
 //	should.NotContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key should not exist"))
-//
-// If the input is not a map, the test fails immediately.
-func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K, opts ...Option) {
 	t.Helper()
 	assert.NotContainKey(t, actual, expectedKey, opts...)
 }
@@ -493,9 +483,7 @@ func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Optio
 //	should.NotContainValue(t, userMap, 2) // This will fail
 //
 //	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
-//
-// If the input is not a map, the test fails immediately.
-func NotContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+func NotContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 	assert.NotContainValue(t, actual, expectedValue, opts...)
 }

@@ -34,17 +34,10 @@ func fail(t testing.TB, message string, args ...any) {
 //	should.BeTrue(t, true)
 //
 //	should.BeTrue(t, user.IsActive, should.WithMessage("User must be active"))
-//
-// If the input is not a boolean, the test fails immediately.
-func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
+func BeTrue(t testing.TB, actual bool, opts ...Option) {
 	t.Helper()
-	val, ok := any(actual).(bool)
-	if !ok {
-		fail(t, "expected a boolean value, but got %T", actual)
-		return
-	}
 
-	if !val {
+	if !actual {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected true, got false", cfg.Message)
@@ -64,17 +57,10 @@ func BeTrue[T any](t testing.TB, actual T, opts ...Option) {
 //	should.BeFalse(t, false)
 //
 //	should.BeFalse(t, user.IsDeleted, should.WithMessage("User should not be deleted"))
-//
-// If the input is not a boolean, the test fails immediately.
-func BeFalse[T any](t testing.TB, actual T, opts ...Option) {
+func BeFalse(t testing.TB, actual bool, opts ...Option) {
 	t.Helper()
-	val, ok := any(actual).(bool)
-	if !ok {
-		fail(t, "expected a boolean value, but got %T", actual)
-		return
-	}
 
-	if val {
+	if actual {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected false, got true", cfg.Message)
@@ -590,15 +576,8 @@ func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 //	should.ContainKey(t, userMap, "email")
 //
 //	should.ContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key must exist"))
-//
-// If the input is not a map, the test fails immediately.
-func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K, opts ...Option) {
 	t.Helper()
-
-	if !isMap(actual) {
-		fail(t, "expected a map, but got %T", actual)
-		return
-	}
 
 	result := containsMapKey(actual, expectedKey)
 	if result.Found {
@@ -628,15 +607,8 @@ func ContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) 
 //	should.ContainValue(t, userMap, 3)
 //
 //	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
-//
-// If the input is not a map, the test fails immediately.
-func ContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+func ContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
-
-	if !isMap(actual) {
-		fail(t, "expected a map, but got %T", actual)
-		return
-	}
 
 	result := containsMapValue(actual, expectedValue)
 	if result.Found {
@@ -744,15 +716,8 @@ func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {
 //	should.NotContainKey(t, userMap, "age") // This will fail
 //
 //	should.NotContainKey(t, map[int]string{1: "one", 2: "two"}, 3, should.WithMessage("Key should not exist"))
-//
-// If the input is not a map, the test fails immediately.
-func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Option) {
+func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K, opts ...Option) {
 	t.Helper()
-
-	if !isMap(actual) {
-		fail(t, "expected a map, but got %T", actual)
-		return
-	}
 
 	result := containsMapKey(actual, expectedKey)
 	if result.Found {
@@ -778,15 +743,8 @@ func NotContainKey[T any](t testing.TB, actual T, expectedKey any, opts ...Optio
 //	should.NotContainValue(t, userMap, 2) // This will fail
 //
 //	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
-//
-// If the input is not a map, the test fails immediately.
-func NotContainValue[T any](t testing.TB, actual T, expectedValue any, opts ...Option) {
+func NotContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
-
-	if !isMap(actual) {
-		fail(t, "expected a map, but got %T", actual)
-		return
-	}
 
 	result := containsMapValue(actual, expectedValue)
 	if result.Found {

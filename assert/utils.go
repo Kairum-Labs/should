@@ -1317,14 +1317,6 @@ func formatMapValuesList(values []interface{}) string {
 	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
 }
 
-// isMap checks if the provided value is a map.
-func isMap(v interface{}) bool {
-	if v == nil {
-		return false
-	}
-	return reflect.TypeOf(v).Kind() == reflect.Map
-}
-
 // containsMapKey checks if a map contains a specific key with similarity detection
 func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResult {
 	const maxShow = 5

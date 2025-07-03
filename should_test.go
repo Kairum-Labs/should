@@ -331,7 +331,7 @@ func TestWrappers(t *testing.T) {
 
 	t.Run("NotContainValue passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		NotContainValue(mockT, map[string]int{"a": 1, "b": 2}, "c")
+		NotContainValue(mockT, map[string]int{"a": 1, "b": 2}, 3)
 		if mockT.failed {
 			t.Error("NotContainValue should pass")
 		}

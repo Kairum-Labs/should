@@ -1376,56 +1376,6 @@ func TestFormatMapValuesList(t *testing.T) {
 	})
 }
 
-// === Tests for isMap ===
-
-func TestIsMap(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Basic functionality", func(t *testing.T) {
-		t.Parallel()
-		tests := []struct {
-			name     string
-			input    interface{}
-			expected bool
-		}{
-			{"map type", map[string]int{}, true},
-			{"slice type", []int{}, false},
-			{"string type", "hello", false},
-			{"int type", 123, false},
-			{"struct type", struct{}{}, false},
-		}
-
-		for _, tt := range tests {
-			tt := tt
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isMap(tt.input)
-				BeEqual(t, result, tt.expected)
-			})
-		}
-	})
-
-	t.Run("Edge cases", func(t *testing.T) {
-		t.Parallel()
-		tests := []struct {
-			name     string
-			input    interface{}
-			expected bool
-		}{
-			{"nil value", nil, false},
-		}
-
-		for _, tt := range tests {
-			tt := tt
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isMap(tt.input)
-				BeEqual(t, result, tt.expected)
-			})
-		}
-	})
-}
-
 // === Tests for containsMapKey ===
 
 func TestContainsMapKey(t *testing.T) {

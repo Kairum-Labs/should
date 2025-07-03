@@ -1510,23 +1510,6 @@ func TestNotBeNil_Fails_WithNilPointer(t *testing.T) {
 
 // === Tests for error handling in boolean assertions ===
 
-func TestBeTrue_Fails_WithNonBooleanType(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeTrue(t, "true")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a boolean value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
-}
-
 func TestBeTrue_Fails_WithFalseValue(t *testing.T) {
 	t.Parallel()
 
@@ -1539,23 +1522,6 @@ func TestBeTrue_Fails_WithFalseValue(t *testing.T) {
 	}
 
 	expected := "Expected true, got false"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
-}
-
-func TestBeFalse_Fails_WithNonBooleanType(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeFalse(t, 0)
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a boolean value, but got int"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
@@ -3104,23 +3070,6 @@ func TestContainKey_WithCustomMessage(t *testing.T) {
 	}
 }
 
-func TestContainKey_Fails_WithNonMapType(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		ContainKey(t, []string{"not", "a", "map"}, "key")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a map, but got []string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
-}
-
 // === Tests for ContainValue ===
 
 func TestContainValue_Succeeds_WhenValueIsPresent(t *testing.T) {
@@ -3249,23 +3198,6 @@ func TestContainValue_WithCustomMessage(t *testing.T) {
 		if !strings.Contains(message, part) {
 			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
 		}
-	}
-}
-
-func TestContainValue_Fails_WithNonMapType(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		ContainValue(t, "not a map", "value")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a map, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
 }
 
@@ -3401,208 +3333,416 @@ func TestNotContainKey(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			key        interface{}
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should pass when key does not exist",
-				mapValue:   map[string]int{"name": 1, "age": 2},
-				key:        "email",
-				shouldFail: false,
-			},
-			{
-				name:       "should pass with int keys when key does not exist",
-				mapValue:   map[int]string{1: "one", 2: "two"},
-				key:        3,
-				shouldFail: false,
-			},
-			{
-				name:       "should pass with empty map",
-				mapValue:   map[string]int{},
-				key:        "any",
-				shouldFail: false,
-			},
-			{
-				name:       "should fail when key exists",
-				mapValue:   map[string]int{"name": 1, "age": 2},
-				key:        "age",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected map to NOT contain key, but key was found:",
-						"Map Type : map[string]int",
-						"Map Size : 2 entries",
-						`Found Key: "age"`,
-						"Associated Value: 2",
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
-						}
-					}
+		t.Run("string keys", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				key        string
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass when key does not exist",
+					mapValue:   map[string]int{"name": 1, "age": 2},
+					key:        "email",
+					shouldFail: false,
 				},
-			},
-			{
-				name:       "should fail when int key exists",
-				mapValue:   map[int]string{1: "one", 2: "two", 3: "three"},
-				key:        2,
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected map to NOT contain key, but key was found:",
-						"Map Type : map[int]string",
-						"Found Key: 2",
-						`Associated Value: "two"`,
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
-						}
-					}
+				{
+					name:       "should pass with empty map",
+					mapValue:   map[string]int{},
+					key:        "any",
+					shouldFail: false,
 				},
-			},
-		}
+				{
+					name:       "should fail when key exists",
+					mapValue:   map[string]int{"name": 1, "age": 2},
+					key:        "age",
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						expectedParts := []string{
+							"Expected map to NOT contain key, but key was found:",
+							"Map Type : map[string]int",
+							"Map Size : 2 entries",
+							`Found Key: "age"`,
+							"Associated Value: 2",
+						}
+						for _, part := range expectedParts {
+							if !strings.Contains(message, part) {
+								t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+							}
+						}
+					},
+				},
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainKey(mockT, tt.mapValue, tt.key)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainKey to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+		t.Run("int keys", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[int]string
+				key        int
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass when key does not exist",
+					mapValue:   map[int]string{1: "one", 2: "two"},
+					key:        3,
+					shouldFail: false,
+				},
+				{
+					name:       "should fail when int key exists",
+					mapValue:   map[int]string{1: "one", 2: "two", 3: "three"},
+					key:        2,
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						expectedParts := []string{
+							"Expected map to NOT contain key, but key was found:",
+							"Map Type : map[int]string",
+							"Found Key: 2",
+							`Associated Value: "two"`,
+						}
+						for _, part := range expectedParts {
+							if !strings.Contains(message, part) {
+								t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+							}
+						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("custom struct keys", func(t *testing.T) {
+			type CustomKey struct {
+				ID   int
+				Name string
+			}
+
+			tests := []struct {
+				name       string
+				mapValue   map[CustomKey]bool
+				key        CustomKey
+				shouldFail bool
+			}{
+				{
+					name:       "should pass when custom key does not exist",
+					mapValue:   map[CustomKey]bool{{ID: 1, Name: "test"}: true},
+					key:        CustomKey{ID: 2, Name: "other"},
+					shouldFail: false,
+				},
+				{
+					name:       "should fail when custom key exists",
+					mapValue:   map[CustomKey]bool{{ID: 1, Name: "test"}: true},
+					key:        CustomKey{ID: 1, Name: "test"},
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			key        interface{}
-			opts       []Option
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should pass with custom message",
-				mapValue:   map[string]int{"name": 1},
-				key:        "email",
-				opts:       []Option{WithMessage("Email key should not exist")},
-				shouldFail: false,
-			},
-			{
-				name:       "should show custom error message on failure",
-				mapValue:   map[string]string{"secret_key": "value"},
-				key:        "secret_key",
-				opts:       []Option{WithMessage("Configuration should not contain sensitive keys")},
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Configuration should not contain sensitive keys") {
-						t.Errorf("Expected custom error message, got: %s", message)
-					}
-					if !strings.Contains(message, "Expected map to NOT contain key, but key was found:") {
-						t.Errorf("Expected standard error message, got: %s", message)
-					}
+		t.Run("string-int maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				key        string
+				opts       []Option
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass with custom message",
+					mapValue:   map[string]int{"name": 1},
+					key:        "email",
+					opts:       []Option{WithMessage("Email key should not exist")},
+					shouldFail: false,
 				},
-			},
-		}
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainKey(mockT, tt.mapValue, tt.key, tt.opts...)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key, tt.opts...)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainKey to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+		t.Run("string-string maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]string
+				key        string
+				opts       []Option
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should show custom error message on failure",
+					mapValue:   map[string]string{"secret_key": "value"},
+					key:        "secret_key",
+					opts:       []Option{WithMessage("Configuration should not contain sensitive keys")},
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						if !strings.Contains(message, "Configuration should not contain sensitive keys") {
+							t.Errorf("Expected custom error message, got: %s", message)
+						}
+						if !strings.Contains(message, "Expected map to NOT contain key, but key was found:") {
+							t.Errorf("Expected standard error message, got: %s", message)
+						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key, tt.opts...)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			key        interface{}
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should handle nil map",
-				mapValue:   func() interface{} { var m map[string]int; return m }(),
-				key:        "test",
-				shouldFail: false,
-			},
-			{
-				name:       "should handle zero value keys",
-				mapValue:   map[int]string{0: "zero", 1: "one"},
-				key:        2,
-				shouldFail: false,
-			},
-			{
-				name:       "should fail with zero value key that exists",
-				mapValue:   map[int]string{0: "zero", 1: "one"},
-				key:        0,
-				shouldFail: true,
-			},
-			{
-				name:       "should handle empty string keys",
-				mapValue:   map[string]int{"": 42, "test": 1},
-				key:        "missing",
-				shouldFail: false,
-			},
-			{
-				name:       "should fail with empty string key that exists",
-				mapValue:   map[string]int{"": 42, "test": 1},
-				key:        "",
-				shouldFail: true,
-			},
-			{
-				name:       "should fail for non-map type",
-				mapValue:   []string{"not", "a", "map"},
-				key:        "key",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "expected a map, but got []string") {
-						t.Errorf("Expected error for non-map type, got: %s", message)
-					}
+		t.Run("nil map handling", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				key        string
+				shouldFail bool
+			}{
+				{
+					name:       "should handle nil map",
+					mapValue:   nil,
+					key:        "test",
+					shouldFail: false,
 				},
-			},
-		}
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainKey(mockT, tt.mapValue, tt.key)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainKey to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+		t.Run("zero value keys", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[int]string
+				key        int
+				shouldFail bool
+			}{
+				{
+					name:       "should handle zero value keys that don't exist",
+					mapValue:   map[int]string{0: "zero", 1: "one"},
+					key:        2,
+					shouldFail: false,
+				},
+				{
+					name:       "should fail with zero value key that exists",
+					mapValue:   map[int]string{0: "zero", 1: "one"},
+					key:        0,
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("empty string keys", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				key        string
+				shouldFail bool
+			}{
+				{
+					name:       "should handle missing keys when empty string exists",
+					mapValue:   map[string]int{"": 42, "test": 1},
+					key:        "missing",
+					shouldFail: false,
+				},
+				{
+					name:       "should fail with empty string key that exists",
+					mapValue:   map[string]int{"": 42, "test": 1},
+					key:        "",
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("complex key types", func(t *testing.T) {
+			type ComplexKey struct {
+				ID   int
+				Name string
+			}
+
+			tests := []struct {
+				name       string
+				mapValue   map[ComplexKey]bool
+				key        ComplexKey
+				shouldFail bool
+			}{
+				{
+					name:       "should handle complex struct keys that don't exist",
+					mapValue:   map[ComplexKey]bool{{ID: 1, Name: "test"}: true},
+					key:        ComplexKey{ID: 2, Name: "other"},
+					shouldFail: false,
+				},
+				{
+					name:       "should fail with complex struct key that exists",
+					mapValue:   map[ComplexKey]bool{{ID: 1, Name: "test"}: true},
+					key:        ComplexKey{ID: 1, Name: "test"},
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("pointer keys", func(t *testing.T) {
+			key1 := "test1"
+			key2 := "test2"
+			key3 := "test3"
+
+			tests := []struct {
+				name       string
+				mapValue   map[*string]int
+				key        *string
+				shouldFail bool
+			}{
+				{
+					name:       "should handle pointer keys that don't exist",
+					mapValue:   map[*string]int{&key1: 1, &key2: 2},
+					key:        &key3,
+					shouldFail: false,
+				},
+				{
+					name:       "should fail with pointer key that exists",
+					mapValue:   map[*string]int{&key1: 1, &key2: 2},
+					key:        &key1,
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainKey(mockT, tt.mapValue, tt.key)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainKey to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainKey to pass, but it failed: %s", mockT.message)
+					}
+				})
+			}
+		})
 	})
 }
 
@@ -3612,259 +3752,439 @@ func TestNotContainValue(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			value      interface{}
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should pass when value does not exist",
-				mapValue:   map[string]int{"name": 1, "age": 2},
-				value:      3,
-				shouldFail: false,
-			},
-			{
-				name:       "should pass with string values when value does not exist",
-				mapValue:   map[int]string{1: "one", 2: "two"},
-				value:      "three",
-				shouldFail: false,
-			},
-			{
-				name:       "should pass with empty map",
-				mapValue:   map[string]int{},
-				value:      42,
-				shouldFail: false,
-			},
-			{
-				name:       "should fail when value exists",
-				mapValue:   map[string]int{"name": 1, "age": 30, "score": 100},
-				value:      30,
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected map to NOT contain value, but it was found:",
-						"Map Type : map[string]int",
-						"Map Size : 3 entries",
-						"Found Value: 30",
-						`Found At: key "age"`,
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
-						}
-					}
+		t.Run("string-int maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				value      int
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass when value does not exist",
+					mapValue:   map[string]int{"name": 1, "age": 2},
+					value:      3,
+					shouldFail: false,
 				},
-			},
-			{
-				name:       "should fail when string value exists",
-				mapValue:   map[int]string{1: "admin", 2: "user", 3: "guest"},
-				value:      "user",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected map to NOT contain value, but it was found:",
-						"Map Type : map[int]string",
-						`Found Value: "user"`,
-						"Found At: key 2",
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
-						}
-					}
+				{
+					name:       "should pass with empty map",
+					mapValue:   map[string]int{},
+					value:      42,
+					shouldFail: false,
 				},
-			},
-		}
+				{
+					name:       "should fail when value exists",
+					mapValue:   map[string]int{"name": 1, "age": 30, "score": 100},
+					value:      30,
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						expectedParts := []string{
+							"Expected map to NOT contain value, but it was found:",
+							"Map Type : map[string]int",
+							"Map Size : 3 entries",
+							"Found Value: 30",
+							`Found At: key "age"`,
+						}
+						for _, part := range expectedParts {
+							if !strings.Contains(message, part) {
+								t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+							}
+						}
+					},
+				},
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainValue(mockT, tt.mapValue, tt.value)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainValue to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+		t.Run("int-string maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[int]string
+				value      string
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass when string value does not exist",
+					mapValue:   map[int]string{1: "one", 2: "two"},
+					value:      "three",
+					shouldFail: false,
+				},
+				{
+					name:       "should fail when string value exists",
+					mapValue:   map[int]string{1: "admin", 2: "user", 3: "guest"},
+					value:      "user",
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						expectedParts := []string{
+							"Expected map to NOT contain value, but it was found:",
+							"Map Type : map[int]string",
+							`Found Value: "user"`,
+							"Found At: key 2",
+						}
+						for _, part := range expectedParts {
+							if !strings.Contains(message, part) {
+								t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+							}
+						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value)
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			value      interface{}
-			opts       []Option
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should pass with custom message",
-				mapValue:   map[string]int{"score": 100},
-				value:      50,
-				opts:       []Option{WithMessage("Score should not be 50")},
-				shouldFail: false,
-			},
-			{
-				name:       "should show custom error message on failure",
-				mapValue:   map[string]string{"status": "deleted"},
-				value:      "deleted",
-				opts:       []Option{WithMessage("User should not have deleted status")},
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "User should not have deleted status") {
-						t.Errorf("Expected custom error message, got: %s", message)
-					}
-					if !strings.Contains(message, "Expected map to NOT contain value, but it was found:") {
-						t.Errorf("Expected standard error message, got: %s", message)
-					}
+		t.Run("string to int map", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				value      int
+				opts       []Option
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass with custom message",
+					mapValue:   map[string]int{"score": 100},
+					value:      50,
+					opts:       []Option{WithMessage("Score should not be 50")},
+					shouldFail: false,
 				},
-			},
-		}
+				{
+					name:       "should show custom error message on failure",
+					mapValue:   map[string]int{"score": 100, "level": 5},
+					value:      100,
+					opts:       []Option{WithMessage("Score should not be 100")},
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						if !strings.Contains(message, "Score should not be 100") {
+							t.Errorf("Expected custom error message, got: %s", message)
+						}
+						if !strings.Contains(message, "Expected map to NOT contain value, but it was found:") {
+							t.Errorf("Expected standard error message, got: %s", message)
+						}
+					},
+				},
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainValue to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("string to string map", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]string
+				value      string
+				opts       []Option
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass with custom message",
+					mapValue:   map[string]string{"status": "active"},
+					value:      "deleted",
+					opts:       []Option{WithMessage("User should not have deleted status")},
+					shouldFail: false,
+				},
+				{
+					name:       "should show custom error message on failure",
+					mapValue:   map[string]string{"status": "deleted"},
+					value:      "deleted",
+					opts:       []Option{WithMessage("User should not have deleted status")},
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						if !strings.Contains(message, "User should not have deleted status") {
+							t.Errorf("Expected custom error message, got: %s", message)
+						}
+						if !strings.Contains(message, "Expected map to NOT contain value, but it was found:") {
+							t.Errorf("Expected standard error message, got: %s", message)
+						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
+
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("int to string map", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[int]string
+				value      string
+				opts       []Option
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should pass with custom message for int keys",
+					mapValue:   map[int]string{1: "first", 2: "second"},
+					value:      "third",
+					opts:       []Option{WithMessage("Should not contain 'third'")},
+					shouldFail: false,
+				},
+				{
+					name:       "should show custom error message on failure with int keys",
+					mapValue:   map[int]string{1: "first", 2: "second"},
+					value:      "first",
+					opts:       []Option{WithMessage("Should not contain 'first'")},
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						if !strings.Contains(message, "Should not contain 'first'") {
+							t.Errorf("Expected custom error message, got: %s", message)
+						}
+						if !strings.Contains(message, "Expected map to NOT contain value, but it was found:") {
+							t.Errorf("Expected standard error message, got: %s", message)
+						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
+
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			mapValue   interface{}
-			value      interface{}
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "should handle nil map",
-				mapValue:   func() interface{} { var m map[string]int; return m }(),
-				value:      42,
-				shouldFail: false,
-			},
-			{
-				name:       "should handle zero value values",
-				mapValue:   map[string]int{"zero": 0, "one": 1},
-				value:      2,
-				shouldFail: false,
-			},
-			{
-				name:       "should fail with zero value that exists",
-				mapValue:   map[string]int{"zero": 0, "one": 1},
-				value:      0,
-				shouldFail: true,
-			},
-			{
-				name:       "should handle empty string values",
-				mapValue:   map[int]string{1: "", 2: "test"},
-				value:      "missing",
-				shouldFail: false,
-			},
-			{
-				name:       "should fail with empty string value that exists",
-				mapValue:   map[int]string{1: "", 2: "test"},
-				value:      "",
-				shouldFail: true,
-			},
-			{
-				name: "should handle complex struct values",
-				mapValue: map[string]struct{ Name string }{
-					"user1": {Name: "Alice"},
-					"user2": {Name: "Bob"},
+		t.Run("string-int maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[string]int
+				value      int
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should handle nil map",
+					mapValue:   nil,
+					value:      42,
+					shouldFail: false,
 				},
-				value:      struct{ Name string }{Name: "Charlie"},
-				shouldFail: false,
-			},
-			{
-				name: "should fail with complex struct value that exists",
-				mapValue: map[string]struct{ Name string }{
-					"user1": {Name: "Alice"},
-					"user2": {Name: "Bob"},
+				{
+					name:       "should handle zero value values",
+					mapValue:   map[string]int{"zero": 0, "one": 1},
+					value:      2,
+					shouldFail: false,
 				},
-				value:      struct{ Name string }{Name: "Bob"},
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected map to NOT contain value, but it was found:",
-						"Map Type : map[string]struct { Name string }",
-						`Found Value: struct{Name: "Bob"}`,
-						`Found At: key "user2"`,
-					}
-					// Should NOT contain the verbose context section
-					unexpectedParts := []string{
-						"Context:",
-						"← Found here",
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+				{
+					name:       "should fail with zero value that exists",
+					mapValue:   map[string]int{"zero": 0, "one": 1},
+					value:      0,
+					shouldFail: true,
+				},
+				{
+					name:       "should handle multiple keys with same value",
+					mapValue:   map[string]int{"first": 42, "second": 42, "third": 100},
+					value:      42,
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						if !strings.Contains(message, "Found At: keys") {
+							t.Errorf("Expected message to mention multiple keys, got: %s", message)
 						}
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value)
+
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
 					}
-					for _, part := range unexpectedParts {
-						if strings.Contains(message, part) {
-							t.Errorf("Expected message to NOT contain %q, but it was found in:\n%s", part, message)
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("int-string maps", func(t *testing.T) {
+			tests := []struct {
+				name       string
+				mapValue   map[int]string
+				value      string
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name:       "should handle empty string values",
+					mapValue:   map[int]string{1: "", 2: "test"},
+					value:      "missing",
+					shouldFail: false,
+				},
+				{
+					name:       "should fail with empty string value that exists",
+					mapValue:   map[int]string{1: "", 2: "test"},
+					value:      "",
+					shouldFail: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value)
+
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
+
+		t.Run("complex struct values", func(t *testing.T) {
+			type User struct{ Name string }
+
+			tests := []struct {
+				name       string
+				mapValue   map[string]User
+				value      User
+				shouldFail bool
+				errorCheck func(t *testing.T, message string)
+			}{
+				{
+					name: "should handle complex struct values",
+					mapValue: map[string]User{
+						"user1": {Name: "Alice"},
+						"user2": {Name: "Bob"},
+					},
+					value:      User{Name: "Charlie"},
+					shouldFail: false,
+				},
+				{
+					name: "should fail with complex struct value that exists",
+					mapValue: map[string]User{
+						"user1": {Name: "Alice"},
+						"user2": {Name: "Bob"},
+					},
+					value:      User{Name: "Bob"},
+					shouldFail: true,
+					errorCheck: func(t *testing.T, message string) {
+						expectedParts := []string{
+							"Expected map to NOT contain value, but it was found:",
+							"Map Type : map[string]assert.User", // Note: type name may vary
+							`Found At: key "user2"`,
 						}
-					}
+						// Should NOT contain the verbose context section
+						unexpectedParts := []string{
+							"Context:",
+							"← Found here",
+						}
+						for _, part := range expectedParts {
+							if !strings.Contains(message, part) {
+								t.Errorf("Expected message to contain %q, but it was not found in:\n%s", part, message)
+							}
+						}
+						for _, part := range unexpectedParts {
+							if strings.Contains(message, part) {
+								t.Errorf("Expected message to NOT contain %q, but it was found in:\n%s", part, message)
+							}
+						}
+					},
 				},
-			},
-			{
-				name:       "should fail for non-map type",
-				mapValue:   "not a map",
-				value:      "value",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "expected a map, but got string") {
-						t.Errorf("Expected error for non-map type, got: %s", message)
-					}
-				},
-			},
-			{
-				name:       "should handle multiple keys with same value",
-				mapValue:   map[string]int{"first": 42, "second": 42, "third": 100},
-				value:      42,
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Found At: keys") {
-						t.Errorf("Expected message to mention multiple keys, got: %s", message)
-					}
-				},
-			},
-		}
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				mockT := &mockT{}
-				NotContainValue(mockT, tt.mapValue, tt.value)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					mockT := &mockT{}
+					NotContainValue(mockT, tt.mapValue, tt.value)
 
-				if tt.shouldFail && !mockT.Failed() {
-					t.Fatal("Expected NotContainValue to fail, but it passed")
-				}
-				if !tt.shouldFail && mockT.Failed() {
-					t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
-				}
-				if tt.errorCheck != nil && mockT.Failed() {
-					tt.errorCheck(t, mockT.message)
-				}
-			})
-		}
+					if tt.shouldFail && !mockT.Failed() {
+						t.Fatal("Expected NotContainValue to fail, but it passed")
+					}
+					if !tt.shouldFail && mockT.Failed() {
+						t.Errorf("Expected NotContainValue to pass, but it failed: %s", mockT.message)
+					}
+					if tt.errorCheck != nil && mockT.Failed() {
+						tt.errorCheck(t, mockT.message)
+					}
+				})
+			}
+		})
 	})
 }
