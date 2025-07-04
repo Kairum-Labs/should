@@ -1,22 +1,27 @@
-name: Compatibility
+name: Compatibility Tests
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Saturdays at 3 AM UTC
+    - cron: "0 3 * * 6"
 
 jobs:
-  compatibility:
-    name: Go Version Compatibility
-    runs-on: ubuntu-latest
-
+  go-compatibility:
+    name: Go ${{ matrix.go-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
         go-version: ["1.21", "1.22", "1.23", "1.24"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - name: Check out code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go ${{ matrix.go-version }}
@@ -28,7 +33,7 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build ./...
+        run: go build -v ./...
 
       - name: Run tests
         run: go test -v ./...
@@ -36,12 +41,65 @@ jobs:
       - name: Run tests with race detector
         run: go test -race -short ./...
 
+  cross-platform:
+    name: Cross Platform (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -v ./...
+
+  module-compatibility:
+    name: Module Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Check go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Check for vulnerabilities
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Run project tests
+        run: go test -v ./...
+
   minimum-version:
     name: Minimum Go Version Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Check out code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go 1.21 (minimum)
@@ -58,25 +116,3 @@ jobs:
           go mod download
           go build ./...
           go test ./... -short
-
-      - name: Test basic API usage
-        run: |
-          cat > compatibility_test.go << 'EOF'
-          package main
-
-          import (
-              "testing"
-              "github.com/Kairum-Labs/should/assert"
-          )
-
-          func TestBasicCompatibility(t *testing.T) {
-              assert.BeTrue(t, true)
-              assert.BeEqual(t, 42, 42)
-              assert.NotBeEmpty(t, "hello")
-              assert.Contain(t, []int{1, 2, 3}, 2)
-              assert.ContainKey(t, map[string]int{"test": 1}, "test")
-              assert.ContainValue(t, map[string]int{"test": 1}, 1)
-          }
-          EOF
-
-          go test -v compatibility_test.go
