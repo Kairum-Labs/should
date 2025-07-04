@@ -1180,37 +1180,34 @@ func TestBeLessThan_WithFloats(t *testing.T) {
 
 // === Tests for error handling ===
 
-func TestBeGreaterThan_Fails_WithNonNumericActual(t *testing.T) {
+func TestBeGreaterThan_Succeeds_WithStrings(t *testing.T) {
 	t.Parallel()
 
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterThan(t, "hello", "world")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a number for actual value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
+	// Strings are now supported in BeGreaterThan
+	BeGreaterThan(t, "zebra", "apple")
+	BeGreaterThan(t, "hello", "goodbye")
 }
 
-func TestBeLessThan_Fails_WithNonNumericExpected(t *testing.T) {
+func TestBeLessThan_FailsWithStringComparison(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeLessThan(t, "hello", "world")
+		BeLessThan(t, "zebra", "apple")
 	})
 
 	if !failed {
 		t.Fatal("Expected test to fail, but it passed")
 	}
 
-	expected := "expected a number for actual value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	expectedParts := []string{
+		"Expected value to be less than threshold:",
+		"Value     : zebra",
+		"Threshold : apple",
+	}
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
 	}
 }
 
@@ -1389,21 +1386,12 @@ func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
 	}
 }
 
-func TestBeGreaterOrEqualThan_Fails_WithNonNumericTypes(t *testing.T) {
+func TestBeGreaterOrEqualThan_SupportsStrings(t *testing.T) {
 	t.Parallel()
 
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, "hello", "world")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a number for actual value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
+	// Strings are now supported in BeGreaterOrEqualThan
+	BeGreaterOrEqualThan(t, "zebra", "apple")
+	BeGreaterOrEqualThan(t, "hello", "hello")
 }
 
 func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
@@ -1427,6 +1415,255 @@ func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
 			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
 		}
 	}
+}
+
+// === Tests for BeLessOrEqualThan ===
+
+func TestBeLessOrEqualThan(t *testing.T) {
+	t.Run("Basic functionality", func(t *testing.T) {
+		// Integer tests
+		BeLessOrEqualThan(t, 5, 10)
+		BeLessOrEqualThan(t, 10, 10)
+
+		// Float tests
+		BeLessOrEqualThan(t, 2.71, 3.14)
+		BeLessOrEqualThan(t, 3.14, 3.14)
+
+		// Test failures
+		t.Run("Fails when actual is greater than expected", func(t *testing.T) {
+			failed, message := assertFails(t, func(t testing.TB) {
+				BeLessOrEqualThan(t, 15, 10)
+			})
+
+			if !failed {
+				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+			}
+
+			expectedParts := []string{
+				"Expected value to be less than or equal to threshold:",
+				"Value     : 15",
+				"Threshold : 10",
+				"Difference: +5 (value is 5 greater)",
+				"Hint      : Value should be smaller than or equal to threshold",
+			}
+			for _, part := range expectedParts {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+				}
+			}
+		})
+
+		t.Run("Fails with float precision", func(t *testing.T) {
+			failed, message := assertFails(t, func(t testing.TB) {
+				BeLessOrEqualThan(t, 3.15, 3.14)
+			})
+
+			if !failed {
+				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+			}
+
+			expectedParts := []string{
+				"Expected value to be less than or equal to threshold:",
+				"Value     : 3.15",
+				"Threshold : 3.14",
+				"Difference: +0.00",
+			}
+			for _, part := range expectedParts {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+				}
+			}
+		})
+	})
+
+	t.Run("String comparisons", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Success when string is less than expected",
+				actual:     "apple",
+				expected:   "banana",
+				shouldFail: false,
+			},
+			{
+				name:       "Success when strings are equal",
+				actual:     "apple",
+				expected:   "apple",
+				shouldFail: false,
+			},
+			{
+				name:       "Fails when string is greater than expected",
+				actual:     "zebra",
+				expected:   "apple",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					expectedParts := []string{
+						"Expected value to be less than or equal to threshold:",
+						"Value     : zebra",
+						"Threshold : apple",
+					}
+					for _, part := range expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+						}
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				if tt.shouldFail {
+					failed, message := assertFails(t, func(t testing.TB) {
+						BeLessOrEqualThan(t, tt.actual, tt.expected)
+					})
+
+					if !failed {
+						t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+					}
+					if tt.errorCheck != nil {
+						tt.errorCheck(t, message)
+					}
+				} else {
+					BeLessOrEqualThan(t, tt.actual, tt.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		// Success with custom message
+		BeLessOrEqualThan(t, 5, 10, WithMessage("Value should be within limit"))
+
+		// Fails with custom error message
+		t.Run("Fails with custom error message", func(t *testing.T) {
+			failed, message := assertFails(t, func(t testing.TB) {
+				BeLessOrEqualThan(t, 100, 50, WithMessage("Score should not exceed maximum"))
+			})
+
+			if !failed {
+				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+			}
+
+			expectedParts := []string{
+				"Score should not exceed maximum",
+				"Expected value to be less than or equal to threshold:",
+				"Value     : 100",
+				"Threshold : 50",
+			}
+			for _, part := range expectedParts {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+				}
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		// Success with zero values
+		BeLessOrEqualThan(t, 0, 0)
+
+		// Success with negative numbers
+		BeLessOrEqualThan(t, -10, -5)
+
+		// Success with very small floats
+		BeLessOrEqualThan(t, 0.0001, 0.0002)
+
+		// Success with empty strings
+		BeLessOrEqualThan(t, "", "")
+
+		// Success when first string is empty
+		BeLessOrEqualThan(t, "", "a")
+
+		// Fails with negative comparison
+		t.Run("Fails with negative comparison", func(t *testing.T) {
+			failed, message := assertFails(t, func(t testing.TB) {
+				BeLessOrEqualThan(t, -5, -10)
+			})
+
+			if !failed {
+				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+			}
+
+			expectedParts := []string{
+				"Expected value to be less than or equal to threshold:",
+				"Value     : -5",
+				"Threshold : -10",
+				"Difference: +5 (value is 5 greater)",
+			}
+			for _, part := range expectedParts {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+				}
+			}
+		})
+	})
+
+	t.Run("Type compatibility", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			testFunc   func()
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name: "Success with different integer types",
+				testFunc: func() {
+					BeLessOrEqualThan(t, int8(5), int8(10))
+					BeLessOrEqualThan(t, int16(5), int16(10))
+					BeLessOrEqualThan(t, int32(5), int32(10))
+					BeLessOrEqualThan(t, int64(5), int64(10))
+				},
+				shouldFail: false,
+			},
+			{
+				name: "Success with different unsigned integer types",
+				testFunc: func() {
+					BeLessOrEqualThan(t, uint8(5), uint8(10))
+					BeLessOrEqualThan(t, uint16(5), uint16(10))
+					BeLessOrEqualThan(t, uint32(5), uint32(10))
+					BeLessOrEqualThan(t, uint64(5), uint64(10))
+				},
+				shouldFail: false,
+			},
+			{
+				name: "Success with different float types",
+				testFunc: func() {
+					BeLessOrEqualThan(t, float32(2.5), float32(3.5))
+					BeLessOrEqualThan(t, float64(2.5), float64(3.5))
+				},
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				if tt.shouldFail {
+					failed, message := assertFails(t, func(t testing.TB) {
+						tt.testFunc()
+					})
+
+					if !failed {
+						t.Fatal("Expected test function to fail, but it passed")
+					}
+					if tt.errorCheck != nil {
+						tt.errorCheck(t, message)
+					}
+				} else {
+					tt.testFunc()
+				}
+			})
+		}
+	})
 }
 
 // === Tests for edge cases ===
@@ -2173,21 +2410,12 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 
 // === Tests for BeLessThan error handling ===
 
-func TestBeLessThan_Fails_WithNonNumericActual(t *testing.T) {
+func TestBeLessThan_Succeeds_WithStrings(t *testing.T) {
 	t.Parallel()
 
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeLessThan(t, "hello", "world")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a number for actual value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
+	// Strings are now supported in BeLessThan with lexicographic ordering
+	BeLessThan(t, "apple", "zebra")
+	BeLessThan(t, "goodbye", "hello")
 }
 
 // === Tests for StartsWith ===
@@ -2412,6 +2640,68 @@ func TestStartsWith(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("String truncation", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should truncate actual string when longer than 56 characters",
+				actual:     "This is a very long string that exceeds the 56 character limit for display purposes in error messages",
+				expected:   "Different",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "... (truncated)") {
+						t.Errorf("Expected message to contain truncated actual string, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "should truncate expected string when longer than 56 characters",
+				actual:     "Short",
+				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "... (truncated)") {
+						t.Errorf("Expected message to contain truncated expected string, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "should truncate both strings when both are longer than 56 characters",
+				actual:     "This is a very long actual string that exceeds the 56 character limit for display purposes in error messages",
+				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					truncatedOccurrences := strings.Count(message, "... (truncated)")
+					if truncatedOccurrences < 2 {
+						t.Errorf("Expected at least 2 truncated strings in message, got %d occurrences in: %s", truncatedOccurrences, message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				StartsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected StartsWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
 }
 
 // === Tests for EndsWith ===
@@ -2589,6 +2879,71 @@ func TestEndsWith(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("String truncation", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should truncate actual string when longer than 56 characters",
+				actual:     "This is a very long string that exceeds the 56 character limit for display purposes in error messages",
+				expected:   "Different",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "... (truncated)") {
+						t.Errorf("Expected message to contain truncated actual string, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "should truncate expected string when longer than 56 characters",
+				actual:     "Short",
+				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "... (truncated)") {
+						t.Errorf("Expected message to contain truncated expected string, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "should truncate both strings when both are longer than 56 characters",
+				actual:     "This is a very long actual string that exceeds the 56 character limit for display purposes in error messages",
+				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					truncatedOccurrences := strings.Count(message, "... (truncated)")
+					if truncatedOccurrences < 2 {
+						t.Errorf("Expected at least 2 truncated strings in message, got %d occurrences in: %s", truncatedOccurrences, message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				EndsWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
 }
 
 func TestBeLessThan_WithCustomMessage(t *testing.T) {
@@ -2616,21 +2971,12 @@ func TestBeLessThan_WithCustomMessage(t *testing.T) {
 
 // === Tests for BeGreaterThan error handling ===
 
-func TestBeGreaterThan_Fails_WithNonNumericExpected(t *testing.T) {
+func TestBeGreaterThan_SupportsStringComparisons(t *testing.T) {
 	t.Parallel()
 
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterThan(t, "hello", "world")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a number for actual value, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
+	// Strings are now supported in BeGreaterThan with lexicographic ordering
+	BeGreaterThan(t, "zebra", "apple")
+	BeGreaterThan(t, "hello", "goodbye")
 }
 
 // === Tests for BeEqual with complex types and custom messages ===
@@ -2693,31 +3039,51 @@ func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
 func TestNumericTypeConversions_AllTypes(t *testing.T) {
 	t.Parallel()
 
-	// Test all supported numeric types for better toFloat64 coverage
-	testCases := []struct {
-		name     string
-		value    interface{}
-		expected float64
-	}{
-		{"int8", int8(10), 10.0},
-		{"int16", int16(20), 20.0},
-		{"int32", int32(30), 30.0},
-		{"int64", int64(40), 40.0},
-		{"uint8", uint8(50), 50.0},
-		{"uint16", uint16(60), 60.0},
-		{"uint32", uint32(70), 70.0},
-		{"uint64", uint64(80), 80.0},
-		{"uintptr", uintptr(90), 90.0},
-		{"float32", float32(3.14), 3.140000104904175}, // float32 precision
-		{"float64", float64(2.718), 2.718},
-	}
+	// Test all supported numeric types for better compareOrderable coverage
+	t.Run("int8", func(t *testing.T) {
+		BeGreaterThan(t, int8(10), int8(9))
+	})
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// This will exercise the toFloat64 function through BeGreaterThan
-			BeGreaterThan(t, tc.value, interface{}(tc.expected-1))
-		})
-	}
+	t.Run("int16", func(t *testing.T) {
+		BeGreaterThan(t, int16(20), int16(19))
+	})
+
+	t.Run("int32", func(t *testing.T) {
+		BeGreaterThan(t, int32(30), int32(29))
+	})
+
+	t.Run("int64", func(t *testing.T) {
+		BeGreaterThan(t, int64(40), int64(39))
+	})
+
+	t.Run("uint8", func(t *testing.T) {
+		BeGreaterThan(t, uint8(50), uint8(49))
+	})
+
+	t.Run("uint16", func(t *testing.T) {
+		BeGreaterThan(t, uint16(60), uint16(59))
+	})
+
+	t.Run("uint32", func(t *testing.T) {
+		BeGreaterThan(t, uint32(70), uint32(69))
+	})
+
+	t.Run("uint64", func(t *testing.T) {
+		BeGreaterThan(t, uint64(80), uint64(79))
+	})
+
+	t.Run("float32", func(t *testing.T) {
+		BeGreaterThan(t, float32(3.14), float32(3.13))
+	})
+
+	t.Run("float64", func(t *testing.T) {
+		BeGreaterThan(t, float64(2.718), float64(2.717))
+	})
+
+	// Test string comparisons too (new feature!)
+	t.Run("string", func(t *testing.T) {
+		BeGreaterThan(t, "zebra", "apple")
+	})
 }
 
 func TestIsNumericType_Coverage(t *testing.T) {

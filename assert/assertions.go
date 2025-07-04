@@ -272,7 +272,7 @@ func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides detailed
+// This assertion works with all orderable types (numeric types and strings) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -284,26 +284,19 @@ func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeGreaterThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
+//	should.BeGreaterThan(t, "zebra", "apple")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeGreaterThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
-	actualV := reflect.ValueOf(actual)
-	expectedV := reflect.ValueOf(expected)
 
-	actualAsFloat, actualOk := toFloat64(actualV)
-	expectedAsFloat, expectedOk := toFloat64(expectedV)
-
-	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", actual)
+	result, err := compareOrderable(actual, expected)
+	if err != nil {
+		fail(t, "cannot compare values: %v", err)
 		return
 	}
 
-	if !expectedOk {
-		fail(t, "expected a number for expected value, but got %T", expected)
-		return
-	}
-
-	if actualAsFloat <= expectedAsFloat {
+	if result <= 0 {
 		cfg := processOptions(opts...)
 		errorMsg := formatNumericComparisonError(actual, expected, "greater")
 		if cfg.Message != "" {
@@ -316,7 +309,7 @@ func BeGreaterThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 
 // BeLessThan reports a test failure if the value is not less than the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides detailed
+// This assertion works with all orderable types (numeric types and strings) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -328,26 +321,19 @@ func BeGreaterThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeLessThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
+//	should.BeLessThan(t, "apple", "zebra")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeLessThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
-	actualV := reflect.ValueOf(actual)
-	expectedV := reflect.ValueOf(expected)
 
-	actualAsFloat, actualOk := toFloat64(actualV)
-	expectedAsFloat, expectedOk := toFloat64(expectedV)
-
-	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", actual)
+	result, err := compareOrderable(actual, expected)
+	if err != nil {
+		fail(t, "cannot compare values: %v", err)
 		return
 	}
 
-	if !expectedOk {
-		fail(t, "expected a number for expected value, but got %T", expected)
-		return
-	}
-
-	if actualAsFloat >= expectedAsFloat {
+	if result >= 0 {
 		cfg := processOptions(opts...)
 		errorMsg := formatNumericComparisonError(actual, expected, "less")
 		if cfg.Message != "" {
@@ -360,7 +346,7 @@ func BeLessThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 
 // BeGreaterOrEqualThan reports a test failure if the value is not greater than or equal to the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides
+// This assertion works with all orderable types (numeric types and strings) and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -371,32 +357,61 @@ func BeLessThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
 //
 //	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeGreaterOrEqualThan[T any](t testing.TB, actual T, expected T, opts ...Option) {
+//	should.BeGreaterOrEqualThan(t, "zebra", "apple")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeGreaterOrEqualThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
-	actualV := reflect.ValueOf(actual)
-	expectedV := reflect.ValueOf(expected)
 
-	actualAsFloat, actualOk := toFloat64(actualV)
-	expectedAsFloat, expectedOk := toFloat64(expectedV)
-
-	if !actualOk {
-		fail(t, "expected a number for actual value, but got %T", actual)
+	result, err := compareOrderable(actual, expected)
+	if err != nil {
+		fail(t, "cannot compare values: %v", err)
 		return
 	}
 
-	if !expectedOk {
-		fail(t, "expected a number for expected value, but got %T", expected)
-		return
-	}
-
-	if actualAsFloat < expectedAsFloat {
+	if result < 0 {
 		cfg := processOptions(opts...)
 		customMsg := cfg.Message
 		if customMsg != "" {
 			customMsg += "\n"
 		}
 		fail(t, "%sExpected %v to be greater or equal than %v", customMsg, actual, expected)
+	}
+}
+
+// BeLessOrEqualThan reports a test failure if the value is not less than or equal to the expected threshold.
+//
+// This assertion works with all orderable types (numeric types and strings) and provides
+// detailed error messages when the assertion fails. It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeLessOrEqualThan(t, 5, 10)
+//
+//	should.BeLessOrEqualThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
+//
+//	should.BeLessOrEqualThan(t, 3.14, 3.14)
+//
+//	should.BeLessOrEqualThan(t, "apple", "zebra")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeLessOrEqualThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+	t.Helper()
+
+	result, err := compareOrderable(actual, expected)
+	if err != nil {
+		fail(t, "cannot compare values: %v", err)
+		return
+	}
+
+	if result > 0 {
+		cfg := processOptions(opts...)
+		errorMsg := formatNumericComparisonError(actual, expected, "lessOrEqual")
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
+		}
 	}
 }
 
@@ -607,7 +622,7 @@ func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K
 //	should.ContainValue(t, userMap, 3)
 //
 //	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
-func ContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
+func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 
 	result := containsMapValue(actual, expectedValue)
@@ -743,7 +758,7 @@ func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKe
 //	should.NotContainValue(t, userMap, 2) // This will fail
 //
 //	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
-func NotContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
+func NotContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 
 	result := containsMapValue(actual, expectedValue)
@@ -1099,6 +1114,44 @@ func toFloat64(v reflect.Value) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// compareOrderable compares two values of orderable types.
+// Returns:
+// - -1 if a < b
+// - 0 if a == b
+// - 1 if a > b
+// - error if types are incompatible
+func compareOrderable[T Orderable](a, b T) (int, error) {
+	aValue := reflect.ValueOf(a)
+	bValue := reflect.ValueOf(b)
+
+	// Handle string comparison
+	if aValue.Kind() == reflect.String && bValue.Kind() == reflect.String {
+		aStr := aValue.String()
+		bStr := bValue.String()
+		if aStr < bStr {
+			return -1, nil
+		} else if aStr > bStr {
+			return 1, nil
+		}
+		return 0, nil
+	}
+
+	// Handle numeric comparison
+	aFloat, aOk := toFloat64(aValue)
+	bFloat, bOk := toFloat64(bValue)
+
+	if !aOk || !bOk {
+		return 0, fmt.Errorf("cannot compare incompatible types")
+	}
+
+	if aFloat < bFloat {
+		return -1, nil
+	} else if aFloat > bFloat {
+		return 1, nil
+	}
+	return 0, nil
 }
 
 // isNumericType checks if a reflect.Type represents a numeric type

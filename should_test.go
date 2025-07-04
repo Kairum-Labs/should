@@ -289,6 +289,14 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("BeLessOrEqualThan passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeLessOrEqualThan(mockT, 10, 10)
+		if mockT.failed {
+			t.Error("BeLessOrEqualThan should pass")
+		}
+	})
+
 	// Contain
 	t.Run("Contain passes", func(t *testing.T) {
 		mockT := &mockTB{}

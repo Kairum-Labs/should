@@ -94,6 +94,14 @@ type Ordered interface {
 		~float32 | ~float64
 }
 
+// Orderable is a type constraint for types that can be ordered using comparison operators.
+// It includes all ordered numeric types and strings.
+type Orderable interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+		~float32 | ~float64 | ~string
+}
+
 // MapContainResult represents the result of checking if a map contains a key or value
 type MapContainResult struct {
 	Found        bool

@@ -143,7 +143,7 @@ func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides detailed
+// This assertion works with all orderable types (numeric types and strings) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -155,15 +155,17 @@ func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeGreaterThan[T any](t testing.TB, actual, expected T, opts ...Option) {
+//	should.BeGreaterThan(t, "zebra", "apple")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeGreaterThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeGreaterThan(t, actual, expected, opts...)
 }
 
 // BeLessThan reports a test failure if the value is not less than the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides detailed
+// This assertion works with all orderable types (numeric types and strings) and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -175,15 +177,17 @@ func BeGreaterThan[T any](t testing.TB, actual, expected T, opts ...Option) {
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeLessThan[T any](t testing.TB, actual, expected T, opts ...Option) {
+//	should.BeLessThan(t, "apple", "zebra")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeLessThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeLessThan(t, actual, expected, opts...)
 }
 
 // BeGreaterOrEqualThan reports a test failure if the value is not greater than or equal to the expected threshold.
 //
-// This assertion works with all numeric types (int, float, etc.) and provides
+// This assertion works with all orderable types (numeric types and strings) and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -194,10 +198,31 @@ func BeLessThan[T any](t testing.TB, actual, expected T, opts ...Option) {
 //
 //	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
 //
-// Only works with numeric types. Both values must be numeric.
-func BeGreaterOrEqualThan[T any](t testing.TB, actual, expected T, opts ...Option) {
+//	should.BeGreaterOrEqualThan(t, "zebra", "apple")
+//
+// Only works with orderable types (numeric types and strings). Both values must be of the same type.
+func BeGreaterOrEqualThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeGreaterOrEqualThan(t, actual, expected, opts...)
+}
+
+// BeLessOrEqualThan reports a test failure if the value is not less than or equal to the expected threshold.
+//
+// This assertion works with all orderable types (numeric types and strings) and provides
+// detailed error messages when the assertion fails. It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeLessOrEqualThan(t, 5, 10)
+//
+//	should.BeLessOrEqualThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
+//
+//	should.BeLessOrEqualThan(t, 3.14, 3.14)
+//
+//	should.BeLessOrEqualThan(t, "apple", "zebra")
+func BeLessOrEqualThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+	t.Helper()
+	assert.BeLessOrEqualThan(t, actual, expected, opts...)
 }
 
 // BeEqual reports a test failure if the two values are not deeply equal.
@@ -449,7 +474,7 @@ func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K
 //	should.ContainValue(t, userMap, 3)
 //
 //	should.ContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value must exist"))
-func ContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
+func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 	assert.ContainValue(t, actual, expectedValue, opts...)
 }
@@ -483,7 +508,7 @@ func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKe
 //	should.NotContainValue(t, userMap, 2) // This will fail
 //
 //	should.NotContainValue(t, map[int]string{1: "one", 2: "two"}, "three", should.WithMessage("Value should not exist"))
-func NotContainValue[K comparable, V comparable](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
+func NotContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedValue V, opts ...Option) {
 	t.Helper()
 	assert.NotContainValue(t, actual, expectedValue, opts...)
 }
