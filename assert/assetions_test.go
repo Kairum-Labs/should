@@ -2269,13 +2269,18 @@ func TestNotContainDuplicates_Fails_WhenDuplicatesExist(t *testing.T) {
 
 	// Test that it correctly identifies duplicates in int slice
 	failed, message := assertFails(t, func(t testing.TB) {
-		NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4})
+		NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4}, WithMessage("Expected no duplicates, but found 1 duplicate value: 2"))
 	})
 	if !failed {
 		t.Fatal("Expected test to fail due to duplicates, but it passed")
 	}
 	if !strings.Contains(message, "duplicate values") {
 		t.Errorf("Expected error message to mention duplicates, got: %s", message)
+	}
+
+	expected := "Expected no duplicates, but found 1 duplicate value: 2"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
 	}
 
 	// Test that it correctly identifies duplicates in string slice

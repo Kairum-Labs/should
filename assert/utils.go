@@ -1048,6 +1048,9 @@ func findUnhashableDuplicates(collection any) []duplicateGroup {
 	return duplicates
 }
 
+// findDuplicates finds duplicate values in a collection.
+// It uses a fast path for comparable types and a fallback for unhashable types.
+// It returns a slice of duplicate groups, each containing the value and its indexes.
 func findDuplicates(collection any) []duplicateGroup {
 	rv := reflect.ValueOf(collection)
 

@@ -684,7 +684,7 @@ func NotContain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 //
 //	should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4})
 //
-//	should.NotContainDuplicates(t, []User{User{Name: "John"}, User{Name: "John"}})
+//	should.NotContainDuplicates(t, []string{"John", "John"})
 //
 // If the input is not a slice or array, the test fails immediately.
 func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {

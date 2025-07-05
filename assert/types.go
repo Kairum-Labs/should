@@ -102,6 +102,11 @@ type Orderable interface {
 		~float32 | ~float64 | ~string
 }
 
+// SliceOrArray constraint that accepts only slices and arrays
+type SliceOrArray[T any] interface {
+	~[]T
+}
+
 // MapContainResult represents the result of checking if a map contains a key or value
 type MapContainResult struct {
 	Found        bool

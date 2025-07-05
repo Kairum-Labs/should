@@ -323,21 +323,6 @@ should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
 // Expected no duplicates, but found 2 duplicate values:
 // └─ 2 appears 2 times at indexes [1, 2]
 // └─ 3 appears 3 times at indexes [3, 4, 5]
-
-// Works with complex types
-type User struct {
-    ID   int
-    Name string
-}
-users := []User{
-    {ID: 1, Name: "John"},
-    {ID: 2, Name: "Jane"},
-    {ID: 1, Name: "John"}, // duplicate
-}
-should.NotContainDuplicates(t, users)
-// Output:
-// Expected no duplicates, but found 1 duplicate value:
-// └─ User{ID: 1, Name: "John"} appears 2 times at indexes [0, 2]
 ```
 
 ### Map Key and Value Assertions

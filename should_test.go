@@ -321,11 +321,20 @@ func TestWrappers(t *testing.T) {
 			t.Error("NotContain should pass")
 		}
 	})
+
 	t.Run("NotContain fails", func(t *testing.T) {
 		mockT := &mockTB{}
 		NotContain(mockT, []int{1, 2, 3}, 2)
 		if !mockT.failed {
 			t.Error("NotContain should fail")
+		}
+	})
+
+	t.Run("NotContainDuplicates passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		NotContainDuplicates(mockT, []int{1, 2, 3})
+		if mockT.failed {
+			t.Error("NotContainDuplicates should pass")
 		}
 	})
 

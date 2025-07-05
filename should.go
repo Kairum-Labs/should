@@ -479,6 +479,23 @@ func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedVal
 	assert.ContainValue(t, actual, expectedValue, opts...)
 }
 
+// NotContainDuplicates reports a test failure if the slice or array contains duplicate values.
+//
+// This assertion works with slices and arrays of any type and provides detailed
+// error messages showing where the duplicate values were found.
+//
+// Example:
+//
+//	should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4})
+//
+//	should.NotContainDuplicates(t, []string{"John", "John"})
+//
+// If the input is not a slice or array, the test fails immediately.
+func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {
+	t.Helper()
+	assert.NotContainDuplicates(t, actual, opts...)
+}
+
 // NotContainKey reports a test failure if the map contains the expected key.
 //
 // This assertion works with maps of any key type and provides detailed error messages
