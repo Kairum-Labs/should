@@ -344,23 +344,23 @@ func BeLessThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option)
 	}
 }
 
-// BeGreaterOrEqualThan reports a test failure if the value is not greater than or equal to the expected threshold.
+// BeGreaterOrEqualTo reports a test failure if the value is not greater than or equal to the expected threshold.
 //
 // This assertion works with all orderable types (numeric types and strings) and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
 //
-//	should.BeGreaterOrEqualThan(t, 10, 10)
+//	should.BeGreaterOrEqualTo(t, 10, 10)
 //
-//	should.BeGreaterOrEqualThan(t, user.Score, 0, should.WithMessage("Score cannot be negative"))
+//	should.BeGreaterOrEqualTo(t, user.Score, 0, should.WithMessage("Score cannot be negative"))
 //
-//	should.BeGreaterOrEqualThan(t, 3.14, 3.14)
+//	should.BeGreaterOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeGreaterOrEqualThan(t, "zebra", "apple")
+//	should.BeGreaterOrEqualTo(t, "zebra", "apple")
 //
 // Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeGreaterOrEqualThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+func BeGreaterOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
 	result, err := compareOrderable(actual, expected)
@@ -379,23 +379,23 @@ func BeGreaterOrEqualThan[T Orderable](t testing.TB, actual T, expected T, opts 
 	}
 }
 
-// BeLessOrEqualThan reports a test failure if the value is not less than or equal to the expected threshold.
+// BeLessOrEqualTo reports a test failure if the value is not less than or equal to the expected threshold.
 //
 // This assertion works with all orderable types (numeric types and strings) and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
 //
-//	should.BeLessOrEqualThan(t, 5, 10)
+//	should.BeLessOrEqualTo(t, 5, 10)
 //
-//	should.BeLessOrEqualThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
+//	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 //
-//	should.BeLessOrEqualThan(t, 3.14, 3.14)
+//	should.BeLessOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeLessOrEqualThan(t, "apple", "zebra")
+//	should.BeLessOrEqualTo(t, "apple", "zebra")
 //
 // Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeLessOrEqualThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+func BeLessOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
 	result, err := compareOrderable(actual, expected)

@@ -47,12 +47,12 @@ func TestBasicAssertions(t *testing.T) {
 	// Numeric comparisons
 	should.BeGreaterThan(t, 10, 5)
 	should.BeLessThan(t, 3, 7)
-	should.BeLessOrEqualThan(t, 5, 10)
+	should.BeLessOrEqualTo(t, 5, 10)
 
 	// Numeric comparisons with custom messages
 	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
-	should.BeGreaterOrEqualThan(t, score, 0, should.WithMessage("Score cannot be negative"))
-	should.BeLessOrEqualThan(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
+	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
+	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
@@ -157,7 +157,7 @@ should.BeLessThan(t, 1000000, 999999)
 //         Hint   : Value should be smaller than threshold
 
 // Less than or equal (fails when value is greater)
-should.BeLessOrEqualThan(t, 15, 10)
+should.BeLessOrEqualTo(t, 15, 10)
 // Output:
 // Expected value to be less than or equal to threshold:
 //         Value     : 15
@@ -166,7 +166,7 @@ should.BeLessOrEqualThan(t, 15, 10)
 //         Hint      : Value should be smaller than or equal to threshold
 
 // Less than or equal with strings
-should.BeLessOrEqualThan(t, "zebra", "apple")
+should.BeLessOrEqualTo(t, "zebra", "apple")
 // Output:
 // Expected value to be less than or equal to threshold:
 //         Value     : zebra
@@ -420,8 +420,8 @@ should.NotContainValue(t, userRoles, 3)
 
 - `BeGreaterThan(t, actual, threshold)` - Numeric greater-than comparison
 - `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
-- `BeGreaterOrEqualThan(t, actual, threshold)` - Numeric greater-than-or-equal comparison
-- `BeLessOrEqualThan(t, actual, threshold)` - Numeric less-than-or-equal comparison
+- `BeGreaterOrEqualTo(t, actual, threshold)` - Numeric greater-than-or-equal comparison
+- `BeLessOrEqualTo(t, actual, threshold)` - Numeric less-than-or-equal comparison
 
 ### String Operations
 
@@ -477,7 +477,7 @@ You can add custom messages to any assertion using `should.WithMessage()`:
 should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be at least 18 years old"))
 
 // Another example
-should.BeGreaterOrEqualThan(t, account.Balance, 0, should.WithMessage("Account balance cannot be negative"))
+should.BeGreaterOrEqualTo(t, account.Balance, 0, should.WithMessage("Account balance cannot be negative"))
 ```
 
 ### Custom Predicate Functions

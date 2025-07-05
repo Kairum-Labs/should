@@ -1325,32 +1325,32 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 	}
 }
 
-// === Tests for BeGreaterOrEqualThan ===
+// === Tests for BeGreaterOrEqualTo ===
 
-func TestBeGreaterOrEqualThan_Succeeds_WithGreaterValue(t *testing.T) {
+func TestBeGreaterOrEqualTo_Succeeds_WithGreaterValue(t *testing.T) {
 	t.Parallel()
 
-	BeGreaterOrEqualThan(t, 10, 5)
+	BeGreaterOrEqualTo(t, 10, 5)
 }
 
-func TestBeGreaterOrEqualThan_Succeeds_WithEqualValue(t *testing.T) {
+func TestBeGreaterOrEqualTo_Succeeds_WithEqualValue(t *testing.T) {
 	t.Parallel()
 
-	BeGreaterOrEqualThan(t, 5, 5)
+	BeGreaterOrEqualTo(t, 5, 5)
 }
 
-func TestBeGreaterOrEqualThan_Succeeds_WithFloats(t *testing.T) {
+func TestBeGreaterOrEqualTo_Succeeds_WithFloats(t *testing.T) {
 	t.Parallel()
 
-	BeGreaterOrEqualThan(t, 3.14, 3.14)
-	BeGreaterOrEqualThan(t, 3.15, 3.14)
+	BeGreaterOrEqualTo(t, 3.14, 3.14)
+	BeGreaterOrEqualTo(t, 3.15, 3.14)
 }
 
-func TestBeGreaterOrEqualThan_Fails_WithSmallerValue(t *testing.T) {
+func TestBeGreaterOrEqualTo_Fails_WithSmallerValue(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, 5, 10)
+		BeGreaterOrEqualTo(t, 5, 10)
 	})
 
 	if !failed {
@@ -1363,11 +1363,11 @@ func TestBeGreaterOrEqualThan_Fails_WithSmallerValue(t *testing.T) {
 	}
 }
 
-func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
+func TestBeGreaterOrEqualTo_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, 0, 1, WithMessage("Score cannot be negative"))
+		BeGreaterOrEqualTo(t, 0, 1, WithMessage("Score cannot be negative"))
 	})
 
 	if !failed {
@@ -1386,19 +1386,19 @@ func TestBeGreaterOrEqualThan_WithCustomMessage(t *testing.T) {
 	}
 }
 
-func TestBeGreaterOrEqualThan_SupportsStrings(t *testing.T) {
+func TestBeGreaterOrEqualTo_SupportsStrings(t *testing.T) {
 	t.Parallel()
 
-	// Strings are now supported in BeGreaterOrEqualThan
-	BeGreaterOrEqualThan(t, "zebra", "apple")
-	BeGreaterOrEqualThan(t, "hello", "hello")
+	// Strings are now supported in BeGreaterOrEqualTo
+	BeGreaterOrEqualTo(t, "zebra", "apple")
+	BeGreaterOrEqualTo(t, "hello", "hello")
 }
 
-func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
+func TestBeGreaterOrEqualTo_Fails_WithMixedIntFloat(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		BeGreaterOrEqualThan(t, 5.0, 5.1, WithMessage("Integer vs float comparison"))
+		BeGreaterOrEqualTo(t, 5.0, 5.1, WithMessage("Integer vs float comparison"))
 	})
 
 	if !failed {
@@ -1417,26 +1417,26 @@ func TestBeGreaterOrEqualThan_Fails_WithMixedIntFloat(t *testing.T) {
 	}
 }
 
-// === Tests for BeLessOrEqualThan ===
+// === Tests for BeLessOrEqualTo ===
 
-func TestBeLessOrEqualThan(t *testing.T) {
+func TestBeLessOrEqualTo(t *testing.T) {
 	t.Run("Basic functionality", func(t *testing.T) {
 		// Integer tests
-		BeLessOrEqualThan(t, 5, 10)
-		BeLessOrEqualThan(t, 10, 10)
+		BeLessOrEqualTo(t, 5, 10)
+		BeLessOrEqualTo(t, 10, 10)
 
 		// Float tests
-		BeLessOrEqualThan(t, 2.71, 3.14)
-		BeLessOrEqualThan(t, 3.14, 3.14)
+		BeLessOrEqualTo(t, 2.71, 3.14)
+		BeLessOrEqualTo(t, 3.14, 3.14)
 
 		// Test failures
 		t.Run("Fails when actual is greater than expected", func(t *testing.T) {
 			failed, message := assertFails(t, func(t testing.TB) {
-				BeLessOrEqualThan(t, 15, 10)
+				BeLessOrEqualTo(t, 15, 10)
 			})
 
 			if !failed {
-				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+				t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
 			}
 
 			expectedParts := []string{
@@ -1455,11 +1455,11 @@ func TestBeLessOrEqualThan(t *testing.T) {
 
 		t.Run("Fails with float precision", func(t *testing.T) {
 			failed, message := assertFails(t, func(t testing.TB) {
-				BeLessOrEqualThan(t, 3.15, 3.14)
+				BeLessOrEqualTo(t, 3.15, 3.14)
 			})
 
 			if !failed {
-				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+				t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
 			}
 
 			expectedParts := []string{
@@ -1522,17 +1522,17 @@ func TestBeLessOrEqualThan(t *testing.T) {
 
 				if tt.shouldFail {
 					failed, message := assertFails(t, func(t testing.TB) {
-						BeLessOrEqualThan(t, tt.actual, tt.expected)
+						BeLessOrEqualTo(t, tt.actual, tt.expected)
 					})
 
 					if !failed {
-						t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+						t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
 					}
 					if tt.errorCheck != nil {
 						tt.errorCheck(t, message)
 					}
 				} else {
-					BeLessOrEqualThan(t, tt.actual, tt.expected)
+					BeLessOrEqualTo(t, tt.actual, tt.expected)
 				}
 			})
 		}
@@ -1540,16 +1540,16 @@ func TestBeLessOrEqualThan(t *testing.T) {
 
 	t.Run("Custom messages", func(t *testing.T) {
 		// Success with custom message
-		BeLessOrEqualThan(t, 5, 10, WithMessage("Value should be within limit"))
+		BeLessOrEqualTo(t, 5, 10, WithMessage("Value should be within limit"))
 
 		// Fails with custom error message
 		t.Run("Fails with custom error message", func(t *testing.T) {
 			failed, message := assertFails(t, func(t testing.TB) {
-				BeLessOrEqualThan(t, 100, 50, WithMessage("Score should not exceed maximum"))
+				BeLessOrEqualTo(t, 100, 50, WithMessage("Score should not exceed maximum"))
 			})
 
 			if !failed {
-				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+				t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
 			}
 
 			expectedParts := []string{
@@ -1568,28 +1568,28 @@ func TestBeLessOrEqualThan(t *testing.T) {
 
 	t.Run("Edge cases", func(t *testing.T) {
 		// Success with zero values
-		BeLessOrEqualThan(t, 0, 0)
+		BeLessOrEqualTo(t, 0, 0)
 
 		// Success with negative numbers
-		BeLessOrEqualThan(t, -10, -5)
+		BeLessOrEqualTo(t, -10, -5)
 
 		// Success with very small floats
-		BeLessOrEqualThan(t, 0.0001, 0.0002)
+		BeLessOrEqualTo(t, 0.0001, 0.0002)
 
 		// Success with empty strings
-		BeLessOrEqualThan(t, "", "")
+		BeLessOrEqualTo(t, "", "")
 
 		// Success when first string is empty
-		BeLessOrEqualThan(t, "", "a")
+		BeLessOrEqualTo(t, "", "a")
 
 		// Fails with negative comparison
 		t.Run("Fails with negative comparison", func(t *testing.T) {
 			failed, message := assertFails(t, func(t testing.TB) {
-				BeLessOrEqualThan(t, -5, -10)
+				BeLessOrEqualTo(t, -5, -10)
 			})
 
 			if !failed {
-				t.Fatal("Expected BeLessOrEqualThan to fail, but it passed")
+				t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
 			}
 
 			expectedParts := []string{
@@ -1616,28 +1616,28 @@ func TestBeLessOrEqualThan(t *testing.T) {
 			{
 				name: "Success with different integer types",
 				testFunc: func() {
-					BeLessOrEqualThan(t, int8(5), int8(10))
-					BeLessOrEqualThan(t, int16(5), int16(10))
-					BeLessOrEqualThan(t, int32(5), int32(10))
-					BeLessOrEqualThan(t, int64(5), int64(10))
+					BeLessOrEqualTo(t, int8(5), int8(10))
+					BeLessOrEqualTo(t, int16(5), int16(10))
+					BeLessOrEqualTo(t, int32(5), int32(10))
+					BeLessOrEqualTo(t, int64(5), int64(10))
 				},
 				shouldFail: false,
 			},
 			{
 				name: "Success with different unsigned integer types",
 				testFunc: func() {
-					BeLessOrEqualThan(t, uint8(5), uint8(10))
-					BeLessOrEqualThan(t, uint16(5), uint16(10))
-					BeLessOrEqualThan(t, uint32(5), uint32(10))
-					BeLessOrEqualThan(t, uint64(5), uint64(10))
+					BeLessOrEqualTo(t, uint8(5), uint8(10))
+					BeLessOrEqualTo(t, uint16(5), uint16(10))
+					BeLessOrEqualTo(t, uint32(5), uint32(10))
+					BeLessOrEqualTo(t, uint64(5), uint64(10))
 				},
 				shouldFail: false,
 			},
 			{
 				name: "Success with different float types",
 				testFunc: func() {
-					BeLessOrEqualThan(t, float32(2.5), float32(3.5))
-					BeLessOrEqualThan(t, float64(2.5), float64(3.5))
+					BeLessOrEqualTo(t, float32(2.5), float32(3.5))
+					BeLessOrEqualTo(t, float64(2.5), float64(3.5))
 				},
 				shouldFail: false,
 			},

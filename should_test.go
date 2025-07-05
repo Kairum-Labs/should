@@ -273,27 +273,27 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	// BeGreaterOrEqualThan
-	t.Run("BeGreaterOrEqualThan passes", func(t *testing.T) {
+	// BeGreaterOrEqualTo
+	t.Run("BeGreaterOrEqualTo passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeGreaterOrEqualThan(mockT, 10, 10)
+		BeGreaterOrEqualTo(mockT, 10, 10)
 		if mockT.failed {
-			t.Error("BeGreaterOrEqualThan should pass")
+			t.Error("BeGreaterOrEqualTo should pass")
 		}
 	})
-	t.Run("BeGreaterOrEqualThan fails", func(t *testing.T) {
+	t.Run("BeGreaterOrEqualTo fails", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeGreaterOrEqualThan(mockT, 9, 10)
+		BeGreaterOrEqualTo(mockT, 9, 10)
 		if !mockT.failed {
-			t.Error("BeGreaterOrEqualThan should fail")
+			t.Error("BeGreaterOrEqualTo should fail")
 		}
 	})
 
-	t.Run("BeLessOrEqualThan passes", func(t *testing.T) {
+	t.Run("BeLessOrEqualTo passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeLessOrEqualThan(mockT, 10, 10)
+		BeLessOrEqualTo(mockT, 10, 10)
 		if mockT.failed {
-			t.Error("BeLessOrEqualThan should pass")
+			t.Error("BeLessOrEqualTo should pass")
 		}
 	})
 
