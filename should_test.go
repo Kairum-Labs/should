@@ -202,7 +202,7 @@ func TestWrappers(t *testing.T) {
 	// BeNil
 	t.Run("BeNil passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		BeNil[any](mockT, nil)
+		BeNil(mockT, nil)
 		if mockT.failed {
 			t.Error("BeNil should pass")
 		}
@@ -227,7 +227,7 @@ func TestWrappers(t *testing.T) {
 	})
 	t.Run("NotBeNil fails", func(t *testing.T) {
 		mockT := &mockTB{}
-		NotBeNil[any](mockT, nil)
+		NotBeNil(mockT, nil)
 		if !mockT.failed {
 			t.Error("NotBeNil should fail")
 		}
@@ -357,6 +357,7 @@ func TestWrappers(t *testing.T) {
 	t.Run("StartsWith passes", func(t *testing.T) {
 		mockT := &mockTB{}
 		StartsWith(mockT, "Hello, world!", "Hello")
+		StartsWith(mockT, "Hello, world!", "hello", IgnoreCase())
 		if mockT.failed {
 			t.Error("StartsWith should pass")
 		}

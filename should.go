@@ -33,6 +33,15 @@ func WithMessage(message string) Option {
 	return assert.WithMessage(message)
 }
 
+// IgnoreCase creates an option for ignoring case in string comparisons.
+//
+// Example:
+//
+//	should.StartsWith(t, "hello", "HELLO", should.IgnoreCase())
+func IgnoreCase() Option {
+	return assert.IgnoreCase()
+}
+
 // BeTrue reports a test failure if the value is not true.
 //
 // This assertion only works with boolean values and will fail immediately
@@ -79,7 +88,7 @@ func BeFalse(t testing.TB, actual bool, opts ...Option) {
 //	should.BeEmpty(t, map[string]int{})
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
+func BeEmpty(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
 	assert.BeEmpty(t, actual, opts...)
 }
@@ -99,7 +108,7 @@ func BeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 //	should.NotBeEmpty(t, &user)
 //
 // Only works with strings, slices, arrays, maps, channels, or pointers.
-func NotBeEmpty[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
 	assert.NotBeEmpty(t, actual, opts...)
 }
@@ -118,7 +127,7 @@ func NotBeEmpty[T any](t testing.TB, actual T, opts ...Option) {
 //	should.BeNil(t, slice, should.WithMessage("Slice should be nil"))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func BeNil[T any](t testing.TB, actual T, opts ...Option) {
+func BeNil(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
 	assert.BeNil(t, actual, opts...)
 }
@@ -136,7 +145,7 @@ func BeNil[T any](t testing.TB, actual T, opts ...Option) {
 //	should.NotBeNil(t, make([]int, 0))
 //
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
-func NotBeNil[T any](t testing.TB, actual T, opts ...Option) {
+func NotBeNil(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
 	assert.NotBeNil(t, actual, opts...)
 }
@@ -240,7 +249,7 @@ func BeLessOrEqualTo[T assert.Orderable](t testing.TB, actual T, expected T, opt
 //	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.BeEqual(t, actual, expected, opts...)
 }
@@ -258,7 +267,7 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 //	should.NotBeEqual(t, 42, 43)
 //
 //	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
-func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.NotBeEqual(t, actual, expected, opts...)
 }
@@ -282,7 +291,7 @@ func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 //	should.Contain(t, []string{"apple", "banana"}, "apple")
 //
 // If the input is not a slice or array, the test fails immediately.
-func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
+func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.Contain(t, actual, expected, opts...)
 }
@@ -301,7 +310,7 @@ func Contain[T any](t testing.TB, actual T, expected any, opts ...Option) {
 //	should.NotContain(t, []string{"apple", "banana"}, "orange", should.WithMessage("Should not have orange"))
 //
 // If the input is not a slice or array, the test fails immediately.
-func NotContain[T any](t testing.TB, actual T, expected any, opts ...Option) {
+func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.NotContain(t, actual, expected, opts...)
 }
@@ -491,7 +500,7 @@ func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedVal
 //	should.NotContainDuplicates(t, []string{"John", "John"})
 //
 // If the input is not a slice or array, the test fails immediately.
-func NotContainDuplicates[T any](t testing.TB, actual T, opts ...Option) {
+func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
 	assert.NotContainDuplicates(t, actual, opts...)
 }
