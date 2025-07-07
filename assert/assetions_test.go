@@ -1201,41 +1201,6 @@ func TestBeLessThan_WithCustomMessage(t *testing.T) {
 	}
 }
 
-// === Tests for error handling ===
-
-func TestBeGreaterThan_Succeeds_WithStrings(t *testing.T) {
-	t.Parallel()
-
-	// Strings are now supported in BeGreaterThan
-	BeGreaterThan(t, "zebra", "apple")
-	BeGreaterThan(t, "hello", "goodbye")
-}
-
-func TestBeLessThan_FailsWithStringComparison(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeLessThan(t, "zebra", "apple")
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expectedParts := []string{
-		"Expected value to be less than threshold:",
-		"Value     : zebra",
-		"Threshold : apple",
-	}
-	for _, part := range expectedParts {
-		if !strings.Contains(message, part) {
-			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
-		}
-	}
-}
-
-// === Tests for Panic ===
-
 func TestPanic_Succeeds_WhenPanicOccurs(t *testing.T) {
 	t.Parallel()
 
@@ -1409,14 +1374,6 @@ func TestBeGreaterOrEqualTo_WithCustomMessage(t *testing.T) {
 	}
 }
 
-func TestBeGreaterOrEqualTo_SupportsStrings(t *testing.T) {
-	t.Parallel()
-
-	// Strings are now supported in BeGreaterOrEqualTo
-	BeGreaterOrEqualTo(t, "zebra", "apple")
-	BeGreaterOrEqualTo(t, "hello", "hello")
-}
-
 func TestBeGreaterOrEqualTo_Fails_WithMixedIntFloat(t *testing.T) {
 	t.Parallel()
 
@@ -1499,68 +1456,6 @@ func TestBeLessOrEqualTo(t *testing.T) {
 		})
 	})
 
-	t.Run("String comparisons", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			actual     string
-			expected   string
-			shouldFail bool
-			errorCheck func(t *testing.T, message string)
-		}{
-			{
-				name:       "Success when string is less than expected",
-				actual:     "apple",
-				expected:   "banana",
-				shouldFail: false,
-			},
-			{
-				name:       "Success when strings are equal",
-				actual:     "apple",
-				expected:   "apple",
-				shouldFail: false,
-			},
-			{
-				name:       "Fails when string is greater than expected",
-				actual:     "zebra",
-				expected:   "apple",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					expectedParts := []string{
-						"Expected value to be less than or equal to threshold:",
-						"Value     : zebra",
-						"Threshold : apple",
-					}
-					for _, part := range expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
-						}
-					}
-				},
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-
-				if tt.shouldFail {
-					failed, message := assertFails(t, func(t testing.TB) {
-						BeLessOrEqualTo(t, tt.actual, tt.expected)
-					})
-
-					if !failed {
-						t.Fatal("Expected BeLessOrEqualTo to fail, but it passed")
-					}
-					if tt.errorCheck != nil {
-						tt.errorCheck(t, message)
-					}
-				} else {
-					BeLessOrEqualTo(t, tt.actual, tt.expected)
-				}
-			})
-		}
-	})
-
 	t.Run("Custom messages", func(t *testing.T) {
 		// Success with custom message
 		BeLessOrEqualTo(t, 5, 10, WithMessage("Value should be within limit"))
@@ -1598,12 +1493,6 @@ func TestBeLessOrEqualTo(t *testing.T) {
 
 		// Success with very small floats
 		BeLessOrEqualTo(t, 0.0001, 0.0002)
-
-		// Success with empty strings
-		BeLessOrEqualTo(t, "", "")
-
-		// Success when first string is empty
-		BeLessOrEqualTo(t, "", "a")
 
 		// Fails with negative comparison
 		t.Run("Fails with negative comparison", func(t *testing.T) {
@@ -2436,16 +2325,6 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 	NotContainDuplicates(t, users)
 }
 
-// === Tests for BeLessThan error handling ===
-
-func TestBeLessThan_Succeeds_WithStrings(t *testing.T) {
-	t.Parallel()
-
-	// Strings are now supported in BeLessThan with lexicographic ordering
-	BeLessThan(t, "apple", "zebra")
-	BeLessThan(t, "goodbye", "hello")
-}
-
 // === Tests for StartsWith ===
 
 func TestStartsWith_WithCustomMessage(t *testing.T) {
@@ -2974,16 +2853,6 @@ func TestEndsWith(t *testing.T) {
 	})
 }
 
-// === Tests for BeGreaterThan error handling ===
-
-func TestBeGreaterThan_SupportsStringComparisons(t *testing.T) {
-	t.Parallel()
-
-	// Strings are now supported in BeGreaterThan with lexicographic ordering
-	BeGreaterThan(t, "zebra", "apple")
-	BeGreaterThan(t, "hello", "goodbye")
-}
-
 // === Tests for BeEqual with complex types and custom messages ===
 
 func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
@@ -3083,11 +2952,6 @@ func TestNumericTypeConversions_AllTypes(t *testing.T) {
 
 	t.Run("float64", func(t *testing.T) {
 		BeGreaterThan(t, float64(2.718), float64(2.717))
-	})
-
-	// Test string comparisons too (new feature!)
-	t.Run("string", func(t *testing.T) {
-		BeGreaterThan(t, "zebra", "apple")
 	})
 }
 

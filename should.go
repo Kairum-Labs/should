@@ -152,7 +152,7 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides detailed
+// This assertion works with all numeric types and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -164,17 +164,15 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
-//	should.BeGreaterThan(t, "zebra", "apple")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeGreaterThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeGreaterThan[T assert.Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeGreaterThan(t, actual, expected, opts...)
 }
 
 // BeLessThan reports a test failure if the value is not less than the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides detailed
+// This assertion works with all numeric types and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -186,17 +184,15 @@ func BeGreaterThan[T assert.Orderable](t testing.TB, actual T, expected T, opts 
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
-//	should.BeLessThan(t, "apple", "zebra")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeLessThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeLessThan[T assert.Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeLessThan(t, actual, expected, opts...)
 }
 
 // BeGreaterOrEqualTo reports a test failure if the value is not greater than or equal to the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides
+// This assertion works with all numeric types and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -207,17 +203,15 @@ func BeLessThan[T assert.Orderable](t testing.TB, actual T, expected T, opts ...
 //
 //	should.BeGreaterOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeGreaterOrEqualTo(t, "zebra", "apple")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeGreaterOrEqualTo[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeGreaterOrEqualTo[T assert.Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeGreaterOrEqualTo(t, actual, expected, opts...)
 }
 
 // BeLessOrEqualTo reports a test failure if the value is not less than or equal to the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides
+// This assertion works with all numeric types and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -228,8 +222,8 @@ func BeGreaterOrEqualTo[T assert.Orderable](t testing.TB, actual T, expected T, 
 //
 //	should.BeLessOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeLessOrEqualTo(t, "apple", "zebra")
-func BeLessOrEqualTo[T assert.Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeLessOrEqualTo[T assert.Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	assert.BeLessOrEqualTo(t, actual, expected, opts...)
 }

@@ -272,7 +272,7 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides detailed
+// This assertion works with all numeric types and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -284,13 +284,11 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 //
 //	should.BeGreaterThan(t, 3.14, 2.71)
 //
-//	should.BeGreaterThan(t, "zebra", "apple")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeGreaterThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
-	result, err := compareOrderable(actual, expected)
+	result, err := compareOrdered(actual, expected)
 	if err != nil {
 		fail(t, "cannot compare values: %v", err)
 		return
@@ -309,7 +307,7 @@ func BeGreaterThan[T Orderable](t testing.TB, actual T, expected T, opts ...Opti
 
 // BeLessThan reports a test failure if the value is not less than the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides detailed
+// This assertion works with all numeric types and provides detailed
 // error messages showing the actual value, threshold, difference, and helpful hints.
 // It supports optional custom error messages through Option.
 //
@@ -321,13 +319,11 @@ func BeGreaterThan[T Orderable](t testing.TB, actual T, expected T, opts ...Opti
 //
 //	should.BeLessThan(t, 2.71, 3.14)
 //
-//	should.BeLessThan(t, "apple", "zebra")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeLessThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
-	result, err := compareOrderable(actual, expected)
+	result, err := compareOrdered(actual, expected)
 	if err != nil {
 		fail(t, "cannot compare values: %v", err)
 		return
@@ -346,7 +342,7 @@ func BeLessThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option)
 
 // BeGreaterOrEqualTo reports a test failure if the value is not greater than or equal to the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides
+// This assertion works with all numeric types and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -357,13 +353,11 @@ func BeLessThan[T Orderable](t testing.TB, actual T, expected T, opts ...Option)
 //
 //	should.BeGreaterOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeGreaterOrEqualTo(t, "zebra", "apple")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeGreaterOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
-	result, err := compareOrderable(actual, expected)
+	result, err := compareOrdered(actual, expected)
 	if err != nil {
 		fail(t, "cannot compare values: %v", err)
 		return
@@ -381,7 +375,7 @@ func BeGreaterOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ..
 
 // BeLessOrEqualTo reports a test failure if the value is not less than or equal to the expected threshold.
 //
-// This assertion works with all orderable types (numeric types and strings) and provides
+// This assertion works with all numeric types and provides
 // detailed error messages when the assertion fails. It supports optional custom error messages through Option.
 //
 // Example:
@@ -392,13 +386,11 @@ func BeGreaterOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ..
 //
 //	should.BeLessOrEqualTo(t, 3.14, 3.14)
 //
-//	should.BeLessOrEqualTo(t, "apple", "zebra")
-//
-// Only works with orderable types (numeric types and strings). Both values must be of the same type.
-func BeLessOrEqualTo[T Orderable](t testing.TB, actual T, expected T, opts ...Option) {
+// Only works with numeric types. Both values must be of the same type.
+func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 
-	result, err := compareOrderable(actual, expected)
+	result, err := compareOrdered(actual, expected)
 	if err != nil {
 		fail(t, "cannot compare values: %v", err)
 		return
@@ -1159,27 +1151,15 @@ func toFloat64(v reflect.Value) (float64, bool) {
 	}
 }
 
-// compareOrderable compares two values of orderable types.
+// compareOrdered compares two values of orderable types.
 // Returns:
 // - -1 if a < b
 // - 0 if a == b
 // - 1 if a > b
 // - error if types are incompatible
-func compareOrderable[T Orderable](a, b T) (int, error) {
+func compareOrdered[T Ordered](a, b T) (int, error) {
 	aValue := reflect.ValueOf(a)
 	bValue := reflect.ValueOf(b)
-
-	// Handle string comparison
-	if aValue.Kind() == reflect.String && bValue.Kind() == reflect.String {
-		aStr := aValue.String()
-		bStr := bValue.String()
-		if aStr < bStr {
-			return -1, nil
-		} else if aStr > bStr {
-			return 1, nil
-		}
-		return 0, nil
-	}
 
 	// Handle numeric comparison
 	aFloat, aOk := toFloat64(aValue)
