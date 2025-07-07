@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Should! This guide covers everyth
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.22 or later
 - Git
 
 ### Setup
