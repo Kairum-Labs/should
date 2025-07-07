@@ -387,6 +387,14 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("ContainSubstring passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		ContainSubstring(mockT, "Hello, world!", "world")
+		if mockT.failed {
+			t.Error("ContainSubstring should pass")
+		}
+	})
+
 	// HaveLength
 	t.Run("HaveLength passes", func(t *testing.T) {
 		mockT := &mockTB{}

@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"strings"
@@ -2264,4 +2265,371 @@ func TestFormatMapNotContainValueError_ComplexTypes(t *testing.T) {
 			t.Errorf("Expected result to NOT contain '%s', but it was found in:\n%s", part, result)
 		}
 	}
+}
+
+// === Tests for ContainSubstring utility functions ===
+
+func TestFormatContainSubstringError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic error formatting", func(t *testing.T) {
+		t.Parallel()
+		result := formatContainSubstringError("Hello, World!", "planet", "")
+
+		expectedParts := []string{
+			"Expected string to contain 'planet', but it was not found",
+			"Substring   : 'planet'",
+			"Actual   : 'Hello, World!'",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Empty substring handling", func(t *testing.T) {
+		t.Parallel()
+		result := formatContainSubstringError("Hello", "", "")
+
+		expectedParts := []string{
+			"Expected string to contain '<empty>', but it was not found",
+			"Substring   : '<empty>'",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Empty actual string handling", func(t *testing.T) {
+		t.Parallel()
+		result := formatContainSubstringError("", "test", "")
+
+		expectedParts := []string{
+			"Expected string to contain 'test', but it was not found",
+			"Actual   : '<empty>'",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Long string with multiline formatting", func(t *testing.T) {
+		t.Parallel()
+		longString := strings.Repeat("a", 250)
+		result := formatContainSubstringError(longString, "test", "")
+
+		expectedParts := []string{
+			"Actual   : (length: 250)",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+
+		// For very long strings, the actual content should be displayed
+		if !strings.Contains(result, "aaaaaaa") {
+			t.Errorf("Expected result to contain part of the long string")
+		}
+	})
+
+	t.Run("String with newlines", func(t *testing.T) {
+		t.Parallel()
+		multilineString := "Hello\nWorld\nTest"
+		result := formatContainSubstringError(multilineString, "missing", "")
+
+		expectedParts := []string{
+			"Actual   : (length: 16)",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("Large substring note", func(t *testing.T) {
+		t.Parallel()
+		largeSubstring := strings.Repeat("x", 60)
+		result := formatContainSubstringError("small text", largeSubstring, "")
+
+		expectedParts := []string{
+			"Note: Substring is 60 characters long",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("With typo detection", func(t *testing.T) {
+		t.Parallel()
+		result := formatContainSubstringError("Hello, beautiful world!", "beatiful", "")
+
+		expectedParts := []string{
+			"Similar substring", // Can be either "found:" or "s found:"
+			"'beautiful' at position",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("With multiple similar substrings", func(t *testing.T) {
+		t.Parallel()
+		result := formatContainSubstringError("test testing tested", "tst", "")
+
+		expectedParts := []string{
+			"Similar substrings found:",
+		}
+
+		for _, part := range expectedParts {
+			if !strings.Contains(result, part) {
+				t.Errorf("Expected result to contain: %q\n\nFull result:\n%s", part, result)
+			}
+		}
+	})
+
+	t.Run("With custom note message", func(t *testing.T) {
+		t.Parallel()
+		customNote := "\nNote: Custom message here"
+		result := formatContainSubstringError("Hello", "missing", customNote)
+
+		if !strings.Contains(result, "Note: Custom message here") {
+			t.Errorf("Expected result to contain custom note message")
+		}
+	})
+}
+
+func TestFindSimilarSubstrings(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic similarity detection", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3)
+
+		if len(results) == 0 {
+			t.Fatal("Expected to find similar substrings")
+		}
+
+		found := false
+		for _, result := range results {
+			if result.Value == "beautiful" {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Errorf("Expected to find 'beautiful' in results, got: %v", results)
+		}
+	})
+
+	t.Run("Empty substring", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("Hello, World!", "", 3)
+
+		if results != nil {
+			t.Errorf("Expected nil results for empty substring, got: %v", results)
+		}
+	})
+
+	t.Run("Substring too long", func(t *testing.T) {
+		t.Parallel()
+		longSubstring := strings.Repeat("x", 25)
+		results := findSimilarSubstrings("Hello, World!", longSubstring, 3)
+
+		if results != nil {
+			t.Errorf("Expected nil results for substring > 20 chars, got: %v", results)
+		}
+	})
+
+	t.Run("Empty text", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("", "test", 3)
+
+		if results != nil {
+			t.Errorf("Expected nil results for empty text, got: %v", results)
+		}
+	})
+
+	t.Run("No similar substrings", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("abcd", "xyz", 3)
+
+		if len(results) != 0 {
+			t.Errorf("Expected no similar substrings, got: %v", results)
+		}
+	})
+
+	t.Run("Exact matches are skipped", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("test testing test", "test", 3)
+
+		// Should only find "testing" as similar, not the exact "test" matches
+		for _, result := range results {
+			if result.Value == "test" {
+				t.Errorf("Expected exact matches to be skipped, but found: %v", result)
+			}
+		}
+	})
+
+	t.Run("Different length substrings", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("testing tests", "test", 5)
+
+		// Should find both "tests" (different length) and substrings from "testing"
+		found := false
+		for _, result := range results {
+			if result.Value == "tests" {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			t.Errorf("Expected to find 'tests' (different length), got: %v", results)
+		}
+	})
+
+	t.Run("Results are sorted by similarity", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("house hause home", "house", 3)
+
+		if len(results) < 2 {
+			t.Fatal("Expected at least 2 results for sorting test")
+		}
+
+		for i := 0; i < len(results)-1; i++ {
+			if results[i].Similarity < results[i+1].Similarity {
+				t.Errorf("Results not sorted by similarity: %f < %f", results[i].Similarity, results[i+1].Similarity)
+			}
+		}
+	})
+
+	t.Run("Max results limit", func(t *testing.T) {
+		t.Parallel()
+		text := "test tast tost tust test1 test2 test3"
+		results := findSimilarSubstrings(text, "test", 2)
+
+		if len(results) > 2 {
+			t.Errorf("Expected max 2 results, got: %d", len(results))
+		}
+	})
+
+	t.Run("Index positions are correct", func(t *testing.T) {
+		t.Parallel()
+		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3)
+
+		if len(results) == 0 {
+			t.Fatal("Expected to find similar substrings")
+		}
+
+		// Find "beautiful" result
+		for _, result := range results {
+			if result.Value == "beautiful" {
+				expectedIndex := strings.Index("Hello, beautiful world!", "beautiful")
+				if result.Index != expectedIndex {
+					t.Errorf("Expected index %d, got %d", expectedIndex, result.Index)
+				}
+				break
+			}
+		}
+	})
+}
+
+func TestRemoveDuplicateSimilarItems(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Remove duplicates by value and position", func(t *testing.T) {
+		t.Parallel()
+		items := []SimilarItem{
+			{Value: "test", Index: 0, Similarity: 0.8, Details: "detail1"},
+			{Value: "test", Index: 0, Similarity: 0.9, Details: "detail2"}, // duplicate
+			{Value: "test", Index: 5, Similarity: 0.7, Details: "detail3"}, // different position
+			{Value: "best", Index: 0, Similarity: 0.6, Details: "detail4"}, // different value
+		}
+
+		results := removeDuplicateSimilarItems(items)
+
+		if len(results) != 3 {
+			t.Errorf("Expected 3 unique items, got %d", len(results))
+		}
+
+		// Verify we have the unique combinations
+		expectedKeys := []string{"test@0", "test@5", "best@0"}
+		actualKeys := make([]string, len(results))
+		for i, item := range results {
+			actualKeys[i] = fmt.Sprintf("%s@%d", item.Value, item.Index)
+		}
+
+		for _, expected := range expectedKeys {
+			found := false
+			for _, actual := range actualKeys {
+				if actual == expected {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected to find key %s in results", expected)
+			}
+		}
+	})
+
+	t.Run("Empty slice", func(t *testing.T) {
+		t.Parallel()
+		results := removeDuplicateSimilarItems([]SimilarItem{})
+
+		if len(results) != 0 {
+			t.Errorf("Expected empty result for empty input, got %d items", len(results))
+		}
+	})
+
+	t.Run("Single item", func(t *testing.T) {
+		t.Parallel()
+		items := []SimilarItem{
+			{Value: "test", Index: 0, Similarity: 0.8, Details: "detail"},
+		}
+
+		results := removeDuplicateSimilarItems(items)
+
+		if len(results) != 1 {
+			t.Errorf("Expected 1 item, got %d", len(results))
+		}
+
+		if results[0].Value != "test" || results[0].Index != 0 {
+			t.Errorf("Expected original item to be preserved")
+		}
+	})
+
+	t.Run("No duplicates", func(t *testing.T) {
+		t.Parallel()
+		items := []SimilarItem{
+			{Value: "test1", Index: 0, Similarity: 0.8, Details: "detail1"},
+			{Value: "test2", Index: 1, Similarity: 0.7, Details: "detail2"},
+			{Value: "test3", Index: 2, Similarity: 0.6, Details: "detail3"},
+		}
+
+		results := removeDuplicateSimilarItems(items)
+
+		if len(results) != 3 {
+			t.Errorf("Expected 3 items (no duplicates), got %d", len(results))
+		}
+	})
 }

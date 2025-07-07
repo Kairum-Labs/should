@@ -1178,6 +1178,29 @@ func TestBeLessThan_WithFloats(t *testing.T) {
 	}
 }
 
+func TestBeLessThan_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeLessThan(t, 10, 5, WithMessage("Value should be smaller"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Value should be smaller",
+		"Expected value to be less than threshold:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
 // === Tests for error handling ===
 
 func TestBeGreaterThan_Succeeds_WithStrings(t *testing.T) {
@@ -2951,29 +2974,6 @@ func TestEndsWith(t *testing.T) {
 	})
 }
 
-func TestBeLessThan_WithCustomMessage(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		BeLessThan(t, 10, 5, WithMessage("Value should be smaller"))
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expectedParts := []string{
-		"Value should be smaller",
-		"Expected value to be less than threshold:",
-	}
-
-	for _, part := range expectedParts {
-		if !strings.Contains(message, part) {
-			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
-		}
-	}
-}
-
 // === Tests for BeGreaterThan error handling ===
 
 func TestBeGreaterThan_SupportsStringComparisons(t *testing.T) {
@@ -4557,5 +4557,324 @@ func TestNotContainValue(t *testing.T) {
 				})
 			}
 		})
+	})
+}
+
+func TestContainSubstring_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainSubstring(t, "Hello, world!", "planet", WithMessage("String should contain 'planet'"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"String should contain 'planet'",
+		"Expected string to contain 'planet', but it was not found",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainSubstring(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			substring  string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should pass if string contains substring",
+				actual:     "Hello, world!",
+				substring:  "world",
+				shouldFail: false,
+			},
+			{
+				name:       "should pass if string contains substring at beginning",
+				actual:     "Hello, world!",
+				substring:  "Hello",
+				shouldFail: false,
+			},
+			{
+				name:       "should pass if string contains substring at end",
+				actual:     "Hello, world!",
+				substring:  "world!",
+				shouldFail: false,
+			},
+			{
+				name:       "should pass with exact match",
+				actual:     "test",
+				substring:  "test",
+				shouldFail: false,
+			},
+			{
+				name:       "should fail if string does not contain substring",
+				actual:     "Hello, world!",
+				substring:  "planet",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected string to contain 'planet', but it was not found") ||
+						!strings.Contains(message, "Substring   : 'planet'") ||
+						!strings.Contains(message, "Actual   : 'Hello, world!'") {
+						t.Errorf("Incorrect error message:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should pass with empty substring - empty string is contained in any string",
+				actual:     "Hello, world!",
+				substring:  "",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				ContainSubstring(mockT, tt.actual, tt.substring)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected ContainSubstring to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected ContainSubstring to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Case sensitivity", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			substring  string
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should pass with ignore case enabled",
+				actual:     "Hello, WORLD!",
+				substring:  "world",
+				opts:       []Option{IgnoreCase()},
+				shouldFail: false,
+			},
+			{
+				name:       "should pass with ignore case enabled - mixed case",
+				actual:     "Hello, WoRlD!",
+				substring:  "WORLD",
+				opts:       []Option{IgnoreCase()},
+				shouldFail: false,
+			},
+			{
+				name:       "should fail if ignore case is disabled and case mismatch is detected",
+				actual:     "Hello, WORLD!",
+				substring:  "world",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Note: Case mismatch detected (use should.IgnoreCase() if intended)") {
+						t.Errorf("Expected message to contain note message, but got %q", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				ContainSubstring(mockT, tt.actual, tt.substring, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected ContainSubstring to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected ContainSubstring to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			substring  string
+			opts       []Option
+			shouldFail bool
+		}{
+			{
+				name:       "should pass with custom message",
+				actual:     "Hello, world!",
+				substring:  "world",
+				opts:       []Option{WithMessage("Expected string to contain 'world'")},
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				ContainSubstring(mockT, tt.actual, tt.substring, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected ContainSubstring to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected ContainSubstring to pass, but it failed: %s", mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			substring  string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should handle empty actual with empty substring",
+				actual:     "",
+				substring:  "",
+				shouldFail: false,
+			},
+			{
+				name:       "should fail with empty actual and non-empty substring",
+				actual:     "",
+				substring:  "test",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Actual   : '<empty>'") {
+						t.Errorf("Expected error message to show '<empty>' for empty actual, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should handle substring longer than actual",
+				actual:     "abc",
+				substring:  "abcdef",
+				shouldFail: true,
+			},
+			{
+				name:       "should handle single character substring",
+				actual:     "Hello, world!",
+				substring:  "o",
+				shouldFail: false,
+			},
+			{
+				name:       "should handle single character actual",
+				actual:     "a",
+				substring:  "b",
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				ContainSubstring(mockT, tt.actual, tt.substring)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected ContainSubstring to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected ContainSubstring to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Long string handling", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			actual     string
+			substring  string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "should use multiline formatting for long strings",
+				actual:     "This is a very long string that exceeds the 200 character limit and should trigger multiline formatting in the error message to provide better readability for developers debugging their tests when the assertion fails",
+				substring:  "nonexistent",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "(length:") {
+						t.Errorf("Expected message to contain length information for long string, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should use multiline formatting for strings with newlines",
+				actual:     "Line 1\nLine 2\nLine 3",
+				substring:  "nonexistent",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "(length:") {
+						t.Errorf("Expected message to contain length information for multiline string, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should show complete string when shorter than 200 characters",
+				actual:     "This is a moderately long string that is longer than 80 characters but shorter than 200",
+				substring:  "nonexistent",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "This is a moderately long string that is longer than 80 characters but shorter than 200") {
+						t.Errorf("Expected message to contain complete actual string, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "should show note for large substring",
+				actual:     "short text",
+				substring:  "This is a very long substring that exceeds the 50 character limit and should trigger a note",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Note: substring is") && !strings.Contains(message, "characters long") {
+						t.Errorf("Expected message to contain note about large substring, got:\n%s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				ContainSubstring(mockT, tt.actual, tt.substring)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected ContainSubstring to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected ContainSubstring to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
 	})
 }

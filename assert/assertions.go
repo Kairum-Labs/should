@@ -938,6 +938,49 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 }
 
+// ContainSubstring reports a test failure if the string does not contain the expected substring.
+//
+// This assertion checks if the actual string contains the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// with intelligent formatting for very long strings, and includes a note if
+// case mismatch is detected.
+//
+// Example:
+//
+//	should.ContainSubstring(t, "Hello, world!", "world")
+//
+//	should.ContainSubstring(t, "Hello, World", "WORLD", should.IgnoreCase())
+//
+//	should.ContainSubstring(t, longText, "keyword", should.WithMessage("Expected keyword to be present"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+func ContainSubstring(t testing.TB, actual string, substring string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	found := strings.Contains(actual, substring)
+	if !found && cfg.IgnoreCase {
+		found = strings.Contains(strings.ToLower(actual), strings.ToLower(substring))
+	}
+
+	if found {
+		return
+	}
+
+	noteMsg := ""
+	if !cfg.IgnoreCase && strings.Contains(strings.ToLower(actual), strings.ToLower(substring)) {
+		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+	}
+
+	errorMsg := formatContainSubstringError(actual, substring, noteMsg)
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
+	} else {
+		fail(t, "%s", errorMsg)
+	}
+}
+
 // HaveLength reports a test failure if the collection does not have the expected length.
 //
 // This assertion works with strings, slices, arrays, and maps.

@@ -58,6 +58,11 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeEmpty(t, "")
 	should.NotBeEmpty(t, []int{1, 2, 3})
 
+	// String operations
+	should.StartsWith(t, "Hello, World!", "Hello")
+	should.EndsWith(t, "Hello, World!", "World!")
+	should.ContainSubstring(t, "Hello, World!", "World")
+
 	// Collection operations
 	users := []string{"Alice", "Bob", "Charlie"}
 	should.Contain(t, users, "Alice")
@@ -310,6 +315,67 @@ should.StartsWith(t, filename, "temp_", should.WithMessage("Temporary files must
 should.EndsWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
 ```
 
+### String Substring Assertions
+
+Check if strings contain specific substrings, with intelligent formatting for long strings:
+
+```go
+// Basic substring checking
+should.ContainSubstring(t, "Hello, World!", "World")
+
+// Case-sensitive by default
+should.ContainSubstring(t, "Hello, World!", "world")
+// Output:
+// Expected string to contain 'world', but it was not found
+// Substring   : 'world'
+// Actual   : 'Hello, World!'
+// Note: Case mismatch detected (use should.IgnoreCase() if intended)
+
+// Case-insensitive option
+should.ContainSubstring(t, "Hello, World!", "world", should.IgnoreCase())
+
+// Typo detection for short substrings (≤20 characters)
+should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
+// Output:
+// Expected string to contain 'beatiful', but it was not found
+// Substring   : 'beatiful'
+// Actual   : 'Hello, beautiful world!'
+//
+// Similar substring found:
+//   └─ 'beautiful' at position 7 - 1 char diff
+
+// Multiple similar matches
+should.ContainSubstring(t, "test testing tester", "tets")
+// Output:
+// Expected string to contain 'tets', but it was not found
+// Substring   : 'tets'
+// Actual   : 'test testing tester'
+//
+// Similar substrings found:
+//   └─ 'test' at position 0 - 1 char diff
+//   └─ 'test' at position 5 - 1 char diff
+
+// Long strings with multiline formatting
+longText := `This is a very long text that spans multiple lines
+and contains various keywords and phrases that we might
+want to search for in our test assertions.`
+
+should.ContainSubstring(t, longText, "nonexistent")
+// Output:
+// Expected string to contain 'nonexistent', but it was not found
+// Substring   : 'nonexistent'
+// Actual   : (length: 153)
+// 1. This is a very long text that spans multiple lines
+// 2. and contains various keywords and phrases that we might
+// 3. want to search for in our test assertions.
+
+// With custom messages
+should.ContainSubstring(t, logContent, "ERROR", should.WithMessage("Log should contain error messages"))
+should.ContainSubstring(t, apiResponse, "success", should.IgnoreCase(), should.WithMessage("API response should indicate success"))
+```
+
+**Note**: Typo detection using Levenshtein distance is automatically enabled for substrings up to 20 characters to maintain good performance. For longer substrings, only exact matching is performed.
+
 ### Duplicate Detection
 
 Ensure collections contain no duplicate values with detailed reporting:
@@ -427,6 +493,7 @@ should.NotContainValue(t, userRoles, 3)
 
 - `StartsWith(t, actual, expected)` - Check if string starts with expected substring
 - `EndsWith(t, actual, expected)` - Check if string ends with expected substring
+- `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
 ### Collection Operations
 
@@ -515,3 +582,4 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+

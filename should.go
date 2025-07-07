@@ -378,6 +378,29 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	assert.EndsWith(t, actual, expected, opts...)
 }
 
+// ContainSubstring reports a test failure if the string does not contain the expected substring.
+//
+// This assertion checks if the actual string contains the expected substring.
+// It provides a detailed error message showing the expected and actual strings,
+// with intelligent formatting for very long strings, and includes a note if
+// case mismatch is detected. For needles up to 20 characters, it also provides
+// typo detection using Levenshtein distance to suggest similar substrings.
+//
+// Example:
+//
+//	should.ContainSubstring(t, "Hello, world!", "world")
+//
+//	should.ContainSubstring(t, "Hello, World", "WORLD", should.IgnoreCase())
+//
+//	should.ContainSubstring(t, longText, "keyword", should.WithMessage("Expected keyword to be present"))
+//
+// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Typo detection is automatically enabled for needles up to 20 characters for performance.
+func ContainSubstring(t testing.TB, actual string, substring string, opts ...Option) {
+	t.Helper()
+	assert.ContainSubstring(t, actual, substring, opts...)
+}
+
 // Panic asserts that the given function panics when executed.
 // If the function does not panic, the test will fail with a descriptive error message.
 //

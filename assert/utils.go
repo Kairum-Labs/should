@@ -1274,6 +1274,146 @@ func formatEndsWithError(actual string, expected string, actualEndSufix string, 
 	return ""
 }
 
+// formatContainSubstringError formats a detailed error message for ContainSubstring assertions.
+func formatContainSubstringError(actual string, substring string, noteMsg string) string {
+	var msg strings.Builder
+
+	// Clean empty strings for display
+	displayActual := actual
+	displayNeedle := substring
+
+	if strings.TrimSpace(actual) == "" {
+		displayActual = "<empty>"
+	}
+
+	if strings.TrimSpace(substring) == "" {
+		displayNeedle = "<empty>"
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected string to contain '%s', but it was not found", displayNeedle))
+	msg.WriteString(fmt.Sprintf("\nSubstring   : '%s'", displayNeedle))
+
+	// Handle very long strings with multiline formatting
+	if len(actual) > 200 || strings.Contains(actual, "\n") {
+		msg.WriteString(fmt.Sprintf("\nActual   : (length: %d)", len(actual)))
+		msg.WriteString(fmt.Sprintf("\n%s", formatMultilineString(actual)))
+	} else {
+		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", displayActual))
+	}
+
+	// Add context for large substrings
+	if len(substring) > 50 {
+		msg.WriteString(fmt.Sprintf("\nNote: Substring is %d characters long", len(substring)))
+	}
+
+	// Find similar substrings if substring is reasonable size
+	if len(substring) > 0 && len(substring) <= 20 && len(actual) > 0 {
+		similarSubstrings := findSimilarSubstrings(actual, substring, 3)
+		if len(similarSubstrings) > 0 {
+			msg.WriteString("\n")
+			if len(similarSubstrings) == 1 {
+				sim := similarSubstrings[0]
+				msg.WriteString("\nSimilar substring found:")
+				msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
+			} else {
+				msg.WriteString("\nSimilar substrings found:")
+				for _, sim := range similarSubstrings {
+					msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
+				}
+			}
+		}
+	}
+
+	msg.WriteString(noteMsg)
+	return msg.String()
+}
+
+// findSimilarSubstrings finds substrings in text that are similar to the target substring
+// using a sliding window approach with Levenshtein distance. Limited to substrings <= 20 chars for performance.
+func findSimilarSubstrings(text string, substring string, maxResults int) []SimilarItem {
+	if len(substring) == 0 || len(substring) > 20 || len(text) == 0 {
+		return nil
+	}
+
+	var results []SimilarItem
+	needleLen := len(substring)
+
+	// Use sliding window to extract all possible substrings of substring length
+	for i := 0; i <= len(text)-needleLen; i++ {
+		candidate := text[i : i+needleLen]
+
+		if candidate == substring {
+			continue // Skip exact matches
+		}
+
+		similarity := calculateStringSimilarity(substring, candidate)
+		if similarity.Similarity >= 0.6 { // 60% similarity threshold
+			similarity.Index = i // Position in the text
+			results = append(results, similarity)
+		}
+	}
+
+	// Also check substrings of different lengths (±1, ±2 characters)
+	for offset := -2; offset <= 2; offset++ {
+		if offset == 0 {
+			continue // Already checked exact length
+		}
+
+		substringLen := needleLen + offset
+		if substringLen <= 0 || substringLen > len(text) {
+			continue
+		}
+
+		for i := 0; i <= len(text)-substringLen; i++ {
+			candidate := text[i : i+substringLen]
+
+			similarity := calculateStringSimilarity(substring, candidate)
+			if similarity.Similarity >= 0.6 {
+				similarity.Index = i
+				results = append(results, similarity)
+			}
+		}
+	}
+
+	results = removeDuplicateSimilarItems(results)
+
+	// Sort by similarity (highest first)
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[i].Similarity < results[j].Similarity {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+
+	// Limit results
+	if len(results) > maxResults {
+		results = results[:maxResults]
+	}
+
+	return results
+}
+
+// removeDuplicateSimilarItems removes duplicate similar items based on position and value
+func removeDuplicateSimilarItems(items []SimilarItem) []SimilarItem {
+	if len(items) <= 1 {
+		return items
+	}
+
+	var unique []SimilarItem
+	seen := make(map[string]bool)
+
+	for _, item := range items {
+		key := fmt.Sprintf("%s@%d", item.Value, item.Index)
+		if !seen[key] {
+			seen[key] = true
+			unique = append(unique, item)
+		}
+	}
+
+	return unique
+}
+
 // formatMapValuesList formats a slice of interface{} values for map error messages
 // This function handles interface{} elements properly by getting their concrete values
 func formatMapValuesList(values []interface{}) string {
