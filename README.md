@@ -171,15 +171,6 @@ should.BeLessOrEqualTo(t, 15, 10)
 //         Threshold : 10
 //         Difference: +5 (value is 5 greater)
 //         Hint      : Value should be smaller than or equal to threshold
-
-// Less than or equal with strings
-should.BeLessOrEqualTo(t, "zebra", "apple")
-// Output:
-// Expected value to be less than or equal to threshold:
-//         Value     : zebra
-//         Threshold : apple
-//         Difference: +21 (value is 21 greater lexicographically)
-//         Hint      : Value should be smaller than or equal to threshold
 ```
 
 ### Struct and Object Comparisons
@@ -584,4 +575,3 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
