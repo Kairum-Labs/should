@@ -2376,7 +2376,7 @@ func TestFormatContainSubstringError(t *testing.T) {
 
 	t.Run("With typo detection", func(t *testing.T) {
 		t.Parallel()
-		result := formatContainSubstringError("Hello, beautiful world!", "beatiful", "")
+		result := formatContainSubstringError("Hello, beautiful world!", "beatiful", "") //nolint:misspell
 
 		expectedParts := []string{
 			"Similar substring", // Can be either "found:" or "s found:"
@@ -2421,7 +2421,7 @@ func TestFindSimilarSubstrings(t *testing.T) {
 
 	t.Run("Basic similarity detection", func(t *testing.T) {
 		t.Parallel()
-		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3)
+		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3) //nolint:misspell
 
 		if len(results) == 0 {
 			t.Fatal("Expected to find similar substrings")
@@ -2524,7 +2524,7 @@ func TestFindSimilarSubstrings(t *testing.T) {
 
 	t.Run("Max results limit", func(t *testing.T) {
 		t.Parallel()
-		text := "test tast tost tust test1 test2 test3"
+		text := "test tast tost tust test1 test2 test3" //nolint:misspell
 		results := findSimilarSubstrings(text, "test", 2)
 
 		if len(results) > 2 {
@@ -2534,7 +2534,7 @@ func TestFindSimilarSubstrings(t *testing.T) {
 
 	t.Run("Index positions are correct", func(t *testing.T) {
 		t.Parallel()
-		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3)
+		results := findSimilarSubstrings("Hello, beautiful world!", "beatiful", 3) //nolint:misspell
 
 		if len(results) == 0 {
 			t.Fatal("Expected to find similar substrings")
