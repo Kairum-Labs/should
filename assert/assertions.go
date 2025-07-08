@@ -365,11 +365,12 @@ func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...O
 
 	if result < 0 {
 		cfg := processOptions(opts...)
-		customMsg := cfg.Message
-		if customMsg != "" {
-			customMsg += "\n"
+		errorMsg := formatNumericComparisonError(actual, expected, "greaterOrEqual")
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, "%s", errorMsg)
 		}
-		fail(t, "%sExpected %v to be greater or equal than %v", customMsg, actual, expected)
 	}
 }
 
@@ -473,16 +474,15 @@ func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	if reflect.DeepEqual(actual, expected) {
 		cfg := processOptions(opts...)
-		customMsg := cfg.Message
 
 		// TODO: We could enrich the error message to show that the values are unexpectedly equal
 
-		if customMsg != "" {
-			fail(t, "\n%s\nExpected values to be different, but they are equal", customMsg)
+		errorMsg := "Expected values to be different, but they are equal"
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
 			return
 		}
-
-		fail(t, "Expected values to be different, but they are equal")
+		fail(t, errorMsg)
 	}
 }
 
@@ -661,7 +661,14 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 			foundOutput = append(foundOutput, fmt.Sprintf("\nCollection: %s", formatSlice(actual)))
 			foundOutput = append(foundOutput, fmt.Sprintf("Found: %s at index %d", formatComparisonValue(item), i))
 			output := strings.Join(foundOutput, "\n")
-			fail(t, "\nExpected collection to NOT contain element: %s", output)
+
+			cfg := processOptions(opts...)
+			errorMsg := fmt.Sprintf("\nExpected collection to NOT contain element: %s", output)
+			if cfg.Message != "" {
+				fail(t, "%s\n%s", cfg.Message, errorMsg)
+			} else {
+				fail(t, "%s", errorMsg)
+			}
 			return
 		}
 	}
@@ -697,18 +704,18 @@ func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 		return
 	}
 
-	if customMsg != "" {
-		customMsg = fmt.Sprintf("%s\n", customMsg)
-	}
-
+	errorMsg := ""
 	if len(duplicates) == 1 {
-		fail(t, "%sExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
-		return
+		errorMsg = fmt.Sprintf("Expected no duplicates, but found 1 duplicate value: %s", formatDuplicatesErrors(duplicates))
+	} else {
+		errorMsg = fmt.Sprintf("Expected no duplicates, but found %d duplicate values: %s", len(duplicates), formatDuplicatesErrors(duplicates))
 	}
 
-	errorsMsg := formatDuplicatesErrors(duplicates)
-
-	fail(t, "%sExpected no duplicates, but found %d duplicate values: %s", customMsg, len(duplicates), errorsMsg)
+	if customMsg != "" {
+		fail(t, "%s\n%s", customMsg, errorMsg)
+	} else {
+		fail(t, errorMsg)
+	}
 }
 
 // NotContainKey reports a test failure if the map contains the expected key.
@@ -799,7 +806,13 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 		}
 	}
 
-	fail(t, "\nPredicate does not match any item in the slice")
+	cfg := processOptions(opts...)
+	errorMsg := "\nPredicate does not match any item in the slice"
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
+	} else {
+		fail(t, errorMsg)
+	}
 }
 
 // StartsWith reports a test failure if the string does not start with the expected substring.
@@ -1087,11 +1100,12 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 	panicked, _ := didPanic(fn)
 	if !panicked {
 		cfg := processOptions(opts...)
-		customMsg := cfg.Message
-		if customMsg != "" {
-			customMsg += "\n"
+		errorMsg := "Expected panic, but did not panic"
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, errorMsg)
 		}
-		fail(t, "%sExpected panic, but did not panic", customMsg)
 	}
 }
 
@@ -1118,11 +1132,12 @@ func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	panicked, r := didPanic(fn)
 	if panicked {
 		cfg := processOptions(opts...)
-		customMsg := cfg.Message
-		if customMsg != "" {
-			customMsg += "\n"
+		errorMsg := fmt.Sprintf("Expected for the function to not panic, but it panicked with: %v", r)
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+		} else {
+			fail(t, errorMsg)
 		}
-		fail(t, "%sExpected for the function to not panic, but it panicked with: %v", customMsg, r)
 	}
 }
 

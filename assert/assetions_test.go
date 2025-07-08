@@ -476,6 +476,32 @@ func TestContainFunc_Fails_WhenPredicateDoesNotMatch(t *testing.T) {
 	}
 }
 
+func TestContainFunc_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	mockT := &mockT{}
+	customMessage := "No matching element found"
+
+	numbers := []int{1, 3, 5, 7}
+	predicate := func(item any) bool {
+		return item.(int)%2 == 0 // Looking for even numbers
+	}
+
+	ContainFunc(mockT, numbers, predicate, WithMessage(customMessage))
+
+	if !mockT.Failed() {
+		t.Fatal("Expected ContainFunc to fail, but it passed")
+	}
+
+	if !strings.Contains(mockT.message, customMessage) {
+		t.Errorf("Expected message to contain custom message %q, but got %q", customMessage, mockT.message)
+	}
+
+	if !strings.Contains(mockT.message, "Predicate does not match") {
+		t.Errorf("Expected message to contain default error message, but got %q", mockT.message)
+	}
+}
+
 func TestShouldContain_ShowsSimilarElements_OnFailure(t *testing.T) {
 	t.Parallel()
 
@@ -1345,7 +1371,7 @@ func TestBeGreaterOrEqualTo_Fails_WithSmallerValue(t *testing.T) {
 		t.Fatal("Expected test to fail, but it passed")
 	}
 
-	expected := "Expected 5 to be greater or equal than 10"
+	expected := "Expected value to be greater than or equal to threshold"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
@@ -1364,7 +1390,7 @@ func TestBeGreaterOrEqualTo_WithCustomMessage(t *testing.T) {
 
 	expectedParts := []string{
 		"Score cannot be negative",
-		"Expected 0 to be greater or equal than 1",
+		"Expected value to be greater than or equal to threshold",
 	}
 
 	for _, part := range expectedParts {
@@ -1387,7 +1413,7 @@ func TestBeGreaterOrEqualTo_Fails_WithMixedIntFloat(t *testing.T) {
 
 	expectedParts := []string{
 		"Integer vs float comparison",
-		"Expected 5 to be greater or equal than 5.1",
+		"Expected value to be greater than or equal to threshold",
 	}
 
 	for _, part := range expectedParts {
@@ -2323,6 +2349,29 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 	}
 
 	NotContainDuplicates(t, users)
+}
+
+func TestNotContainDuplicates_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	mockT := &mockT{}
+	customMessage := "Collection should not have duplicates"
+
+	duplicateSlice := []int{1, 2, 2, 3}
+
+	NotContainDuplicates(mockT, duplicateSlice, WithMessage(customMessage))
+
+	if !mockT.Failed() {
+		t.Fatal("Expected NotContainDuplicates to fail, but it passed")
+	}
+
+	if !strings.Contains(mockT.message, customMessage) {
+		t.Errorf("Expected message to contain custom message %q, but got %q", customMessage, mockT.message)
+	}
+
+	if !strings.Contains(mockT.message, "Expected no duplicates") {
+		t.Errorf("Expected message to contain default error message, but got %q", mockT.message)
+	}
 }
 
 // === Tests for StartsWith ===
