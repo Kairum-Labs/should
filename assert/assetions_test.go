@@ -4791,3 +4791,289 @@ func TestContainSubstring(t *testing.T) {
 		}
 	})
 }
+
+// === Tests for fail function ===
+
+func TestFail(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			message        string
+			args           []any
+			expectedOutput string
+			description    string
+		}{
+			{
+				name:           "should use Error when no args provided",
+				message:        "simple error message",
+				args:           nil,
+				expectedOutput: "simple error message",
+				description:    "When no arguments are provided, should call t.Error()",
+			},
+			{
+				name:           "should use Errorf when args provided",
+				message:        "formatted message: %s",
+				args:           []any{"test"},
+				expectedOutput: "formatted message: test",
+				description:    "When arguments are provided, should call t.Errorf()",
+			},
+			{
+				name:           "should handle multiple args",
+				message:        "user %s has %d points",
+				args:           []any{"john", 42},
+				expectedOutput: "user john has 42 points",
+				description:    "Should handle multiple formatting arguments",
+			},
+			{
+				name:           "should handle empty args slice",
+				message:        "empty args slice",
+				args:           []any{},
+				expectedOutput: "empty args slice",
+				description:    "Empty args slice should use t.Error()",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				fail(mockT, tt.message, tt.args...)
+
+				if !mockT.Failed() {
+					t.Fatal("Expected fail to mark test as failed")
+				}
+
+				if mockT.message != tt.expectedOutput {
+					t.Errorf("Expected message %q, got %q", tt.expectedOutput, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Security - Percent character handling", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			message        string
+			args           []any
+			expectedOutput string
+			description    string
+		}{
+			{
+				name:           "should safely handle percent in message without args",
+				message:        "100% complete",
+				args:           nil,
+				expectedOutput: "100% complete",
+				description:    "Percent characters should be safe when using t.Error()",
+			},
+			{
+				name:           "should safely handle multiple percents without args",
+				message:        "progress: 50% done, 25% remaining, 25% unknown",
+				args:           nil,
+				expectedOutput: "progress: 50% done, 25% remaining, 25% unknown",
+				description:    "Multiple percent characters should be safe",
+			},
+			{
+				name:           "should handle percent with format verbs without args",
+				message:        "invalid format: %s, %d, %v",
+				args:           nil,
+				expectedOutput: "invalid format: %s, %d, %v",
+				description:    "Format verbs should be treated as literal text when no args",
+			},
+			{
+				name:           "should handle percent with args correctly",
+				message:        "progress: %d%% complete",
+				args:           []any{75},
+				expectedOutput: "progress: 75% complete",
+				description:    "Should format correctly when args are provided",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				fail(mockT, tt.message, tt.args...)
+
+				if !mockT.Failed() {
+					t.Fatal("Expected fail to mark test as failed")
+				}
+
+				if mockT.message != tt.expectedOutput {
+					t.Errorf("Expected message %q, got %q", tt.expectedOutput, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			message        string
+			args           []any
+			expectedOutput string
+			description    string
+		}{
+			{
+				name:           "should handle empty message",
+				message:        "",
+				args:           nil,
+				expectedOutput: "",
+				description:    "Empty message should work",
+			},
+			{
+				name:           "should handle empty message with args",
+				message:        "",
+				args:           []any{"ignored"},
+				expectedOutput: "%!(EXTRA string=ignored)",
+				description:    "Empty message with args shows formatting error as expected",
+			},
+			{
+				name:           "should handle newlines in message",
+				message:        "line 1\nline 2\nline 3",
+				args:           nil,
+				expectedOutput: "line 1\nline 2\nline 3",
+				description:    "Newlines should be preserved",
+			},
+			{
+				name:           "should handle nil in args",
+				message:        "value is %v",
+				args:           []any{nil},
+				expectedOutput: "value is <nil>",
+				description:    "Nil values in args should be formatted correctly",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				fail(mockT, tt.message, tt.args...)
+
+				if !mockT.Failed() {
+					t.Fatal("Expected fail to mark test as failed")
+				}
+
+				if mockT.message != tt.expectedOutput {
+					t.Errorf("Expected message %q, got %q", tt.expectedOutput, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Format string validation", func(t *testing.T) {
+		tests := []struct {
+			name        string
+			message     string
+			args        []any
+			shouldPanic bool
+			description string
+		}{
+			{
+				name:        "should handle mismatched format verbs gracefully",
+				message:     "expected %s but got %d",
+				args:        []any{"string"},
+				shouldPanic: false,
+				description: "Mismatched format verbs should not panic",
+			},
+			{
+				name:        "should handle too many args",
+				message:     "simple message",
+				args:        []any{"extra", "args"},
+				shouldPanic: false,
+				description: "Extra arguments should not cause panic",
+			},
+			{
+				name:        "should handle complex format string",
+				message:     "user %s (id: %d) has %.2f points at %v",
+				args:        []any{"john", 123, 45.678, "2023-01-01"},
+				shouldPanic: false,
+				description: "Complex format strings should work",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+
+				defer func() {
+					r := recover()
+					if tt.shouldPanic && r == nil {
+						t.Error("Expected panic but none occurred")
+					}
+					if !tt.shouldPanic && r != nil {
+						t.Errorf("Unexpected panic: %v", r)
+					}
+				}()
+
+				fail(mockT, tt.message, tt.args...)
+
+				if !mockT.Failed() {
+					t.Fatal("Expected fail to mark test as failed")
+				}
+			})
+		}
+	})
+
+	t.Run("Helper method call", func(t *testing.T) {
+		// This test verifies that fail calls t.Helper()
+
+		t.Run("should call Helper method", func(t *testing.T) {
+			mockT := &mockT{}
+
+			fail(mockT, "test message")
+
+			if !mockT.Failed() {
+				t.Fatal("Expected fail to mark test as failed")
+			}
+		})
+	})
+}
+
+func TestFail_Integration(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Integration with BeTrue", func(t *testing.T) {
+		mockT := &mockT{}
+		BeTrue(mockT, false)
+
+		if !mockT.Failed() {
+			t.Fatal("Expected BeTrue to fail and call fail function")
+		}
+
+		expected := "Expected true, got false"
+		if mockT.message != expected {
+			t.Errorf("Expected message %q, got %q", expected, mockT.message)
+		}
+	})
+
+	t.Run("Integration with custom message", func(t *testing.T) {
+		mockT := &mockT{}
+		BeTrue(mockT, false, WithMessage("custom error"))
+
+		if !mockT.Failed() {
+			t.Fatal("Expected BeTrue to fail")
+		}
+
+		if !strings.Contains(mockT.message, "custom error") {
+			t.Errorf("Expected message to contain custom error, got %q", mockT.message)
+		}
+		if !strings.Contains(mockT.message, "Expected true, got false") {
+			t.Errorf("Expected message to contain assertion error, got %q", mockT.message)
+		}
+	})
+
+	t.Run("Integration with percent characters in custom message", func(t *testing.T) {
+		mockT := &mockT{}
+		BeTrue(mockT, false, WithMessage("progress: 100% complete"))
+
+		if !mockT.Failed() {
+			t.Fatal("Expected BeTrue to fail")
+		}
+
+		if !strings.Contains(mockT.message, "progress: 100% complete") {
+			t.Errorf("Expected message to contain custom message with percent, got %q", mockT.message)
+		}
+		if !strings.Contains(mockT.message, "Expected true, got false") {
+			t.Errorf("Expected message to contain assertion error, got %q", mockT.message)
+		}
+	})
+}

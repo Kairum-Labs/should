@@ -19,6 +19,11 @@ func (m *mockTB) Errorf(format string, args ...any) {
 	m.lastMessage = fmt.Sprintf(format, args...)
 }
 
+func (m *mockTB) Error(args ...any) {
+	m.failed = true
+	m.lastMessage = fmt.Sprint(args...)
+}
+
 func (m *mockTB) FailNow() {
 	m.failed = true
 	panic("FailNow called")

@@ -21,7 +21,11 @@ func processOptions(opts ...Option) *Config {
 
 func fail(t testing.TB, message string, args ...any) {
 	t.Helper()
-	t.Errorf(message, args...)
+	if len(args) > 0 {
+		t.Errorf(message, args...)
+	} else {
+		t.Error(message)
+	}
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -104,7 +108,7 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
-				fail(t, "%s", errorMsg)
+				fail(t, errorMsg)
 			}
 		}
 	case reflect.Ptr:
@@ -116,7 +120,7 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	default:
 		fail(t, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
@@ -149,7 +153,7 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 		return
 	}
@@ -163,7 +167,7 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
-				fail(t, "%s", errorMsg)
+				fail(t, errorMsg)
 			}
 		}
 	case reflect.Ptr:
@@ -173,7 +177,7 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
-				fail(t, "%s", errorMsg)
+				fail(t, errorMsg)
 			}
 		}
 	default:
@@ -300,7 +304,7 @@ func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -335,7 +339,7 @@ func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -369,7 +373,7 @@ func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...O
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -403,7 +407,7 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -524,7 +528,7 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, output)
 			} else {
-				fail(t, "%s", output)
+				fail(t, output)
 			}
 			return
 		}
@@ -544,7 +548,7 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, output)
 		} else {
-			fail(t, "%s", output)
+			fail(t, output)
 		}
 		return
 	}
@@ -565,7 +569,7 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, baseMsg)
 	} else {
-		fail(t, "%s", baseMsg)
+		fail(t, baseMsg)
 	}
 }
 
@@ -596,7 +600,7 @@ func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
 	} else {
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
@@ -627,7 +631,7 @@ func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedVal
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
 	} else {
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
@@ -667,7 +671,7 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
 			} else {
-				fail(t, "%s", errorMsg)
+				fail(t, errorMsg)
 			}
 			return
 		}
@@ -740,7 +744,7 @@ func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKe
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -767,7 +771,7 @@ func NotContainValue[K comparable, V any](t testing.TB, actual map[K]V, expected
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -875,7 +879,7 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 			return
 		}
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
@@ -939,7 +943,7 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 			return
 		}
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
@@ -982,7 +986,7 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
 	} else {
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
@@ -1015,7 +1019,7 @@ func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -1041,7 +1045,7 @@ func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 		} else {
-			fail(t, "%s", errorMsg)
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -1074,7 +1078,7 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
 	} else {
-		fail(t, "%s", errorMsg)
+		fail(t, errorMsg)
 	}
 }
 
