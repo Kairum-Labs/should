@@ -53,9 +53,7 @@ jobs:
           go-version: "stable"
 
       - name: Check for vulnerabilities
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
   module-check:
     name: Module Check
@@ -72,9 +70,7 @@ jobs:
           go-version: "stable"
 
       - name: Check go.mod is tidy
-        run: |
-          go mod tidy
-          git diff --exit-code go.mod go.sum
+        run: go mod tidy -diff
 
       - name: Run project tests
         run: go test -v ./...
