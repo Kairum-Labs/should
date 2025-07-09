@@ -201,7 +201,7 @@ should.BeEqual(t, p1, p2)
 p3 := Person{Name: "John", Age: 30}
 should.NotBeEqual(t, p1, p3)
 // Output when values are equal:
-// Expected values to be different, but they are equal:
+// Expected values to be different, but they are equal
 ```
 
 ### Length and Type Assertions
