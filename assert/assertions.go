@@ -23,9 +23,10 @@ func fail(t testing.TB, message string, args ...any) {
 	t.Helper()
 	if len(args) > 0 {
 		t.Errorf(message, args...)
-	} else {
-		t.Error(message)
+		return
 	}
+
+	t.Error(message)
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -45,9 +46,10 @@ func BeTrue(t testing.TB, actual bool, opts ...Option) {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected true, got false", cfg.Message)
-		} else {
-			fail(t, "Expected true, got false")
+			return
 		}
+
+		fail(t, "Expected true, got false")
 	}
 }
 
@@ -68,9 +70,10 @@ func BeFalse(t testing.TB, actual bool, opts ...Option) {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected false, got true", cfg.Message)
-		} else {
-			fail(t, "Expected false, got true")
+			return
 		}
+
+		fail(t, "Expected false, got true")
 	}
 }
 
@@ -107,9 +110,10 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 			errorMsg := formatEmptyError(actual, true)
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
-			} else {
-				fail(t, errorMsg)
+				return
 			}
+
+			fail(t, errorMsg)
 		}
 	case reflect.Ptr:
 		if actualValue.IsNil() {
@@ -119,9 +123,10 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 		errorMsg := formatEmptyError(actual, true)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	default:
 		fail(t, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
 	}
@@ -152,9 +157,10 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 		errorMsg := formatEmptyError(actual, false)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 		return
 	}
 
@@ -166,9 +172,10 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 			errorMsg := formatEmptyError(actual, false)
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
-			} else {
-				fail(t, errorMsg)
+				return
 			}
+
+			fail(t, errorMsg)
 		}
 	case reflect.Ptr:
 		if actualValue.IsNil() {
@@ -176,9 +183,10 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 			errorMsg := formatEmptyError(actual, false)
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
-			} else {
-				fail(t, errorMsg)
+				return
 			}
+
+			fail(t, errorMsg)
 		}
 	default:
 		fail(t, "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
@@ -224,9 +232,10 @@ func BeNil(t testing.TB, actual any, opts ...Option) {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected nil, but was not", cfg.Message)
-		} else {
-			fail(t, "Expected nil, but was not")
+			return
 		}
+
+		fail(t, "Expected nil, but was not")
 	}
 }
 
@@ -268,9 +277,10 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\nExpected not nil, but was nil", cfg.Message)
-		} else {
-			fail(t, "Expected not nil, but was nil")
+			return
 		}
+
+		fail(t, "Expected not nil, but was nil")
 	}
 }
 
@@ -303,9 +313,10 @@ func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option
 		errorMsg := formatNumericComparisonError(actual, expected, "greater")
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -338,9 +349,10 @@ func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 		errorMsg := formatNumericComparisonError(actual, expected, "less")
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -372,9 +384,10 @@ func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...O
 		errorMsg := formatNumericComparisonError(actual, expected, "greaterOrEqual")
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -406,9 +419,10 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 		errorMsg := formatNumericComparisonError(actual, expected, "lessOrEqual")
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -486,6 +500,7 @@ func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 			return
 		}
+
 		fail(t, errorMsg)
 	}
 }
@@ -527,9 +542,10 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 			output := formatContainsError(target, result)
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, output)
-			} else {
-				fail(t, output)
+				return
 			}
+
+			fail(t, output)
 			return
 		}
 	}
@@ -547,9 +563,10 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, output)
-		} else {
-			fail(t, output)
+			return
 		}
+
+		fail(t, output)
 		return
 	}
 
@@ -568,9 +585,10 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, baseMsg)
-	} else {
-		fail(t, baseMsg)
+		return
 	}
+
+	fail(t, baseMsg)
 }
 
 // ContainKey reports a test failure if the map does not contain the expected key.
@@ -599,9 +617,10 @@ func ContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKey K
 	errorMsg := formatMapContainKeyError(expectedKey, result)
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
-	} else {
-		fail(t, errorMsg)
+		return
 	}
+
+	fail(t, errorMsg)
 }
 
 // ContainValue reports a test failure if the map does not contain the expected value.
@@ -630,9 +649,10 @@ func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedVal
 	errorMsg := formatMapContainValueError(expectedValue, result)
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
-	} else {
-		fail(t, errorMsg)
+		return
 	}
+
+	fail(t, errorMsg)
 }
 
 // NotContain reports a test failure if the slice or array contains the expected value.
@@ -670,10 +690,10 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 			errorMsg := fmt.Sprintf("\nExpected collection to NOT contain element: %s", output)
 			if cfg.Message != "" {
 				fail(t, "%s\n%s", cfg.Message, errorMsg)
-			} else {
-				fail(t, errorMsg)
+				return
 			}
-			return
+
+			fail(t, errorMsg)
 		}
 	}
 }
@@ -708,18 +728,22 @@ func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 		return
 	}
 
-	errorMsg := ""
-	if len(duplicates) == 1 {
-		errorMsg = fmt.Sprintf("Expected no duplicates, but found 1 duplicate value: %s", formatDuplicatesErrors(duplicates))
-	} else {
-		errorMsg = fmt.Sprintf("Expected no duplicates, but found %d duplicate values: %s", len(duplicates), formatDuplicatesErrors(duplicates))
+	if customMsg != "" {
+		if len(duplicates) == 1 {
+			fail(t, "%s\nExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
+			return
+		}
+
+		fail(t, "%s\nExpected no duplicates, but found %d duplicate values: %s", customMsg, len(duplicates), formatDuplicatesErrors(duplicates))
+		return
 	}
 
-	if customMsg != "" {
-		fail(t, "%s\n%s", customMsg, errorMsg)
-	} else {
-		fail(t, errorMsg)
+	if len(duplicates) == 1 {
+		fail(t, "%s\nExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
+		return
 	}
+
+	fail(t, "Expected no duplicates, but found %d duplicate values: %s", len(duplicates), formatDuplicatesErrors(duplicates))
 }
 
 // NotContainKey reports a test failure if the map contains the expected key.
@@ -743,9 +767,10 @@ func NotContainKey[K comparable, V any](t testing.TB, actual map[K]V, expectedKe
 		errorMsg := formatMapNotContainKeyError(expectedKey, actual)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -770,9 +795,10 @@ func NotContainValue[K comparable, V any](t testing.TB, actual map[K]V, expected
 		errorMsg := formatMapNotContainValueError(expectedValue, actual)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -814,9 +840,10 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 	errorMsg := "\nPredicate does not match any item in the slice"
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
-	} else {
-		fail(t, errorMsg)
+		return
 	}
+
+	fail(t, errorMsg)
 }
 
 // StartsWith reports a test failure if the string does not start with the expected substring.
@@ -879,6 +906,7 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 			return
 		}
+
 		fail(t, errorMsg)
 	}
 }
@@ -943,6 +971,7 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 			fail(t, "%s\n%s", customMsg, errorMsg)
 			return
 		}
+
 		fail(t, errorMsg)
 	}
 }
@@ -985,9 +1014,10 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 	errorMsg := formatContainSubstringError(actual, substring, noteMsg)
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
-	} else {
-		fail(t, errorMsg)
+		return
 	}
+
+	fail(t, errorMsg)
 }
 
 // HaveLength reports a test failure if the collection does not have the expected length.
@@ -1018,9 +1048,10 @@ func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 		errorMsg := formatLengthError(actual, expected, actualLen)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -1044,9 +1075,10 @@ func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 		errorMsg := formatTypeError(actual, expectedType, actualType)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -1077,9 +1109,10 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	errorMsg := formatOneOfError(actual, options)
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)
-	} else {
-		fail(t, errorMsg)
+		return
 	}
+
+	fail(t, errorMsg)
 }
 
 // Panic reports a test failure if the given function does not panic.
@@ -1107,9 +1140,10 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 		errorMsg := "Expected panic, but did not panic"
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
@@ -1139,9 +1173,10 @@ func NotPanic(t testing.TB, fn func(), opts ...Option) {
 		errorMsg := fmt.Sprintf("Expected for the function to not panic, but it panicked with: %v", r)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
-		} else {
-			fail(t, errorMsg)
+			return
 		}
+
+		fail(t, errorMsg)
 	}
 }
 
