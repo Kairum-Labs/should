@@ -426,6 +426,52 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 	}
 }
 
+// BeInRange reports a test failure if the value is not within the specified range (inclusive).
+//
+// This assertion works with all numeric types and provides detailed
+// error messages when the assertion fails, indicating whether the value is
+// above or below the range and by how much.
+//
+// Example:
+//
+//	should.BeInRange(t, 25, 18, 65)
+//
+//	should.BeInRange(t, 99.5, 0.0, 100.0)
+//
+//	should.BeInRange(t, 200, 200, 299, should.WithMessage("HTTP status should be 2xx"))
+//
+// Only works with numeric types. All values must be of the same type.
+func BeInRange[T Ordered](t testing.TB, actual T, min T, max T, opts ...Option) {
+	t.Helper()
+	if actual >= min && actual <= max {
+		return
+	}
+
+	cfg := processOptions(opts...)
+	var messageBuilder strings.Builder
+
+	if cfg.Message != "" {
+		messageBuilder.WriteString(cfg.Message)
+		messageBuilder.WriteString("\n")
+	}
+
+	if actual < min {
+		messageBuilder.WriteString(fmt.Sprintf("Expected value to be in range [%v, %v], but it was below:", min, max))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Value    : %v", actual))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Range    : [%v, %v]", min, max))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Distance : %v below minimum (%v < %v)", min-actual, actual, min))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Hint     : Value should be >= %v", min))
+	} else { // actual > max
+		messageBuilder.WriteString(fmt.Sprintf("Expected value to be in range [%v, %v], but it was above:", min, max))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Value    : %v", actual))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Range    : [%v, %v]", min, max))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Distance : %v above maximum (%v > %v)", actual-max, actual, max))
+		messageBuilder.WriteString(fmt.Sprintf("\n        Hint     : Value should be <= %v", max))
+	}
+
+	fail(t, messageBuilder.String())
+}
+
 // BeEqual reports a test failure if the two values are not deeply equal.
 //
 // This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
