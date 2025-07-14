@@ -35,7 +35,8 @@ func WithMessage(msg string) Option {
 	return message(msg)
 }
 
-func IgnoreCase() Option {
+// WithIgnoreCase creates an option for ignoring case in comparisons.
+func WithIgnoreCase() Option {
 	return ignoreCase(true)
 }
 
