@@ -295,10 +295,10 @@ should.StartsWith(t, "Hello, World!", "hello")
 // Actual   : 'Hello, World!'
 //             ^^^^^
 //           (actual prefix)
-// Note: Case mismatch detected (use should.IgnoreCase() if intended)
+// Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
 
 // Case-insensitive option
-should.StartsWith(t, "Hello, World!", "hello", should.IgnoreCase())
+should.StartsWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
 
 // String suffix checking
 should.EndsWith(t, "Hello, World!", "World!")
@@ -322,10 +322,10 @@ should.ContainSubstring(t, "Hello, World!", "world")
 // Expected string to contain 'world', but it was not found
 // Substring   : 'world'
 // Actual   : 'Hello, World!'
-// Note: Case mismatch detected (use should.IgnoreCase() if intended)
+// Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
 
 // Case-insensitive option
-should.ContainSubstring(t, "Hello, World!", "world", should.IgnoreCase())
+should.ContainSubstring(t, "Hello, World!", "world", should.WithIgnoreCase())
 
 // Typo detection for short substrings (≤20 characters)
 should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
@@ -364,7 +364,7 @@ should.ContainSubstring(t, longText, "nonexistent")
 
 // With custom messages
 should.ContainSubstring(t, logContent, "ERROR", should.WithMessage("Log should contain error messages"))
-should.ContainSubstring(t, apiResponse, "success", should.IgnoreCase(), should.WithMessage("API response should indicate success"))
+should.ContainSubstring(t, apiResponse, "success", should.WithIgnoreCase(), should.WithMessage("API response should indicate success"))
 ```
 
 **Note**: Typo detection using Levenshtein distance is automatically enabled for substrings up to 20 characters to maintain good performance. For longer substrings, only exact matching is performed.

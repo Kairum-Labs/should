@@ -2473,7 +2473,7 @@ func TestStartsWith(t *testing.T) {
 				name:       "should pass with ignore case enabled",
 				actual:     "Hello, world!",
 				expected:   "hello",
-				opts:       []Option{IgnoreCase()},
+				opts:       []Option{WithIgnoreCase()},
 				shouldFail: false,
 			},
 			{
@@ -2482,7 +2482,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "hello",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, `Note: Case mismatch detected (use should.IgnoreCase() if intended)`) {
+					if !strings.Contains(message, `Note: Case mismatch detected (use should.WithIgnoreCase() if intended)`) {
 						t.Errorf("Expected message to contain note message, but got %q", message)
 					}
 				},
@@ -2741,7 +2741,7 @@ func TestEndsWith(t *testing.T) {
 				name:       "Success with ignore case enabled",
 				actual:     "Hello, WORLD",
 				expected:   "world",
-				opts:       []Option{IgnoreCase()},
+				opts:       []Option{WithIgnoreCase()},
 				shouldFail: false,
 			},
 			{
@@ -4583,14 +4583,14 @@ func TestContainSubstring(t *testing.T) {
 				name:       "should pass with ignore case enabled",
 				actual:     "Hello, WORLD!",
 				substring:  "world",
-				opts:       []Option{IgnoreCase()},
+				opts:       []Option{WithIgnoreCase()},
 				shouldFail: false,
 			},
 			{
 				name:       "should pass with ignore case enabled - mixed case",
 				actual:     "Hello, WoRlD!",
 				substring:  "WORLD",
-				opts:       []Option{IgnoreCase()},
+				opts:       []Option{WithIgnoreCase()},
 				shouldFail: false,
 			},
 			{
@@ -4599,7 +4599,7 @@ func TestContainSubstring(t *testing.T) {
 				substring:  "world",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Note: Case mismatch detected (use should.IgnoreCase() if intended)") {
+					if !strings.Contains(message, "Note: Case mismatch detected (use should.WithIgnoreCase() if intended)") {
 						t.Errorf("Expected message to contain note message, but got %q", message)
 					}
 				},
