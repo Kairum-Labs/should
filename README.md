@@ -7,8 +7,6 @@
 
 `Should` is a lightweight and intuitive assertion library for Go, designed to make your tests more readable and expressive. It provides **exceptionally detailed error messages** to help you debug failures faster and understand exactly what went wrong.
 
-> **⚠️ Pre-Release Notice**: I'm actively working towards the first stable release (v1.0.0) in the coming weeks. Some changes to the API might still happen, but I'd really appreciate it if anyone could test the current assertions and share any feedback or suggestions!
-
 ## Features
 
 - **Detailed Error Messages**: Get comprehensive, contextual error information for every assertion type.
