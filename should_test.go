@@ -362,7 +362,7 @@ func TestWrappers(t *testing.T) {
 	t.Run("StartsWith passes", func(t *testing.T) {
 		mockT := &mockTB{}
 		StartsWith(mockT, "Hello, world!", "Hello")
-		StartsWith(mockT, "Hello, world!", "hello", IgnoreCase())
+		StartsWith(mockT, "Hello, world!", "hello", WithIgnoreCase())
 		if mockT.failed {
 			t.Error("StartsWith should pass")
 		}

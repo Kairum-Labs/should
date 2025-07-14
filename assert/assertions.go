@@ -856,11 +856,11 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 //
 //	should.StartsWith(t, "Hello, world!", "hello")
 //
-//	should.StartsWith(t, "Hello, world!", "hello", should.IgnoreCase())
+//	should.StartsWith(t, "Hello, world!", "hello", should.WithIgnoreCase())
 //
 //	should.StartsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 
@@ -896,7 +896,7 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	noteMsg := ""
 	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
-		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 
 	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg, cfg)
@@ -921,11 +921,11 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 //
 //	should.EndsWith(t, "Hello, world!", "world")
 //
-//	should.EndsWith(t, "Hello, world", "WORLD", should.IgnoreCase())
+//	should.EndsWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
 //
 //	should.EndsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 
@@ -961,7 +961,7 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	noteMsg := ""
 	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {
-		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 
 	errorMsg := formatEndsWithError(actual, expected, actualEndSufix, noteMsg, cfg)
@@ -987,11 +987,11 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 //
 //	should.ContainSubstring(t, "Hello, world!", "world")
 //
-//	should.ContainSubstring(t, "Hello, World", "WORLD", should.IgnoreCase())
+//	should.ContainSubstring(t, "Hello, World", "WORLD", should.WithIgnoreCase())
 //
 //	should.ContainSubstring(t, longText, "keyword", should.WithMessage("Expected keyword to be present"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 func ContainSubstring(t testing.TB, actual string, substring string, opts ...Option) {
 	t.Helper()
 
@@ -1008,7 +1008,7 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 
 	noteMsg := ""
 	if !cfg.IgnoreCase && strings.Contains(strings.ToLower(actual), strings.ToLower(substring)) {
-		noteMsg = "\nNote: Case mismatch detected (use should.IgnoreCase() if intended)"
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 
 	errorMsg := formatContainSubstringError(actual, substring, noteMsg)

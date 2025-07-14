@@ -33,13 +33,17 @@ func WithMessage(message string) Option {
 	return assert.WithMessage(message)
 }
 
-// IgnoreCase creates an option for ignoring case in string comparisons.
+// WithIgnoreCase returns an option that makes string comparisons case-insensitive.
+//
+// This option can be passed to assertions that perform string comparisons,
+// such as StartsWith and EndsWith, to ensure that case differences are ignored.
 //
 // Example:
 //
-//	should.StartsWith(t, "hello", "HELLO", should.IgnoreCase())
-func IgnoreCase() Option {
-	return assert.IgnoreCase()
+//	should.StartsWith(t, "hello", "HELLO", should.WithIgnoreCase())
+//	should.EndsWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+func WithIgnoreCase() Option {
+	return assert.WithIgnoreCase()
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -342,11 +346,11 @@ func ContainFunc[T any](t testing.TB, actual T, predicate func(item any) bool, o
 //
 //	should.StartsWith(t, "Hello, world!", "hello")
 //
-//	should.StartsWith(t, "Hello, world!", "hello", should.IgnoreCase())
+//	should.StartsWith(t, "Hello, world!", "hello", should.WithIgnoreCase())
 //
 //	should.StartsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 	assert.StartsWith(t, actual, expected, opts...)
@@ -362,11 +366,11 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 //
 //	should.EndsWith(t, "Hello, world!", "world")
 //
-//	should.EndsWith(t, "Hello, world", "WORLD", should.IgnoreCase())
+//	should.EndsWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
 //
 //	should.EndsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 	assert.EndsWith(t, actual, expected, opts...)
@@ -384,11 +388,11 @@ func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
 //
 //	should.ContainSubstring(t, "Hello, world!", "world")
 //
-//	should.ContainSubstring(t, "Hello, World", "WORLD", should.IgnoreCase())
+//	should.ContainSubstring(t, "Hello, World", "WORLD", should.WithIgnoreCase())
 //
 //	should.ContainSubstring(t, longText, "keyword", should.WithMessage("Expected keyword to be present"))
 //
-// Note: The assertion is case-sensitive by default. Use should.IgnoreCase() to ignore case.
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
 // Typo detection is automatically enabled for needles up to 20 characters for performance.
 func ContainSubstring(t testing.TB, actual string, substring string, opts ...Option) {
 	t.Helper()
