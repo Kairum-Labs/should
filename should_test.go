@@ -463,6 +463,15 @@ func TestWrappers(t *testing.T) {
 			t.Error("BeInRange should fail")
 		}
 	})
+
+	t.Run("NotPanic with stack trace passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		NotPanic(mockT, func() {
+		}, WithStackTrace())
+		if mockT.failed {
+			t.Error("NotPanic should pass")
+		}
+	})
 }
 
 func TestContainKey_Integration(t *testing.T) {

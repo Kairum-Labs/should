@@ -46,6 +46,17 @@ func WithIgnoreCase() Option {
 	return assert.WithIgnoreCase()
 }
 
+// WithStackTrace creates an option for including stack traces on NotPanic assertions.
+//
+// Example:
+//
+//	should.NotPanic(t, func() {
+//		panic("expected panic")
+//	}, should.WithStackTrace())
+func WithStackTrace() Option {
+	return assert.WithStackTrace()
+}
+
 // BeTrue reports a test failure if the value is not true.
 //
 // This assertion only works with boolean values and will fail immediately
