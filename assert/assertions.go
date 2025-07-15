@@ -448,28 +448,13 @@ func BeInRange[T Ordered](t testing.TB, actual T, min T, max T, opts ...Option) 
 	}
 
 	cfg := processOptions(opts...)
-	var messageBuilder strings.Builder
+	errorMsg := formatRangeError(actual, min, max)
 
 	if cfg.Message != "" {
-		messageBuilder.WriteString(cfg.Message)
-		messageBuilder.WriteString("\n")
+		fail(t, "%s\n%s", cfg.Message, errorMsg)
+		return
 	}
-
-	if actual < min {
-		messageBuilder.WriteString(fmt.Sprintf("Expected value to be in range [%v, %v], but it was below:", min, max))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Value    : %v", actual))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Range    : [%v, %v]", min, max))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Distance : %v below minimum (%v < %v)", min-actual, actual, min))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Hint     : Value should be >= %v", min))
-	} else { // actual > max
-		messageBuilder.WriteString(fmt.Sprintf("Expected value to be in range [%v, %v], but it was above:", min, max))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Value    : %v", actual))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Range    : [%v, %v]", min, max))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Distance : %v above maximum (%v > %v)", actual-max, actual, max))
-		messageBuilder.WriteString(fmt.Sprintf("\n        Hint     : Value should be <= %v", max))
-	}
-
-	fail(t, messageBuilder.String())
+	fail(t, errorMsg)
 }
 
 // BeEqual reports a test failure if the two values are not deeply equal.

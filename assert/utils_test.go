@@ -2633,3 +2633,75 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 		}
 	})
 }
+
+func TestFormatString(t *testing.T) {
+	// ... existing test ...
+}
+
+func TestFormatRangeError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("value below range", func(t *testing.T) {
+		t.Parallel()
+		actual := 16
+		min := 18
+		max := 65
+		expected := `Expected value to be in range [18, 65], but it was below:
+        Value    : 16
+        Range    : [18, 65]
+        Distance : 2 below minimum (16 < 18)
+        Hint     : Value should be >= 18`
+		result := formatRangeError(actual, min, max)
+		if result != expected {
+			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
+		}
+	})
+
+	t.Run("value above range", func(t *testing.T) {
+		t.Parallel()
+		actual := 105
+		min := 0
+		max := 100
+		expected := `Expected value to be in range [0, 100], but it was above:
+        Value    : 105
+        Range    : [0, 100]
+        Distance : 5 above maximum (105 > 100)
+        Hint     : Value should be <= 100`
+		result := formatRangeError(actual, min, max)
+		if result != expected {
+			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
+		}
+	})
+
+	t.Run("float value below range", func(t *testing.T) {
+		t.Parallel()
+		actual := -0.1
+		min := 0.0
+		max := 1.0
+		expected := fmt.Sprintf(`Expected value to be in range [%v, %v], but it was below:
+        Value    : %v
+        Range    : [%v, %v]
+        Distance : %v below minimum (%v < %v)
+        Hint     : Value should be >= %v`, min, max, actual, min, max, min-actual, actual, min, min)
+		result := formatRangeError(actual, min, max)
+		if result != expected {
+			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
+		}
+	})
+
+	t.Run("float value above range", func(t *testing.T) {
+		t.Parallel()
+		actual := 1.1
+		min := 0.0
+		max := 1.0
+		expected := fmt.Sprintf(`Expected value to be in range [%v, %v], but it was above:
+        Value    : %v
+        Range    : [%v, %v]
+        Distance : %v above maximum (%v > %v)
+        Hint     : Value should be <= %v`, min, max, actual, min, max, actual-max, actual, max, max)
+		result := formatRangeError(actual, min, max)
+		if result != expected {
+			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
+		}
+	})
+}

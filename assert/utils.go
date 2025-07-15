@@ -2145,3 +2145,21 @@ func formatMapNotContainValueError(target interface{}, mapValue interface{}) str
 
 	return msg.String()
 }
+
+func formatRangeError[T Ordered](actual, min, max T) string {
+	if actual < min {
+		return fmt.Sprintf("Expected value to be in range [%v, %v], but it was below:"+
+			"\n        Value    : %v"+
+			"\n        Range    : [%v, %v]"+
+			"\n        Distance : %v below minimum (%v < %v)"+
+			"\n        Hint     : Value should be >= %v",
+			min, max, actual, min, max, min-actual, actual, min, min)
+	}
+
+	return fmt.Sprintf("Expected value to be in range [%v, %v], but it was above:"+
+		"\n        Value    : %v"+
+		"\n        Range    : [%v, %v]"+
+		"\n        Distance : %v above maximum (%v > %v)"+
+		"\n        Hint     : Value should be <= %v",
+		min, max, actual, min, max, actual-max, actual, max, max)
+}
