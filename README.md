@@ -66,8 +66,8 @@ func TestBasicAssertions(t *testing.T) {
 	should.NotBeEmpty(t, []int{1, 2, 3})
 
 	// String operations
-	should.StartsWith(t, "Hello, World!", "Hello")
-	should.EndsWith(t, "Hello, World!", "World!")
+	should.StartWidth(t, "Hello, World!", "Hello")
+	should.EndWith(t, "Hello, World!", "World!")
 	should.ContainSubstring(t, "Hello, World!", "World")
 
 	// Collection operations
@@ -318,10 +318,10 @@ Check if strings start or end with specific substrings, with intelligent case ha
 
 ```go
 // Basic string prefix checking
-should.StartsWith(t, "Hello, World!", "Hello")
+should.StartWidth(t, "Hello, World!", "Hello")
 
 // Case-sensitive by default
-should.StartsWith(t, "Hello, World!", "hello")
+should.StartWidth(t, "Hello, World!", "hello")
 // Output:
 // Expected string to start with 'hello', but it starts with 'Hello'
 // Expected : 'hello'
@@ -331,14 +331,14 @@ should.StartsWith(t, "Hello, World!", "hello")
 // Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
 
 // Case-insensitive option
-should.StartsWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
+should.StartWidth(t, "Hello, World!", "hello", should.WithIgnoreCase())
 
 // String suffix checking
-should.EndsWith(t, "Hello, World!", "World!")
+should.EndWith(t, "Hello, World!", "World!")
 
 // With custom messages
-should.StartsWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
-should.EndsWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
+should.StartWidth(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
+should.EndWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
 ```
 
 ### String Substring Assertions
@@ -518,8 +518,8 @@ should.NotContainValue(t, userRoles, 3)
 
 ### String Operations
 
-- `StartsWith(t, actual, expected)` - Check if string starts with expected substring
-- `EndsWith(t, actual, expected)` - Check if string ends with expected substring
+- `StartWidth(t, actual, expected)` - Check if string starts with expected substring
+- `EndWith(t, actual, expected)` - Check if string ends with expected substring
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
 ### Collection Operations

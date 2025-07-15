@@ -1250,7 +1250,7 @@ func formatStartsWithError(actual string, expected string, startWith string, not
 	return ""
 }
 
-// formatEndsWithError formats a detailed error message for EndsWith assertions.
+// formatEndsWithError formats a detailed error message for EndWith assertions.
 func formatEndsWithError(actual string, expected string, actualEndSufix string, noteMsg string, cfg *Config) string {
 	var msg strings.Builder
 	if cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {

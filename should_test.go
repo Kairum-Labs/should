@@ -359,20 +359,20 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	t.Run("StartsWith passes", func(t *testing.T) {
+	t.Run("StartWith passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		StartsWith(mockT, "Hello, world!", "Hello")
-		StartsWith(mockT, "Hello, world!", "hello", WithIgnoreCase())
+		StartWith(mockT, "Hello, world!", "Hello")
+		StartWith(mockT, "Hello, world!", "hello", WithIgnoreCase())
 		if mockT.failed {
-			t.Error("StartsWith should pass")
+			t.Error("StartWith should pass")
 		}
 	})
 
-	t.Run("EndsWith passes", func(t *testing.T) {
+	t.Run("EndWith passes", func(t *testing.T) {
 		mockT := &mockTB{}
-		EndsWith(mockT, "Hello, world", "world")
+		EndWith(mockT, "Hello, world", "world")
 		if mockT.failed {
-			t.Error("EndsWith should pass")
+			t.Error("EndWith should pass")
 		}
 	})
 
