@@ -101,6 +101,13 @@ type duplicateGroup struct {
 	Indexes []int
 }
 
+// PanicInfo contains information about a panic that occurred.
+type panicInfo struct {
+	Panicked  bool
+	Recovered any
+	Stack     string
+}
+
 // Ordered is a type constraint for types that can be ordered.
 // It includes all integer and floating-point types.
 type Ordered interface {

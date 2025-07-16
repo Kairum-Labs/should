@@ -1388,19 +1388,6 @@ func TestNotPanic_Extended(t *testing.T) {
 					"Stack trace:",
 				},
 			},
-			{
-				name: "should show stack trace note when WithStackTrace is not used",
-				testFunc: func() {
-					panic("error without stack trace")
-				},
-				opts:       []Option{}, // No WithStackTrace
-				shouldFail: true,
-				expectedParts: []string{
-					"Expected for the function to not panic, but it panicked with:",
-					"error without stack trace",
-					"Note: Stack trace is not available when should.WithStackTrace() is not used",
-				},
-			},
 		}
 
 		for _, tt := range tests {

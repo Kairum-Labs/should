@@ -1167,8 +1167,8 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 func Panic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
 	cfg := processOptions(opts...)
-	panicked, _, _ := didPanic(fn, cfg.StackTrace)
-	if !panicked {
+	panicInfo := didPanic(fn)
+	if !panicInfo.Panicked {
 		errorMsg := "Expected panic, but did not panic"
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
@@ -1196,50 +1196,38 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 //		user.Save()
 //	}, should.WithMessage("Save operation should not panic"))
 //
+// Note: Stack trace is not available when should.WithStackTrace() is not used
+//
 // The function parameter must not be nil.
 func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
 	cfg := processOptions(opts...)
-	panicked, r, stack := didPanic(fn, cfg.StackTrace)
-	if panicked {
-		var messageBuilder strings.Builder
-		messageBuilder.WriteString("Expected for the function to not panic, but it panicked with: ")
-		messageBuilder.WriteString(fmt.Sprintf("%v", r))
-
-		if stack != "" {
-			messageBuilder.WriteString("\nStack trace:\n")
-			messageBuilder.WriteString(stack)
-		}
-
-		if !cfg.StackTrace {
-			messageBuilder.WriteString("\nNote: Stack trace is not available when should.WithStackTrace() is not used")
-		}
+	panicInfo := didPanic(fn)
+	if panicInfo.Panicked {
+		panicErrorMsg := formatNotPanicError(panicInfo, cfg)
 
 		if cfg.Message != "" {
-			fail(t, "%s\n%s", cfg.Message, messageBuilder.String())
+			fail(t, "%s\n%s", cfg.Message, panicErrorMsg)
 			return
 		}
 
-		fail(t, messageBuilder.String())
+		fail(t, panicErrorMsg)
 	}
 }
 
 // didPanic executes a function and reports whether it panicked, returning the recovered value.
-func didPanic(fn func(), withStackTrace bool) (panicked bool, recovered any, stack string) {
+func didPanic(fn func()) (result panicInfo) {
 	defer func() {
 		if r := recover(); r != nil {
-			if !withStackTrace {
-				recovered = r
-				panicked = true
-				return
+			result = panicInfo{
+				Panicked:  true,
+				Recovered: r,
+				Stack:     string(debug.Stack()),
 			}
-
-			stack = string(debug.Stack())
-			recovered = r
-			panicked = true
 		}
 	}()
 	fn()
+
 	return
 }
 
