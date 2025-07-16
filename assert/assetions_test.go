@@ -5087,28 +5087,28 @@ func TestBeInRange(t *testing.T) {
 		tests := []struct {
 			name        string
 			value       int
-			min         int
-			max         int
+			minValue    int
+			maxValue    int
 			opts        []Option
 			shouldFail  bool
 			expectedMsg string
 		}{
-			{name: "should pass when value is within range", value: 50, min: 0, max: 100, shouldFail: false},
-			{name: "should pass when value is at lower bound", value: 0, min: 0, max: 100, shouldFail: false},
-			{name: "should pass when value is at upper bound", value: 100, min: 0, max: 100, shouldFail: false},
+			{name: "should pass when value is within range", value: 50, minValue: 0, maxValue: 100, shouldFail: false},
+			{name: "should pass when value is at lower bound", value: 0, minValue: 0, maxValue: 100, shouldFail: false},
+			{name: "should pass when value is at upper bound", value: 100, minValue: 0, maxValue: 100, shouldFail: false},
 			{
 				name:        "should fail when value is below range",
 				value:       16,
-				min:         18,
-				max:         65,
+				minValue:    18,
+				maxValue:    65,
 				shouldFail:  true,
 				expectedMsg: "Expected value to be in range [18, 65], but it was below:",
 			},
 			{
 				name:        "should fail when value is above range",
 				value:       105,
-				min:         0,
-				max:         100,
+				minValue:    0,
+				maxValue:    100,
 				shouldFail:  true,
 				expectedMsg: "Expected value to be in range [0, 100], but it was above:",
 			},
@@ -5117,7 +5117,7 @@ func TestBeInRange(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				BeInRange(mockT, tt.value, tt.min, tt.max, tt.opts...)
+				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue, tt.opts...)
 
 				if tt.shouldFail != mockT.Failed() {
 					t.Errorf("Expected test failure to be %v, but was %v", tt.shouldFail, mockT.Failed())
@@ -5136,27 +5136,27 @@ func TestBeInRange(t *testing.T) {
 		tests := []struct {
 			name        string
 			value       float64
-			min         float64
-			max         float64
+			minValue    float64
+			maxValue    float64
 			shouldFail  bool
 			expectedMsg string
 		}{
-			{name: "should pass when value is within range", value: 0.5, min: 0.0, max: 1.0, shouldFail: false},
-			{name: "should pass when value is at lower bound", value: 0.0, min: 0.0, max: 1.0, shouldFail: false},
-			{name: "should pass when value is at upper bound", value: 1.0, min: 0.0, max: 1.0, shouldFail: false},
+			{name: "should pass when value is within range", value: 0.5, minValue: 0.0, maxValue: 1.0, shouldFail: false},
+			{name: "should pass when value is at lower bound", value: 0.0, minValue: 0.0, maxValue: 1.0, shouldFail: false},
+			{name: "should pass when value is at upper bound", value: 1.0, minValue: 0.0, maxValue: 1.0, shouldFail: false},
 			{
 				name:        "should fail when value is below range",
 				value:       -0.1,
-				min:         0.0,
-				max:         1.0,
+				minValue:    0.0,
+				maxValue:    1.0,
 				shouldFail:  true,
 				expectedMsg: "Expected value to be in range [0, 1], but it was below:",
 			},
 			{
 				name:        "should fail when value is above range",
 				value:       1.1,
-				min:         0.0,
-				max:         1.0,
+				minValue:    0.0,
+				maxValue:    1.0,
 				shouldFail:  true,
 				expectedMsg: "Expected value to be in range [0, 1], but it was above:",
 			},
@@ -5165,7 +5165,7 @@ func TestBeInRange(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				BeInRange(mockT, tt.value, tt.min, tt.max)
+				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue)
 
 				if tt.shouldFail != mockT.Failed() {
 					t.Errorf("Expected test failure to be %v, but was %v", tt.shouldFail, mockT.Failed())

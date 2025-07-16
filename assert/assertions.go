@@ -441,14 +441,14 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 //	should.BeInRange(t, 200, 200, 299, should.WithMessage("HTTP status should be 2xx"))
 //
 // Only works with numeric types. All values must be of the same type.
-func BeInRange[T Ordered](t testing.TB, actual T, min T, max T, opts ...Option) {
+func BeInRange[T Ordered](t testing.TB, actual T, minValue T, maxValue T, opts ...Option) {
 	t.Helper()
-	if actual >= min && actual <= max {
+	if actual >= minValue && actual <= maxValue {
 		return
 	}
 
 	cfg := processOptions(opts...)
-	errorMsg := formatRangeError(actual, min, max)
+	errorMsg := formatRangeError(actual, minValue, maxValue)
 
 	if cfg.Message != "" {
 		fail(t, "%s\n%s", cfg.Message, errorMsg)

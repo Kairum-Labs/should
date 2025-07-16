@@ -247,9 +247,9 @@ func BeLessOrEqualTo[T assert.Ordered](t testing.TB, actual T, expected T, opts 
 //	should.BeInRange(t, 200, 200, 299, should.WithMessage("HTTP status should be 2xx"))
 //
 // Only works with numeric types. All values must be of the same type.
-func BeInRange[T assert.Ordered](t testing.TB, actual T, min T, max T, opts ...Option) {
+func BeInRange[T assert.Ordered](t testing.TB, actual T, minValue T, maxValue T, opts ...Option) {
 	t.Helper()
-	assert.BeInRange(t, actual, min, max, opts...)
+	assert.BeInRange(t, actual, minValue, maxValue, opts...)
 }
 
 // BeEqual reports a test failure if the two values are not deeply equal.
