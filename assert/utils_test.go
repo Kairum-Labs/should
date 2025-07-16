@@ -2634,10 +2634,6 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 	})
 }
 
-func TestFormatString(t *testing.T) {
-	// ... existing test ...
-}
-
 func TestFormatRangeError(t *testing.T) {
 	t.Parallel()
 
