@@ -1339,6 +1339,131 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 	}
 }
 
+func TestNotPanic_Extended(t *testing.T) {
+	t.Parallel()
+
+	t.Run("With WithStackTrace option", func(t *testing.T) {
+		tests := []struct {
+			name          string
+			testFunc      func()
+			opts          []Option
+			shouldFail    bool
+			expectedParts []string
+		}{
+			{
+				name: "should pass when no panic occurs",
+				testFunc: func() {
+					result := 1 + 2
+					_ = result
+				},
+				opts:       []Option{WithStackTrace()},
+				shouldFail: false,
+			},
+			{
+				name: "should fail with stack trace when manual panic occurs",
+				testFunc: func() {
+					panic("runtime error")
+				},
+				opts:       []Option{WithStackTrace()},
+				shouldFail: true,
+				expectedParts: []string{
+					"Expected for the function to not panic, but it panicked with:",
+					"runtime error",
+					"Stack trace:",
+				},
+			},
+			{
+				name: "should fail with stack trace when runtime panic occurs",
+				testFunc: func() {
+					var x int = 1
+					var y int = 0
+					result := x / y
+					_ = result
+				},
+				opts:       []Option{WithStackTrace()},
+				shouldFail: true,
+				expectedParts: []string{
+					"Expected for the function to not panic, but it panicked with:",
+					"integer divide by zero",
+					"Stack trace:",
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				if tt.shouldFail {
+					failed, message := assertFails(t, func(t testing.TB) {
+						NotPanic(t, tt.testFunc, tt.opts...)
+					})
+
+					if !failed {
+						t.Fatal("Expected test to fail, but it passed")
+					}
+
+					for _, part := range tt.expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+						}
+					}
+				} else {
+					NotPanic(t, tt.testFunc, tt.opts...)
+				}
+			})
+		}
+	})
+
+	t.Run("Combined options", func(t *testing.T) {
+		tests := []struct {
+			name          string
+			testFunc      func()
+			opts          []Option
+			shouldFail    bool
+			expectedParts []string
+		}{
+			{
+				name: "should combine WithMessage and WithStackTrace",
+				testFunc: func() {
+					panic("database error")
+				},
+				opts: []Option{
+					WithMessage("Database operation should not panic"),
+					WithStackTrace(),
+				},
+				shouldFail: true,
+				expectedParts: []string{
+					"Database operation should not panic",
+					"Expected for the function to not panic, but it panicked with:",
+					"database error",
+					"Stack trace:",
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				if tt.shouldFail {
+					failed, message := assertFails(t, func(t testing.TB) {
+						NotPanic(t, tt.testFunc, tt.opts...)
+					})
+
+					if !failed {
+						t.Fatal("Expected test to fail, but it passed")
+					}
+
+					for _, part := range tt.expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+						}
+					}
+				} else {
+					NotPanic(t, tt.testFunc, tt.opts...)
+				}
+			})
+		}
+	})
+}
+
 // === Tests for BeGreaterOrEqualTo ===
 
 func TestBeGreaterOrEqualTo_Succeeds_WithGreaterValue(t *testing.T) {

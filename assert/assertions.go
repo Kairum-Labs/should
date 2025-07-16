@@ -7,6 +7,7 @@ package assert
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"testing"
 )
@@ -1165,9 +1166,9 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 // The function parameter must not be nil.
 func Panic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
-	panicked, _ := didPanic(fn)
-	if !panicked {
-		cfg := processOptions(opts...)
+	cfg := processOptions(opts...)
+	panicInfo := didPanic(fn)
+	if !panicInfo.Panicked {
 		errorMsg := "Expected panic, but did not panic"
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
@@ -1195,31 +1196,38 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 //		user.Save()
 //	}, should.WithMessage("Save operation should not panic"))
 //
+// Note: Stack trace is not available when should.WithStackTrace() is not used
+//
 // The function parameter must not be nil.
 func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
-	panicked, r := didPanic(fn)
-	if panicked {
-		cfg := processOptions(opts...)
-		errorMsg := fmt.Sprintf("Expected for the function to not panic, but it panicked with: %v", r)
+	cfg := processOptions(opts...)
+	panicInfo := didPanic(fn)
+	if panicInfo.Panicked {
+		panicErrorMsg := formatNotPanicError(panicInfo, cfg)
+
 		if cfg.Message != "" {
-			fail(t, "%s\n%s", cfg.Message, errorMsg)
+			fail(t, "%s\n%s", cfg.Message, panicErrorMsg)
 			return
 		}
 
-		fail(t, errorMsg)
+		fail(t, panicErrorMsg)
 	}
 }
 
 // didPanic executes a function and reports whether it panicked, returning the recovered value.
-func didPanic(fn func()) (panicked bool, recovered any) {
+func didPanic(fn func()) (result panicInfo) {
 	defer func() {
 		if r := recover(); r != nil {
-			panicked = true
-			recovered = r
+			result = panicInfo{
+				Panicked:  true,
+				Recovered: r,
+				Stack:     string(debug.Stack()),
+			}
 		}
 	}()
 	fn()
+
 	return
 }
 

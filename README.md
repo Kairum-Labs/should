@@ -542,7 +542,7 @@ should.NotContainValue(t, userRoles, 3)
 - `Panic(t, func, config...)` - Assert that a function panics
 - `NotPanic(t, func, config...)` - Assert that a function does not panic
 
-Example with custom messages:
+Examples with custom messages and stack traces:
 
 ```go
 // Assert function panics with custom message
@@ -554,6 +554,11 @@ should.Panic(t, func() {
 should.NotPanic(t, func() {
     user.Save()
 }, should.WithMessage("Save operation should not panic"))
+
+// Get detailed stack trace on panic
+should.NotPanic(t, func() {
+    user.Save()
+}, should.WithStackTrace(), should.WithMessage("Save operation should not panic"))
 ```
 
 ## Advanced Usage
@@ -572,6 +577,17 @@ should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be at least 
 
 // Another example
 should.BeGreaterOrEqualTo(t, account.Balance, 0, should.WithMessage("Account balance cannot be negative"))
+```
+
+#### Stack Traces with `WithStackTrace`
+
+For `NotPanic` assert, you can capture detailed stack traces using `should.WithStackTrace()`:
+
+```go
+// Get stack trace when panic occurs
+should.NotPanic(t, func() {
+    riskyOperation()
+}, should.WithStackTrace())
 ```
 
 ### Custom Predicate Functions

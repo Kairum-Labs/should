@@ -10,6 +10,7 @@ type Option interface {
 type Config struct {
 	Message    string
 	IgnoreCase bool
+	StackTrace bool
 	/*
 		 	Description    string
 			DeepComparison bool
@@ -19,7 +20,11 @@ type Config struct {
 // message implements the Option interface for custom messages.
 type message string
 
+// ignoreCase is a boolean flag for ignoring case in comparisons.
 type ignoreCase bool
+
+// stackTrace is a boolean flag for including stack traces on NotPanic assertions.
+type stackTrace bool
 
 // Apply sets the custom message in the config.
 func (m message) Apply(c *Config) {
@@ -30,6 +35,10 @@ func (i ignoreCase) Apply(c *Config) {
 	c.IgnoreCase = bool(i)
 }
 
+func (s stackTrace) Apply(c *Config) {
+	c.StackTrace = bool(s)
+}
+
 // WithMessage creates an option for setting a custom error message.
 func WithMessage(msg string) Option {
 	return message(msg)
@@ -38,6 +47,11 @@ func WithMessage(msg string) Option {
 // WithIgnoreCase creates an option for ignoring case in comparisons.
 func WithIgnoreCase() Option {
 	return ignoreCase(true)
+}
+
+// WithStackTrace creates an option for including stack traces on NotPanic assertions.
+func WithStackTrace() Option {
+	return stackTrace(true)
 }
 
 // fieldDiff represents a single difference between two compared values.
@@ -85,6 +99,13 @@ type insertionInfo[T Ordered] struct {
 type duplicateGroup struct {
 	Value   any
 	Indexes []int
+}
+
+// PanicInfo contains information about a panic that occurred.
+type panicInfo struct {
+	Panicked  bool
+	Recovered any
+	Stack     string
 }
 
 // Ordered is a type constraint for types that can be ordered.
