@@ -66,7 +66,7 @@ func TestBasicAssertions(t *testing.T) {
 	should.NotBeEmpty(t, []int{1, 2, 3})
 
 	// String operations
-	should.StartWidth(t, "Hello, World!", "Hello")
+	should.StartWith(t, "Hello, World!", "Hello")
 	should.EndWith(t, "Hello, World!", "World!")
 	should.ContainSubstring(t, "Hello, World!", "World")
 
@@ -318,10 +318,10 @@ Check if strings start or end with specific substrings, with intelligent case ha
 
 ```go
 // Basic string prefix checking
-should.StartWidth(t, "Hello, World!", "Hello")
+should.StartWith(t, "Hello, World!", "Hello")
 
 // Case-sensitive by default
-should.StartWidth(t, "Hello, World!", "hello")
+should.StartWith(t, "Hello, World!", "hello")
 // Output:
 // Expected string to start with 'hello', but it starts with 'Hello'
 // Expected : 'hello'
@@ -331,13 +331,13 @@ should.StartWidth(t, "Hello, World!", "hello")
 // Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
 
 // Case-insensitive option
-should.StartWidth(t, "Hello, World!", "hello", should.WithIgnoreCase())
+should.StartWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
 
 // String suffix checking
 should.EndWith(t, "Hello, World!", "World!")
 
 // With custom messages
-should.StartWidth(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
+should.StartWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
 should.EndWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
 ```
 
@@ -518,7 +518,7 @@ should.NotContainValue(t, userRoles, 3)
 
 ### String Operations
 
-- `StartWidth(t, actual, expected)` - Check if string starts with expected substring
+- `StartWith(t, actual, expected)` - Check if string starts with expected substring
 - `EndWith(t, actual, expected)` - Check if string ends with expected substring
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
