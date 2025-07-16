@@ -51,6 +51,11 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeLessThan(t, 3, 7)
 	should.BeLessOrEqualTo(t, 5, 10)
 
+	// Range validation
+	should.BeInRange(t, user.Age, 18, 65)
+	should.BeInRange(t, testScore, 0, 100)
+	should.BeInRange(t, response.StatusCode, 200, 299)
+
 	// Numeric comparisons with custom messages
 	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
@@ -171,6 +176,34 @@ should.BeLessOrEqualTo(t, 15, 10)
 //         Threshold : 10
 //         Difference: +5 (value is 5 greater)
 //         Hint      : Value should be smaller than or equal to threshold
+
+// Range validation (fails when value is below or above the range)
+should.BeInRange(t, 16, 18, 65)
+// Output:
+// Expected value to be in range [18, 65], but it was below:
+//         Value    : 16
+//         Range    : [18, 65]
+//         Distance : 2 below minimum (16 < 18)
+//         Hint     : Value should be >= 18
+
+// Range validation (fails when value is above the range)
+should.BeInRange(t, 105, 0, 100)
+// Output:
+// Expected value to be in range [0, 100], but it was above:
+//         Value    : 105
+//         Range    : [0, 100]
+//         Distance : 5 above maximum (105 > 100)
+//         Hint     : Value should be <= 100
+
+// Range validation with custom message
+should.BeInRange(t, 150, 0, 100, should.WithMessage("Battery level must be valid percentage"))
+// Output:
+// Battery level must be valid percentage
+// Expected value to be in range [0, 100], but it was above:
+//         Value    : 150
+//         Range    : [0, 100]
+//         Distance : 50 above maximum (150 > 100)
+//         Hint     : Value should be <= 100
 ```
 
 ### Struct and Object Comparisons
@@ -481,6 +514,7 @@ should.NotContainValue(t, userRoles, 3)
 - `BeLessThan(t, actual, threshold)` - Numeric less-than comparison
 - `BeGreaterOrEqualTo(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 - `BeLessOrEqualTo(t, actual, threshold)` - Numeric less-than-or-equal comparison
+- `BeInRange(t, actual, minValue, maxValue)` - Check if value is within inclusive range [minValue, maxValue]
 
 ### String Operations
 

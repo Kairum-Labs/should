@@ -5077,3 +5077,139 @@ func TestFail_Integration(t *testing.T) {
 		}
 	})
 }
+
+func TestBeInRange(t *testing.T) {
+	t.Parallel()
+
+	// Test cases for integer ranges
+	t.Run("Integer range", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name        string
+			value       int
+			minValue    int
+			maxValue    int
+			opts        []Option
+			shouldFail  bool
+			expectedMsg string
+		}{
+			{name: "should pass when value is within range", value: 50, minValue: 0, maxValue: 100, shouldFail: false},
+			{name: "should pass when value is at lower bound", value: 0, minValue: 0, maxValue: 100, shouldFail: false},
+			{name: "should pass when value is at upper bound", value: 100, minValue: 0, maxValue: 100, shouldFail: false},
+			{
+				name:        "should fail when value is below range",
+				value:       16,
+				minValue:    18,
+				maxValue:    65,
+				shouldFail:  true,
+				expectedMsg: "Expected value to be in range [18, 65], but it was below:",
+			},
+			{
+				name:        "should fail when value is above range",
+				value:       105,
+				minValue:    0,
+				maxValue:    100,
+				shouldFail:  true,
+				expectedMsg: "Expected value to be in range [0, 100], but it was above:",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue, tt.opts...)
+
+				if tt.shouldFail != mockT.Failed() {
+					t.Errorf("Expected test failure to be %v, but was %v", tt.shouldFail, mockT.Failed())
+				}
+
+				if tt.shouldFail && !strings.Contains(mockT.message, tt.expectedMsg) {
+					t.Errorf("Expected error message to contain %q, but got %q", tt.expectedMsg, mockT.message)
+				}
+			})
+		}
+	})
+
+	// Test cases for float ranges
+	t.Run("Float range", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name        string
+			value       float64
+			minValue    float64
+			maxValue    float64
+			shouldFail  bool
+			expectedMsg string
+		}{
+			{name: "should pass when value is within range", value: 0.5, minValue: 0.0, maxValue: 1.0, shouldFail: false},
+			{name: "should pass when value is at lower bound", value: 0.0, minValue: 0.0, maxValue: 1.0, shouldFail: false},
+			{name: "should pass when value is at upper bound", value: 1.0, minValue: 0.0, maxValue: 1.0, shouldFail: false},
+			{
+				name:        "should fail when value is below range",
+				value:       -0.1,
+				minValue:    0.0,
+				maxValue:    1.0,
+				shouldFail:  true,
+				expectedMsg: "Expected value to be in range [0, 1], but it was below:",
+			},
+			{
+				name:        "should fail when value is above range",
+				value:       1.1,
+				minValue:    0.0,
+				maxValue:    1.0,
+				shouldFail:  true,
+				expectedMsg: "Expected value to be in range [0, 1], but it was above:",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockT := &mockT{}
+				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue)
+
+				if tt.shouldFail != mockT.Failed() {
+					t.Errorf("Expected test failure to be %v, but was %v", tt.shouldFail, mockT.Failed())
+				}
+
+				if tt.shouldFail && !strings.Contains(mockT.message, tt.expectedMsg) {
+					t.Errorf("Expected error message to contain %q, but got %q", tt.expectedMsg, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should include custom message on failure when below range", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			opts := []Option{WithMessage("Value is out of bounds")}
+			BeInRange(mockT, 10, 20, 30, opts...)
+
+			if !mockT.Failed() {
+				t.Fatal("Expected test to fail, but it passed")
+			}
+
+			expectedMsg := "Value is out of bounds\nExpected value to be in range [20, 30], but it was below:"
+			if !strings.Contains(mockT.message, expectedMsg) {
+				t.Errorf("Expected error message to contain %q, but got %q", expectedMsg, mockT.message)
+			}
+		})
+
+		t.Run("should include custom message on failure when above range", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			opts := []Option{WithMessage("Battery level must be valid")}
+			BeInRange(mockT, 150, 0, 100, opts...)
+
+			if !mockT.Failed() {
+				t.Fatal("Expected test to fail, but it passed")
+			}
+
+			expectedMsg := "Battery level must be valid\nExpected value to be in range [0, 100], but it was above:"
+			if !strings.Contains(mockT.message, expectedMsg) {
+				t.Errorf("Expected error message to contain %q, but got %q", expectedMsg, mockT.message)
+			}
+		})
+	})
+}

@@ -447,6 +447,22 @@ func TestWrappers(t *testing.T) {
 			t.Error("BeOneOf should fail")
 		}
 	})
+
+	// BeInRange
+	t.Run("BeInRange passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeInRange(mockT, 5, 0, 10)
+		if mockT.failed {
+			t.Error("BeInRange should pass")
+		}
+	})
+	t.Run("BeInRange fails", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeInRange(mockT, 15, 0, 10)
+		if !mockT.failed {
+			t.Error("BeInRange should fail")
+		}
+	})
 }
 
 func TestContainKey_Integration(t *testing.T) {
