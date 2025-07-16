@@ -2499,13 +2499,13 @@ func TestNotContainDuplicates_WithCustomMessage(t *testing.T) {
 	}
 }
 
-// === Tests for StartsWith ===
+// === Tests for StartWith ===
 
 func TestStartsWith_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		StartsWith(t, "Hello, world!", "world", WithMessage("String should start with 'world'"))
+		StartWith(t, "Hello, world!", "world", WithMessage("String should start with 'world'"))
 	})
 
 	if !failed {
@@ -2570,13 +2570,13 @@ func TestStartsWith(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				StartsWith(mockT, tt.actual, tt.expected)
+				StartWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.failed {
-					t.Fatal("Expected StartsWith to fail, but it passed")
+					t.Fatal("Expected StartWith to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
-					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+					t.Errorf("Expected StartWith to pass, but it failed: %s", mockT.message)
 				}
 				if tt.errorCheck != nil && mockT.failed {
 					tt.errorCheck(t, mockT.message)
@@ -2617,13 +2617,13 @@ func TestStartsWith(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				StartsWith(mockT, tt.actual, tt.expected, tt.opts...)
+				StartWith(mockT, tt.actual, tt.expected, tt.opts...)
 
 				if tt.shouldFail && !mockT.failed {
-					t.Fatal("Expected StartsWith to fail, but it passed")
+					t.Fatal("Expected StartWith to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
-					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+					t.Errorf("Expected StartWith to pass, but it failed: %s", mockT.message)
 				}
 				if tt.errorCheck != nil && mockT.failed {
 					tt.errorCheck(t, mockT.message)
@@ -2652,13 +2652,13 @@ func TestStartsWith(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				StartsWith(mockT, tt.actual, tt.expected, tt.opts...)
+				StartWith(mockT, tt.actual, tt.expected, tt.opts...)
 
 				if tt.shouldFail && !mockT.failed {
-					t.Fatal("Expected StartsWith to fail, but it passed")
+					t.Fatal("Expected StartWith to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
-					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+					t.Errorf("Expected StartWith to pass, but it failed: %s", mockT.message)
 				}
 			})
 		}
@@ -2707,13 +2707,13 @@ func TestStartsWith(t *testing.T) {
 			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				StartsWith(mockT, tt.actual, tt.expected)
+				StartWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.failed {
-					t.Fatal("Expected StartsWith to fail, but it passed")
+					t.Fatal("Expected StartWith to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
-					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+					t.Errorf("Expected StartWith to pass, but it failed: %s", mockT.message)
 				}
 				if tt.errorCheck != nil && mockT.failed {
 					tt.errorCheck(t, mockT.message)
@@ -2769,13 +2769,13 @@ func TestStartsWith(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				mockT := &mockT{}
-				StartsWith(mockT, tt.actual, tt.expected)
+				StartWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.failed {
-					t.Fatal("Expected StartsWith to fail, but it passed")
+					t.Fatal("Expected StartWith to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
-					t.Errorf("Expected StartsWith to pass, but it failed: %s", mockT.message)
+					t.Errorf("Expected StartWith to pass, but it failed: %s", mockT.message)
 				}
 				if tt.errorCheck != nil && mockT.failed {
 					tt.errorCheck(t, mockT.message)
@@ -2785,7 +2785,7 @@ func TestStartsWith(t *testing.T) {
 	})
 }
 
-// === Tests for EndsWith ===
+// === Tests for EndWith ===
 
 func TestEndsWith(t *testing.T) {
 	t.Run("Basic functionality", func(t *testing.T) {
@@ -2838,7 +2838,7 @@ func TestEndsWith(t *testing.T) {
 				t.Parallel()
 
 				mockT := &mockT{}
-				EndsWith(mockT, tt.actual, tt.expected)
+				EndWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.Failed() {
 					t.Errorf("Expected failure but test passed")
@@ -2883,7 +2883,7 @@ func TestEndsWith(t *testing.T) {
 				t.Parallel()
 
 				mockT := &mockT{}
-				EndsWith(mockT, tt.actual, tt.expected, tt.opts...)
+				EndWith(mockT, tt.actual, tt.expected, tt.opts...)
 
 				if tt.shouldFail && !mockT.Failed() {
 					t.Errorf("Expected failure but test passed")
@@ -2898,7 +2898,7 @@ func TestEndsWith(t *testing.T) {
 	t.Run("Custom messages", func(t *testing.T) {
 		t.Run("Fails with custom message", func(t *testing.T) {
 			mockT := &mockT{}
-			EndsWith(mockT, "Hello, world!", "planet", WithMessage("String should end with 'planet'"))
+			EndWith(mockT, "Hello, world!", "planet", WithMessage("String should end with 'planet'"))
 
 			if !mockT.Failed() {
 				t.Errorf("Expected failure but test passed")
@@ -2949,7 +2949,7 @@ func TestEndsWith(t *testing.T) {
 				t.Parallel()
 
 				mockT := &mockT{}
-				EndsWith(mockT, tt.actual, tt.expected)
+				EndWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.Failed() {
 					t.Errorf("Expected failure but test passed")
@@ -3010,7 +3010,7 @@ func TestEndsWith(t *testing.T) {
 				t.Parallel()
 
 				mockT := &mockT{}
-				EndsWith(mockT, tt.actual, tt.expected)
+				EndWith(mockT, tt.actual, tt.expected)
 
 				if tt.shouldFail && !mockT.Failed() {
 					t.Errorf("Expected failure but test passed")

@@ -878,7 +878,7 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 	fail(t, errorMsg)
 }
 
-// StartsWith reports a test failure if the string does not start with the expected substring.
+// StartWith reports a test failure if the string does not start with the expected substring.
 //
 // This assertion checks if the actual string starts with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
@@ -886,14 +886,14 @@ func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, o
 //
 // Example:
 //
-//	should.StartsWith(t, "Hello, world!", "hello")
+//	should.StartWith(t, "Hello, world!", "hello")
 //
-//	should.StartsWith(t, "Hello, world!", "hello", should.WithIgnoreCase())
+//	should.StartWith(t, "Hello, world!", "hello", should.WithIgnoreCase())
 //
-//	should.StartsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
+//	should.StartWith(t, "Hello, world!", "world", should.WithMessage("Expected string to start with 'world'"))
 //
 // Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
-func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
+func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
@@ -943,7 +943,7 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 }
 
-// EndsWith reports a test failure if the string does not end with the expected substring.
+// EndWith reports a test failure if the string does not end with the expected substring.
 //
 // This assertion checks if the actual string ends with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
@@ -951,14 +951,14 @@ func StartsWith(t testing.TB, actual string, expected string, opts ...Option) {
 //
 // Example:
 //
-//	should.EndsWith(t, "Hello, world!", "world")
+//	should.EndWith(t, "Hello, world!", "world")
 //
-//	should.EndsWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+//	should.EndWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
 //
-//	should.EndsWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
+//	should.EndWith(t, "Hello, world!", "world", should.WithMessage("Expected string to end with 'world'"))
 //
 // Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
-func EndsWith(t testing.TB, actual string, expected string, opts ...Option) {
+func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
