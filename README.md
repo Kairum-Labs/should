@@ -1,6 +1,7 @@
 # Should - A Go Assertion Library
 
 [![go](https://img.shields.io/badge/go-1.22+-blue)](https://golang.com/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Kairum-Labs/should.svg)](https://pkg.go.dev/github.com/Kairum-Labs/should)
 [![codecov](https://codecov.io/gh/Kairum-Labs/should/branch/main/graph/badge.svg)](https://codecov.io/gh/Kairum-Labs/should)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Kairum-Labs/should)](https://goreportcard.com/report/github.com/Kairum-Labs/should)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
