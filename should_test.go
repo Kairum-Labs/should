@@ -448,7 +448,14 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	// BeInRange
+	t.Run("BeSorted passes", func(t *testing.T) {
+		mockT := &mockTB{}
+		BeSorted(mockT, []int{1, 2, 3})
+		if mockT.failed {
+			t.Error("BeSorted should pass")
+		}
+	})
+
 	t.Run("BeInRange passes", func(t *testing.T) {
 		mockT := &mockTB{}
 		BeInRange(mockT, 5, 0, 10)

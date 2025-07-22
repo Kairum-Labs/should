@@ -132,3 +132,17 @@ type CloseMatch struct {
 	Value       interface{}
 	Differences []string
 }
+
+// sortViolation represents a single violation in sort order
+type sortViolation struct {
+	Index int
+	Value interface{}
+	Next  interface{}
+}
+
+// sortCheckResult contains the result of checking if a collection is sorted
+type sortCheckResult struct {
+	IsSorted   bool
+	Violations []sortViolation
+	Total      int
+}

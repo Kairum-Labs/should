@@ -2177,3 +2177,121 @@ func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
 
 	return messageBuilder.String()
 }
+
+// checkIfSorted verifies if a collection (slice or array) is sorted in ascending order
+func checkIfSorted(collection any) sortCheckResult {
+	collectionValue := reflect.ValueOf(collection)
+
+	if !collectionValue.IsValid() || (!isSliceOrArray(collection)) {
+		return sortCheckResult{
+			IsSorted:   true,
+			Violations: nil,
+			Total:      0,
+		}
+	}
+
+	length := collectionValue.Len()
+	if length <= 1 {
+		return sortCheckResult{
+			IsSorted:   true,
+			Violations: nil,
+			Total:      length,
+		}
+	}
+
+	var violations []sortViolation
+	const maxViolations = 6 // Stop after 6 violations for performance (show 5 + indicate more)
+
+	for i := 0; i < length-1; i++ {
+		current := collectionValue.Index(i).Interface()
+		next := collectionValue.Index(i + 1).Interface()
+
+		// Compare using our comparison function
+		if !isLessOrEqualSortable(current, next) {
+			violations = append(violations, sortViolation{
+				Index: i,
+				Value: current,
+				Next:  next,
+			})
+
+			if len(violations) >= maxViolations {
+				break
+			}
+		}
+	}
+
+	return sortCheckResult{
+		IsSorted:   len(violations) == 0,
+		Violations: violations,
+		Total:      length,
+	}
+}
+
+// isLessOrEqualSortable compares two sortable values and returns true if a <= b
+func isLessOrEqualSortable(a, b any) bool {
+	aValue := reflect.ValueOf(a)
+	bValue := reflect.ValueOf(b)
+
+	// Both values must be of the same type for comparison
+	if aValue.Type() != bValue.Type() {
+		return false
+	}
+
+	switch aValue.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return aValue.Int() <= bValue.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return aValue.Uint() <= bValue.Uint()
+	case reflect.Float32, reflect.Float64:
+		return aValue.Float() <= bValue.Float()
+	case reflect.String:
+		return aValue.String() <= bValue.String()
+	default:
+		return false
+	}
+}
+
+// formatSortError creates a detailed error message for BeSorted failures
+func formatSortError(result sortCheckResult) string {
+	var msg strings.Builder
+
+	if len(result.Violations) == 0 {
+		return ""
+	}
+
+	msg.WriteString("Expected collection to be in ascending order, but it is not:\n")
+
+	collectionInfo := fmt.Sprintf("Collection: (total: %d elements)\n", result.Total)
+	if result.Total > 100 {
+		collectionInfo = fmt.Sprintf("Collection: [Large collection] (total: %d elements)\n", result.Total)
+	}
+	msg.WriteString(collectionInfo)
+
+	violationCount := len(result.Violations)
+	statusText := "Status    : 1 order violation found\n"
+	if violationCount != 1 {
+		statusText = fmt.Sprintf("Status    : %d order violations found\n", violationCount)
+	}
+	msg.WriteString(statusText)
+
+	msg.WriteString("Problems  :\n")
+
+	// Show up to 5 violations to avoid overwhelming output
+	maxShow := min(violationCount, 5)
+	for i := 0; i < maxShow; i++ {
+		violation := result.Violations[i]
+		msg.WriteString(fmt.Sprintf("  - Index %d: %v > %v\n",
+			violation.Index, violation.Value, violation.Next))
+	}
+
+	remaining := violationCount - maxShow
+	if remaining > 0 {
+		remainingText := "  - ... and 1 more violation"
+		if remaining != 1 {
+			remainingText = fmt.Sprintf("  - ... and %d more violations", remaining)
+		}
+		msg.WriteString(remainingText)
+	}
+
+	return msg.String()
+}

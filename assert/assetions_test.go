@@ -5338,3 +5338,112 @@ func TestBeInRange(t *testing.T) {
 		})
 	})
 }
+
+func TestBeSorted(t *testing.T) {
+	// Helper function to reduce repetition
+	runSortTest := func(collection any, shouldFail bool, msgCheck string) {
+		mockTest := &mockT{}
+		BeSorted(mockTest, collection)
+
+		if shouldFail && !mockTest.Failed() {
+			t.Error("Expected failure but test passed")
+		}
+		if !shouldFail && mockTest.Failed() {
+			t.Errorf("Expected success but test failed: %s", mockTest.message)
+		}
+		if msgCheck != "" && mockTest.failed && !strings.Contains(mockTest.message, msgCheck) {
+			t.Errorf("Expected message to contain %q, got:\n%s", msgCheck, mockTest.message)
+		}
+	}
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+
+		// Successful cases
+		runSortTest([]int{}, false, "")               // empty
+		runSortTest([]int{42}, false, "")             // single element
+		runSortTest([]int{1, 2, 3, 4, 5}, false, "")  // sorted
+		runSortTest([5]int{1, 2, 3, 4, 5}, false, "") // sorted array
+		runSortTest([]int{5, 5, 5}, false, "")        // duplicates
+
+		// Failure cases
+		runSortTest([]int{3, 1, 2}, true, "Index 0: 3 > 1")
+		runSortTest([3]int{3, 1, 2}, true, "Index 0: 3 > 1")
+		runSortTest([]int{5, 4, 3, 2, 1}, true, "4 order violations found")
+	})
+
+	t.Run("Type variations", func(t *testing.T) {
+		t.Parallel()
+
+		// Different types - sorted
+		runSortTest([]float64{1.1, 2.2, 3.3}, false, "")
+		runSortTest([]string{"apple", "banana", "cherry"}, false, "")
+		runSortTest([3]string{"apple", "banana", "cherry"}, false, "")
+
+		// Different types - unsorted
+		runSortTest([]float64{1.1, 3.3, 2.2}, true, "Index 1: 3.3 > 2.2")
+		runSortTest([]string{"banana", "apple"}, true, "Index 0: banana > apple")
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		runSortTest([]int{-5, -3, -1, 0, 2}, false, "")         // negatives sorted
+		runSortTest([]int{-1, -5, 0}, true, "Index 0: -1 > -5") // negatives unsorted
+		runSortTest([]float64{1.0, 1.1, 1.2}, false, "")        // float precision
+	})
+
+	t.Run("Error cases", func(t *testing.T) {
+		t.Parallel()
+
+		nonCollectionMock := &mockT{}
+		BeSorted(nonCollectionMock, 42) // not slice/array
+		if !nonCollectionMock.Failed() || !strings.Contains(nonCollectionMock.message, "slices or arrays") {
+			t.Errorf("Expected error for non-slice/array type")
+		}
+
+		unsortableTypeMock := &mockT{}
+		type unsortable struct{ value int }
+		BeSorted(unsortableTypeMock, []unsortable{{1}, {2}}) // unsortable elements
+		if !unsortableTypeMock.Failed() || !strings.Contains(unsortableTypeMock.message, "sortable types") {
+			t.Errorf("Expected error for unsortable element type")
+		}
+	})
+
+	t.Run("Large collection", func(t *testing.T) {
+		t.Parallel()
+
+		largeSlice := generateUnsortedLargeSlice(1000)
+		runSortTest(largeSlice, true, "[Large collection]")
+	})
+
+	t.Run("Custom message", func(t *testing.T) {
+		t.Parallel()
+
+		customMessageMock := &mockT{}
+		customMsg := "Values must be in order"
+		BeSorted(customMessageMock, []int{3, 1, 2}, WithMessage(customMsg))
+
+		if !customMessageMock.Failed() {
+			t.Error("Expected failure but test passed")
+		}
+		if !strings.Contains(customMessageMock.message, customMsg) {
+			t.Errorf("Expected custom message in error")
+		}
+	})
+}
+
+// generateUnsortedLargeSlice creates a large slice with some violations for testing
+func generateUnsortedLargeSlice(size int) []int {
+	slice := make([]int, size)
+	for i := range size {
+		slice[i] = i
+	}
+	// Add some violations
+	if size > 10 {
+		slice[5] = slice[5] + 10           // Make element 5 larger
+		slice[size/2] = slice[size/2] - 10 // Make middle element smaller
+		slice[size-5] = slice[size-5] - 20 // Make near-end element smaller
+	}
+	return slice
+}

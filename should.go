@@ -263,6 +263,29 @@ func BeInRange[T assert.Ordered](t testing.TB, actual T, minValue T, maxValue T,
 	assert.BeInRange(t, actual, minValue, maxValue, opts...)
 }
 
+// BeSorted reports a test failure if the slice or array is not sorted in ascending order.
+//
+// This assertion checks if all elements in the slice or array are in ascending order.
+// It provides detailed error messages showing order violations, including the index
+// and values that are out of order. For large collections, it shows a summary with
+// the total number of violations and displays up to 5 specific violations.
+//
+// Example:
+//
+//	should.BeSorted(t, []int{1, 2, 3, 4, 5})
+//
+//	should.BeSorted(t, [5]int{1, 2, 3, 4, 5})
+//
+//	should.BeSorted(t, []float64{1.1, 2.2, 3.3}, should.WithMessage("Values must be in order"))
+//
+//	should.BeSorted(t, []string{"apple", "banana", "cherry"})
+//
+// Works with slices and arrays of sortable types (numeric types and strings)
+func BeSorted(t testing.TB, actual any, opts ...Option) {
+	t.Helper()
+	assert.BeSorted(t, actual, opts...)
+}
+
 // BeEqual reports a test failure if the two values are not deeply equal.
 //
 // This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
