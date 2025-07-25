@@ -5343,7 +5343,23 @@ func TestBeSorted(t *testing.T) {
 	// Helper function to reduce repetition
 	runSortTest := func(collection any, shouldFail bool, msgCheck string) {
 		mockTest := &mockT{}
-		BeSorted(mockTest, collection)
+
+		switch elements := collection.(type) {
+		case []int:
+			BeSorted(mockTest, elements)
+		case [5]int:
+			BeSorted(mockTest, elements[:]) // Convert array to slice
+		case [3]int:
+			BeSorted(mockTest, elements[:]) // Convert array to slice
+		case []float64:
+			BeSorted(mockTest, elements)
+		case []string:
+			BeSorted(mockTest, elements)
+		case [3]string:
+			BeSorted(mockTest, elements[:]) // Convert array to slice
+		default:
+			t.Fatalf("Unsupported type in test: %T", collection)
+		}
 
 		if shouldFail && !mockTest.Failed() {
 			t.Error("Expected failure but test passed")
@@ -5393,23 +5409,6 @@ func TestBeSorted(t *testing.T) {
 		runSortTest([]float64{1.0, 1.1, 1.2}, false, "")        // float precision
 	})
 
-	t.Run("Error cases", func(t *testing.T) {
-		t.Parallel()
-
-		nonCollectionMock := &mockT{}
-		BeSorted(nonCollectionMock, 42) // not slice/array
-		if !nonCollectionMock.Failed() || !strings.Contains(nonCollectionMock.message, "slices or arrays") {
-			t.Errorf("Expected error for non-slice/array type")
-		}
-
-		unsortableTypeMock := &mockT{}
-		type unsortable struct{ value int }
-		BeSorted(unsortableTypeMock, []unsortable{{1}, {2}}) // unsortable elements
-		if !unsortableTypeMock.Failed() || !strings.Contains(unsortableTypeMock.message, "sortable types") {
-			t.Errorf("Expected error for unsortable element type")
-		}
-	})
-
 	t.Run("Large collection", func(t *testing.T) {
 		t.Parallel()
 
@@ -5431,6 +5430,7 @@ func TestBeSorted(t *testing.T) {
 			t.Errorf("Expected custom message in error")
 		}
 	})
+
 }
 
 // generateUnsortedLargeSlice creates a large slice with some violations for testing

@@ -2755,506 +2755,341 @@ func TestFormatNotPanicError(t *testing.T) {
 func TestCheckIfSorted(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name       string
-		collection interface{}
-		expected   sortCheckResult
-	}{
-		{
-			name:       "should return true for empty slice",
-			collection: []int{},
-			expected: sortCheckResult{
-				IsSorted:   true,
-				Violations: nil,
-				Total:      0,
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name       string
+			collection any
+			failFast   bool
+			expected   sortCheckResult
+		}{
+			{
+				name:       "should return true for empty slice",
+				collection: []int{},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 0},
 			},
-		},
-		{
-			name:       "should return true for single element",
-			collection: []int{42},
-			expected: sortCheckResult{
-				IsSorted:   true,
-				Violations: nil,
-				Total:      1,
+			{
+				name:       "should return true for single element",
+				collection: []int{42},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 1},
 			},
-		},
-		{
-			name:       "should return true for sorted int slice",
-			collection: []int{1, 2, 3, 4, 5},
-			expected: sortCheckResult{
-				IsSorted:   true,
-				Violations: nil,
-				Total:      5,
+			{
+				name:       "should return true for sorted int slice",
+				collection: []int{1, 2, 3, 4, 5},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 5},
 			},
-		},
-		{
-			name:       "should return true for sorted float slice",
-			collection: []float64{1.1, 2.2, 3.3, 4.4},
-			expected: sortCheckResult{
-				IsSorted:   true,
-				Violations: nil,
-				Total:      4,
+			{
+				name:       "should return true for sorted string slice",
+				collection: []string{"apple", "banana", "cherry"},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 3},
 			},
-		},
-		{
-			name:       "should return false with violations for unsorted slice",
-			collection: []int{1, 3, 2, 5, 4},
-			expected: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 1, Value: 3, Next: 2},
-					{Index: 3, Value: 5, Next: 4},
+			{
+				name:       "should return true for sorted float slice",
+				collection: []float64{1.1, 2.2, 3.3, 4.4},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 4},
+			},
+			{
+				name:       "should return false with violations for unsorted slice",
+				collection: []int{1, 3, 2, 5, 4},
+				failFast:   false,
+				expected: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 1, Value: 3, Next: 2},
+						{Index: 3, Value: 5, Next: 4},
+					},
+					Total: 5,
 				},
-				Total: 5,
 			},
-		},
-		{
-			name:       "should return false with violations for reverse sorted slice",
-			collection: []int{5, 4, 3, 2, 1},
-			expected: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 0, Value: 5, Next: 4},
-					{Index: 1, Value: 4, Next: 3},
-					{Index: 2, Value: 3, Next: 2},
-					{Index: 3, Value: 2, Next: 1},
+			{
+				name:       "should return false with violations for reverse sorted slice",
+				collection: []int{5, 4, 3, 2, 1},
+				failFast:   false,
+				expected: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 5, Next: 4},
+						{Index: 1, Value: 4, Next: 3},
+						{Index: 2, Value: 3, Next: 2},
+						{Index: 3, Value: 2, Next: 1},
+					},
+					Total: 5,
 				},
-				Total: 5,
 			},
-		},
-		{
-			name:       "should stop early when too many violations found",
-			collection: []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
-			expected: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 0, Value: 10, Next: 9},
-					{Index: 1, Value: 9, Next: 8},
-					{Index: 2, Value: 8, Next: 7},
-					{Index: 3, Value: 7, Next: 6},
-					{Index: 4, Value: 6, Next: 5},
-					{Index: 5, Value: 5, Next: 4},
-				},
-				Total: 11,
-			},
-		},
-	}
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			var result sortCheckResult
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				var result sortCheckResult
 
-			switch coll := tt.collection.(type) {
-			case []int:
-				result = checkIfSorted(coll)
-			case []float64:
-				result = checkIfSorted(coll)
-			default:
-				t.Fatalf("Unsupported collection type: %T", tt.collection)
-			}
-
-			if result.IsSorted != tt.expected.IsSorted {
-				t.Errorf("checkIfSorted() IsSorted = %v, want %v", result.IsSorted, tt.expected.IsSorted)
-			}
-
-			if result.Total != tt.expected.Total {
-				t.Errorf("checkIfSorted() Total = %v, want %v", result.Total, tt.expected.Total)
-			}
-
-			if len(result.Violations) != len(tt.expected.Violations) {
-				t.Errorf("checkIfSorted() Violations length = %v, want %v", len(result.Violations), len(tt.expected.Violations))
-				return
-			}
-
-			for i, violation := range result.Violations {
-				expected := tt.expected.Violations[i]
-				if violation.Index != expected.Index || violation.Value != expected.Value || violation.Next != expected.Next {
-					t.Errorf("checkIfSorted() Violation[%d] = {%d, %v, %v}, want {%d, %v, %v}",
-						i, violation.Index, violation.Value, violation.Next,
-						expected.Index, expected.Value, expected.Next)
+				switch coll := tt.collection.(type) {
+				case []int:
+					result = checkIfSorted(coll)
+				case []string:
+					result = checkIfSorted(coll)
+				case []float64:
+					result = checkIfSorted(coll)
+				default:
+					t.Fatalf("Unsupported collection type: %T", tt.collection)
 				}
+
+				if result.IsSorted != tt.expected.IsSorted {
+					t.Errorf("checkIfSorted() IsSorted = %v, want %v", result.IsSorted, tt.expected.IsSorted)
+				}
+
+				if result.Total != tt.expected.Total {
+					t.Errorf("checkIfSorted() Total = %v, want %v", result.Total, tt.expected.Total)
+				}
+
+				if len(result.Violations) != len(tt.expected.Violations) {
+					t.Errorf("checkIfSorted() Violations length = %v, want %v", len(result.Violations), len(tt.expected.Violations))
+					return
+				}
+
+				for i, violation := range result.Violations {
+					expected := tt.expected.Violations[i]
+					if violation.Index != expected.Index || violation.Value != expected.Value || violation.Next != expected.Next {
+						t.Errorf("checkIfSorted() Violation[%d] = {%d, %v, %v}, want {%d, %v, %v}",
+							i, violation.Index, violation.Value, violation.Next,
+							expected.Index, expected.Value, expected.Next)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("should handle duplicates correctly", func(t *testing.T) {
+			t.Parallel()
+			duplicateSlice := []int{1, 2, 2, 3, 3, 3}
+			result := checkIfSorted(duplicateSlice)
+
+			if !result.IsSorted {
+				t.Error("Expected slice with duplicates to be considered sorted")
+			}
+
+			if len(result.Violations) != 0 {
+				t.Errorf("Expected no violations for duplicates, got %d", len(result.Violations))
 			}
 		})
-	}
-}
 
-func TestFormatSortError(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		result   sortCheckResult
-		contains []string
-	}{
-		{
-			name: "should format error for small collection with single violation",
-			result: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 1, Value: 3, Next: 2},
-				},
-				Total: 3,
-			},
-			contains: []string{
-				"Expected collection to be in ascending order, but it is not:",
-				"(total: 3 elements)",
-				"1 order violation found",
-				"Index 1: 3 > 2",
-			},
-		},
-		{
-			name: "should format error for large collection with multiple violations",
-			result: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 4567, Value: 123, Next: 115},
-					{Index: 4702, Value: 890, Next: 456},
-					{Index: 4833, Value: 234, Next: 111},
-				},
-				Total: 10000,
-			},
-			contains: []string{
-				"Expected collection to be in ascending order, but it is not:",
-				"[Large collection] (total: 10000 elements)",
-				"3 order violations found",
-				"Index 4567: 123 > 115",
-				"Index 4702: 890 > 456",
-				"Index 4833: 234 > 111",
-			},
-		},
-		{
-			name: "should truncate violations when there are many",
-			result: sortCheckResult{
-				IsSorted: false,
-				Violations: []sortViolation{
-					{Index: 0, Value: 6, Next: 5},
-					{Index: 1, Value: 5, Next: 4},
-					{Index: 2, Value: 4, Next: 3},
-					{Index: 3, Value: 3, Next: 2},
-					{Index: 4, Value: 2, Next: 1},
-					{Index: 5, Value: 1, Next: 0},
-				},
-				Total: 8,
-			},
-			contains: []string{
-				"6 order violations found",
-				"Index 0: 6 > 5",
-				"Index 4: 2 > 1",
-				"... and 1 more violation",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run("should handle negative numbers", func(t *testing.T) {
 			t.Parallel()
-			result := formatSortError(tt.result)
+			negativeSlice := []int{-5, -3, -1, 0, 2}
+			result := checkIfSorted(negativeSlice)
 
-			for _, expected := range tt.contains {
-				if !strings.Contains(result, expected) {
-					t.Errorf("formatSortError() result does not contain expected string %q\nActual result:\n%s", expected, result)
-				}
+			if !result.IsSorted {
+				t.Error("Expected sorted negative numbers to be considered sorted")
 			}
 		})
-	}
-}
 
-// === Tests for isLessOrEqualSortable ===
+		t.Run("should stop at max violations limit", func(t *testing.T) {
+			t.Parallel()
+			largeUnsorted := []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
+			result := checkIfSorted(largeUnsorted)
 
-func TestIsLessOrEqualSortable(t *testing.T) {
-	t.Parallel()
+			if result.IsSorted {
+				t.Error("Expected large unsorted slice to be not sorted")
+			}
 
-	t.Run("Integer comparisons", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name     string
-			a, b     interface{}
-			expected bool
-		}{
-			{"int less than", 5, 10, true},
-			{"int equal", 10, 10, true},
-			{"int greater than", 15, 10, false},
-			{"int8 less than", int8(5), int8(10), true},
-			{"int16 equal", int16(10), int16(10), true},
-			{"int32 greater than", int32(15), int32(10), false},
-			{"int64 less than", int64(5), int64(10), true},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != tt.expected {
-					t.Errorf("isLessOrEqualSortable(%v, %v) = %v, want %v", tt.a, tt.b, result, tt.expected)
-				}
-			})
-		}
-	})
-
-	t.Run("Unsigned integer comparisons", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name     string
-			a, b     interface{}
-			expected bool
-		}{
-			{"uint less than", uint(5), uint(10), true},
-			{"uint equal", uint(10), uint(10), true},
-			{"uint greater than", uint(15), uint(10), false},
-			{"uint8 less than", uint8(5), uint8(10), true},
-			{"uint16 equal", uint16(10), uint16(10), true},
-			{"uint32 greater than", uint32(15), uint32(10), false},
-			{"uint64 less than", uint64(5), uint64(10), true},
-			{"uintptr equal", uintptr(10), uintptr(10), true},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != tt.expected {
-					t.Errorf("isLessOrEqualSortable(%v, %v) = %v, want %v", tt.a, tt.b, result, tt.expected)
-				}
-			})
-		}
-	})
-
-	t.Run("Float comparisons", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name     string
-			a, b     interface{}
-			expected bool
-		}{
-			{"float32 less than", float32(1.5), float32(2.5), true},
-			{"float32 equal", float32(2.5), float32(2.5), true},
-			{"float32 greater than", float32(3.5), float32(2.5), false},
-			{"float64 less than", 1.5, 2.5, true},
-			{"float64 equal", 2.5, 2.5, true},
-			{"float64 greater than", 3.5, 2.5, false},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != tt.expected {
-					t.Errorf("isLessOrEqualSortable(%v, %v) = %v, want %v", tt.a, tt.b, result, tt.expected)
-				}
-			})
-		}
-	})
-
-	t.Run("String comparisons", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name     string
-			a, b     string
-			expected bool
-		}{
-			{"string less than", "apple", "banana", true},
-			{"string equal", "apple", "apple", true},
-			{"string greater than", "banana", "apple", false},
-			{"empty string less than", "", "a", true},
-			{"string less than empty", "a", "", false},
-			{"both empty strings", "", "", true},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != tt.expected {
-					t.Errorf("isLessOrEqualSortable(%q, %q) = %v, want %v", tt.a, tt.b, result, tt.expected)
-				}
-			})
-		}
-	})
-
-	t.Run("Incompatible types", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name string
-			a, b interface{}
-		}{
-			{"int vs string", 5, "hello"},
-			{"float vs int", 3.14, 5},
-			{"string vs int", "hello", 5},
-			{"int vs bool", 5, true},
-			{"different int types", int32(5), int64(10)},
-			{"different float types", float32(1.5), float64(2.5)},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != false {
-					t.Errorf("isLessOrEqualSortable(%v, %v) = %v, want false for incompatible types", tt.a, tt.b, result)
-				}
-			})
-		}
-	})
-
-	t.Run("Unsupported types", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name string
-			a, b interface{}
-		}{
-			{"bool values", true, false},
-			{"struct values", struct{ x int }{1}, struct{ x int }{2}},
-			{"slice values", []int{1}, []int{2}},
-			{"map values", map[string]int{"a": 1}, map[string]int{"b": 2}},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				result := isLessOrEqualSortable(tt.a, tt.b)
-				if result != false {
-					t.Errorf("isLessOrEqualSortable(%v, %v) = %v, want false for unsupported types", tt.a, tt.b, result)
-				}
-			})
-		}
+			if len(result.Violations) != 6 {
+				t.Errorf("Expected exactly 6 violations (max limit), got %d", len(result.Violations))
+			}
+		})
 	})
 }
 
-// === Tests for isSortableElementType ===
-
-func TestIsSortableElementType(t *testing.T) {
+func TestFormatSortErrorGeneric(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Sortable integer types", func(t *testing.T) {
+	t.Run("Basic formatting", func(t *testing.T) {
 		t.Parallel()
 
-		sortableTypes := []reflect.Type{
-			reflect.TypeOf(int(0)),
-			reflect.TypeOf(int8(0)),
-			reflect.TypeOf(int16(0)),
-			reflect.TypeOf(int32(0)),
-			reflect.TypeOf(int64(0)),
+		tests := []struct {
+			name     string
+			result   sortCheckResult
+			contains []string
+		}{
+			{
+				name: "should format error for small collection with single violation",
+				result: sortCheckResult{
+					IsSorted:   false,
+					Violations: []sortViolation{{Index: 0, Value: 3, Next: 1}},
+					Total:      3,
+				},
+				contains: []string{
+					"Expected collection to be in ascending order, but it is not:",
+					"Collection: (total: 3 elements)",
+					"Status    : 1 order violation found",
+					"Problems  :",
+					"Index 0: 3 > 1",
+				},
+			},
+			{
+				name: "should format error for multiple violations",
+				result: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 5, Next: 4},
+						{Index: 1, Value: 4, Next: 3},
+					},
+					Total: 5,
+				},
+				contains: []string{
+					"Expected collection to be in ascending order, but it is not:",
+					"Collection: (total: 5 elements)",
+					"Status    : 2 order violations found",
+					"Index 0: 5 > 4",
+					"Index 1: 4 > 3",
+				},
+			},
+			{
+				name: "should format error for large collection",
+				result: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 100, Next: 99},
+					},
+					Total: 150,
+				},
+				contains: []string{
+					"Collection: [Large collection] (total: 150 elements)",
+					"Status    : 1 order violation found",
+					"Index 0: 100 > 99",
+				},
+			},
 		}
 
-		for _, typ := range sortableTypes {
-			t.Run(typ.String(), func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				result := isSortableElementType(typ)
-				if !result {
-					t.Errorf("isSortableElementType(%v) = false, want true", typ)
+				result := formatSortError(tt.result)
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("formatSortError() result does not contain expected string %q\nActual result:\n%s", expected, result)
+					}
 				}
 			})
 		}
 	})
 
-	t.Run("Sortable unsigned integer types", func(t *testing.T) {
+	t.Run("Edge cases", func(t *testing.T) {
 		t.Parallel()
 
-		sortableTypes := []reflect.Type{
-			reflect.TypeOf(uint(0)),
-			reflect.TypeOf(uint8(0)),
-			reflect.TypeOf(uint16(0)),
-			reflect.TypeOf(uint32(0)),
-			reflect.TypeOf(uint64(0)),
-			reflect.TypeOf(uintptr(0)),
-		}
+		t.Run("should return empty string when no violations", func(t *testing.T) {
+			t.Parallel()
+			result := sortCheckResult{
+				IsSorted:   true,
+				Violations: []sortViolation{}, // empty violations
+				Total:      3,
+			}
 
-		for _, typ := range sortableTypes {
-			t.Run(typ.String(), func(t *testing.T) {
-				t.Parallel()
-				result := isSortableElementType(typ)
-				if !result {
-					t.Errorf("isSortableElementType(%v) = false, want true", typ)
+			output := formatSortError(result)
+			if output != "" {
+				t.Errorf("formatSortError() with no violations should return empty string, got: %q", output)
+			}
+		})
+
+		t.Run("should handle many violations with truncation", func(t *testing.T) {
+			t.Parallel()
+			// Create 8 violations to trigger truncation (shows 5, mentions 3 more)
+			violations := make([]sortViolation, 8)
+			for i := 0; i < 8; i++ {
+				violations[i] = sortViolation{
+					Index: i,
+					Value: i + 10, // higher value
+					Next:  i,      // lower value
 				}
-			})
-		}
-	})
+			}
 
-	t.Run("Sortable float types", func(t *testing.T) {
-		t.Parallel()
+			result := sortCheckResult{
+				IsSorted:   false,
+				Violations: violations,
+				Total:      10,
+			}
 
-		sortableTypes := []reflect.Type{
-			reflect.TypeOf(float32(0)),
-			reflect.TypeOf(float64(0)),
-		}
+			output := formatSortError(result)
+			if !strings.Contains(output, "3 more violations") {
+				t.Errorf("formatSortError() should mention '3 more violations', got:\n%s", output)
+			}
 
-		for _, typ := range sortableTypes {
-			t.Run(typ.String(), func(t *testing.T) {
-				t.Parallel()
-				result := isSortableElementType(typ)
-				if !result {
-					t.Errorf("isSortableElementType(%v) = false, want true", typ)
+			if !strings.Contains(output, "8 order violations found") {
+				t.Errorf("formatSortError() should mention '8 order violations found', got:\n%s", output)
+			}
+		})
+
+		t.Run("should handle exactly 6 violations (edge case)", func(t *testing.T) {
+			t.Parallel()
+			// Create exactly 6 violations to trigger "1 more violation" message
+			violations := make([]sortViolation, 6)
+			for i := 0; i < 6; i++ {
+				violations[i] = sortViolation{
+					Index: i,
+					Value: i + 10, // higher value
+					Next:  i,      // lower value
 				}
-			})
-		}
-	})
+			}
 
-	t.Run("Sortable string type", func(t *testing.T) {
-		t.Parallel()
+			result := sortCheckResult{
+				IsSorted:   false,
+				Violations: violations,
+				Total:      10,
+			}
 
-		stringType := reflect.TypeOf("")
-		result := isSortableElementType(stringType)
-		if !result {
-			t.Errorf("isSortableElementType(%v) = false, want true", stringType)
-		}
-	})
+			output := formatSortError(result)
+			if !strings.Contains(output, "1 more violation") && !strings.Contains(output, "... and 1 more violation") {
+				t.Errorf("formatSortError() should mention '1 more violation', got:\n%s", output)
+			}
+		})
 
-	t.Run("Non-sortable types", func(t *testing.T) {
-		t.Parallel()
+		t.Run("should handle different value types", func(t *testing.T) {
+			t.Parallel()
+			tests := []struct {
+				name   string
+				result sortCheckResult
+			}{
+				{
+					name: "string values",
+					result: sortCheckResult{
+						IsSorted:   false,
+						Violations: []sortViolation{{Index: 0, Value: "zebra", Next: "apple"}},
+						Total:      2,
+					},
+				},
+				{
+					name: "float values",
+					result: sortCheckResult{
+						IsSorted:   false,
+						Violations: []sortViolation{{Index: 0, Value: 3.14, Next: 2.71}},
+						Total:      2,
+					},
+				},
+			}
 
-		var intPtr *int
-		nonSortableTypes := []reflect.Type{
-			reflect.TypeOf(true),
-			reflect.TypeOf(struct{}{}),
-			reflect.TypeOf([]int{}),
-			reflect.TypeOf([3]int{}),
-			reflect.TypeOf(map[string]int{}),
-			reflect.TypeOf(make(chan int)),
-			reflect.TypeOf(func() {}),
-			reflect.TypeOf(intPtr),
-			reflect.TypeOf(complex64(0)),
-			reflect.TypeOf(complex128(0)),
-		}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					result := formatSortError(tt.result)
 
-		for _, typ := range nonSortableTypes {
-			t.Run(typ.String(), func(t *testing.T) {
-				t.Parallel()
-				result := isSortableElementType(typ)
-				if result {
-					t.Errorf("isSortableElementType(%v) = true, want false", typ)
-				}
-			})
-		}
-	})
+					if result == "" {
+						t.Error("formatSortError() should not return empty string for violations")
+					}
 
-	t.Run("Custom types based on sortable types", func(t *testing.T) {
-		t.Parallel()
-
-		type CustomInt int
-		type CustomString string
-		type CustomFloat float64
-
-		customTypes := []reflect.Type{
-			reflect.TypeOf(CustomInt(0)),
-			reflect.TypeOf(CustomString("")),
-			reflect.TypeOf(CustomFloat(0)),
-		}
-
-		for _, typ := range customTypes {
-			t.Run(typ.String(), func(t *testing.T) {
-				t.Parallel()
-				result := isSortableElementType(typ)
-				if !result {
-					t.Errorf("isSortableElementType(%v) = false, want true (custom type based on sortable underlying type)", typ)
-				}
-			})
-		}
+					if !strings.Contains(result, "Expected collection to be in ascending order") {
+						t.Error("formatSortError() should contain main error message")
+					}
+				})
+			}
+		})
 	})
 }

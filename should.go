@@ -263,25 +263,22 @@ func BeInRange[T assert.Ordered](t testing.TB, actual T, minValue T, maxValue T,
 	assert.BeInRange(t, actual, minValue, maxValue, opts...)
 }
 
-// BeSorted reports a test failure if the slice or array is not sorted in ascending order.
+// BeSorted reports a test failure if the slice is not sorted in ascending order.
 //
-// This assertion checks if all elements in the slice or array are in ascending order.
-// It provides detailed error messages showing order violations, including the index
-// and values that are out of order. For large collections, it shows a summary with
-// the total number of violations and displays up to 5 specific violations.
+// This assertion works with slices of any ordered type (integers, floats, strings).
+// For arrays, convert to slice using slice syntax: myArray[:].
+// Provides detailed error messages showing order violations with indices and values.
 //
 // Example:
 //
 //	should.BeSorted(t, []int{1, 2, 3, 4, 5})
 //
-//	should.BeSorted(t, [5]int{1, 2, 3, 4, 5})
+//	should.BeSorted(t, []string{"a", "b", "c"})
 //
-//	should.BeSorted(t, []float64{1.1, 2.2, 3.3}, should.WithMessage("Values must be in order"))
+//	should.BeSorted(t, myArray[:]) // for arrays
 //
-//	should.BeSorted(t, []string{"apple", "banana", "cherry"})
-//
-// Works with slices and arrays of sortable types (numeric types and strings)
-func BeSorted(t testing.TB, actual any, opts ...Option) {
+// Only works with slices of ordered types (cmp.Ordered constraint).
+func BeSorted[T assert.Sortable](t testing.TB, actual []T, opts ...Option) {
 	t.Helper()
 	assert.BeSorted(t, actual, opts...)
 }

@@ -2178,19 +2178,10 @@ func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
 	return messageBuilder.String()
 }
 
-// checkIfSorted verifies if a collection (slice or array) is sorted in ascending order
-func checkIfSorted(collection any) sortCheckResult {
-	collectionValue := reflect.ValueOf(collection)
-
-	if !collectionValue.IsValid() || (!isSliceOrArray(collection)) {
-		return sortCheckResult{
-			IsSorted:   true,
-			Violations: nil,
-			Total:      0,
-		}
-	}
-
-	length := collectionValue.Len()
+// checkIfSorted verifies if a slice is sorted in ascending order using generics
+// Uses slices.IsSorted for fast primary check, then detailed analysis only if violations exist
+func checkIfSorted[T Sortable](collection []T) sortCheckResult {
+	length := len(collection)
 	if length <= 1 {
 		return sortCheckResult{
 			IsSorted:   true,
@@ -2199,15 +2190,23 @@ func checkIfSorted(collection any) sortCheckResult {
 		}
 	}
 
+	if slices.IsSorted(collection) {
+		return sortCheckResult{
+			IsSorted:   true,
+			Violations: nil,
+			Total:      length,
+		}
+	}
+
+	// Only do detailed analysis if we know there are violations
 	var violations []sortViolation
-	const maxViolations = 6 // Stop after 6 violations for performance (show 5 + indicate more)
+	maxViolations := 6
 
 	for i := 0; i < length-1; i++ {
-		current := collectionValue.Index(i).Interface()
-		next := collectionValue.Index(i + 1).Interface()
+		current := collection[i]
+		next := collection[i+1]
 
-		// Compare using our comparison function
-		if !isLessOrEqualSortable(current, next) {
+		if current > next {
 			violations = append(violations, sortViolation{
 				Index: i,
 				Value: current,
@@ -2221,37 +2220,13 @@ func checkIfSorted(collection any) sortCheckResult {
 	}
 
 	return sortCheckResult{
-		IsSorted:   len(violations) == 0,
+		IsSorted:   false,
 		Violations: violations,
 		Total:      length,
 	}
 }
 
-// isLessOrEqualSortable compares two sortable values and returns true if a <= b
-func isLessOrEqualSortable(a, b any) bool {
-	aValue := reflect.ValueOf(a)
-	bValue := reflect.ValueOf(b)
-
-	// Both values must be of the same type for comparison
-	if aValue.Type() != bValue.Type() {
-		return false
-	}
-
-	switch aValue.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return aValue.Int() <= bValue.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return aValue.Uint() <= bValue.Uint()
-	case reflect.Float32, reflect.Float64:
-		return aValue.Float() <= bValue.Float()
-	case reflect.String:
-		return aValue.String() <= bValue.String()
-	default:
-		return false
-	}
-}
-
-// formatSortError creates a detailed error message for BeSorted failures
+// formatSortError creates a detailed error message for BeSorted failures using generics
 func formatSortError(result sortCheckResult) string {
 	var msg strings.Builder
 
