@@ -1,5 +1,7 @@
 package assert
 
+import "cmp"
+
 // Option is a functional option for configuring assertions.
 type Option interface {
 	Apply(config *Config)
@@ -116,6 +118,12 @@ type Ordered interface {
 		~float32 | ~float64
 }
 
+// Sortable is a type constraint for types that can be sorted.
+// It uses Go's cmp.Ordered constraint for type-safe sorting operations.
+type Sortable interface {
+	cmp.Ordered
+}
+
 // MapContainResult represents the result of checking if a map contains a key or value
 type MapContainResult struct {
 	Found        bool
@@ -131,4 +139,18 @@ type MapContainResult struct {
 type CloseMatch struct {
 	Value       interface{}
 	Differences []string
+}
+
+// sortViolation represents a single violation in sort order
+type sortViolation struct {
+	Index int
+	Value interface{}
+	Next  interface{}
+}
+
+// sortCheckResult contains the result of checking if a collection is sorted
+type sortCheckResult struct {
+	IsSorted   bool
+	Violations []sortViolation
+	Total      int
 }

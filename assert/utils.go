@@ -2177,3 +2177,96 @@ func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
 
 	return messageBuilder.String()
 }
+
+// checkIfSorted verifies if a slice is sorted in ascending order using generics
+// Uses slices.IsSorted for fast primary check, then detailed analysis only if violations exist
+func checkIfSorted[T Sortable](collection []T) sortCheckResult {
+	length := len(collection)
+	if length <= 1 {
+		return sortCheckResult{
+			IsSorted:   true,
+			Violations: nil,
+			Total:      length,
+		}
+	}
+
+	if slices.IsSorted(collection) {
+		return sortCheckResult{
+			IsSorted:   true,
+			Violations: nil,
+			Total:      length,
+		}
+	}
+
+	// Only do detailed analysis if we know there are violations
+	var violations []sortViolation
+	maxViolations := 6
+
+	for i := 0; i < length-1; i++ {
+		current := collection[i]
+		next := collection[i+1]
+
+		if current > next {
+			violations = append(violations, sortViolation{
+				Index: i,
+				Value: current,
+				Next:  next,
+			})
+
+			if len(violations) >= maxViolations {
+				break
+			}
+		}
+	}
+
+	return sortCheckResult{
+		IsSorted:   false,
+		Violations: violations,
+		Total:      length,
+	}
+}
+
+// formatSortError creates a detailed error message for BeSorted failures using generics
+func formatSortError(result sortCheckResult) string {
+	var msg strings.Builder
+
+	if len(result.Violations) == 0 {
+		return ""
+	}
+
+	msg.WriteString("Expected collection to be in ascending order, but it is not:\n")
+
+	collectionInfo := fmt.Sprintf("Collection: (total: %d elements)\n", result.Total)
+	if result.Total > 100 {
+		collectionInfo = fmt.Sprintf("Collection: [Large collection] (total: %d elements)\n", result.Total)
+	}
+	msg.WriteString(collectionInfo)
+
+	violationCount := len(result.Violations)
+	statusText := "Status    : 1 order violation found\n"
+	if violationCount != 1 {
+		statusText = fmt.Sprintf("Status    : %d order violations found\n", violationCount)
+	}
+	msg.WriteString(statusText)
+
+	msg.WriteString("Problems  :\n")
+
+	// Show up to 5 violations to avoid overwhelming output
+	maxShow := min(violationCount, 5)
+	for i := 0; i < maxShow; i++ {
+		violation := result.Violations[i]
+		msg.WriteString(fmt.Sprintf("  - Index %d: %v > %v\n",
+			violation.Index, violation.Value, violation.Next))
+	}
+
+	remaining := violationCount - maxShow
+	if remaining > 0 {
+		remainingText := "  - ... and 1 more violation"
+		if remaining != 1 {
+			remainingText = fmt.Sprintf("  - ... and %d more violations", remaining)
+		}
+		msg.WriteString(remainingText)
+	}
+
+	return msg.String()
+}

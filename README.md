@@ -76,6 +76,11 @@ func TestBasicAssertions(t *testing.T) {
 	should.Contain(t, users, "Alice")
 	should.NotContain(t, users, "David")
 	should.Contain(t, userIDs, targetID, should.WithMessage("User ID must exist in the system"))
+
+	// Sort check
+	should.BeSorted(t, []int{1, 2, 3, 4, 5})
+	should.BeSorted(t, []string{"apple", "banana", "cherry"})
+	should.BeSorted(t, scores, should.WithMessage("Test scores must be in ascending order"))
 }
 ```
 
@@ -418,6 +423,61 @@ should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
 // └─ 3 appears 3 times at indexes [3, 4, 5]
 ```
 
+### Sorted Check
+
+Verify that collections are sorted in ascending order with detailed violation reporting:
+
+```go
+// Multiple violations with helpful summary
+should.BeSorted(t, []int{5, 4, 3, 2, 1})
+// Output:
+// Expected collection to be in ascending order, but it is not:
+// Collection: (total: 5 elements)
+// Status    : 4 order violations found
+// Problems  :
+//   - Index 0: 5 > 4
+//   - Index 1: 4 > 3
+//   - Index 2: 3 > 2
+//   - Index 3: 2 > 1
+
+// Large collections with truncation (stops after 6 violations for performance)
+should.BeSorted(t, []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0})
+// Output:
+// Expected collection to be in ascending order, but it is not:
+// Collection: (total: 11 elements)
+// Status    : 6 order violations found
+// Problems  :
+//   - Index 0: 10 > 9
+//   - Index 1: 9 > 8
+//   - Index 2: 8 > 7
+//   - Index 3: 7 > 6
+//   - Index 4: 6 > 5
+//   - ... and 1 more violation
+
+// Very large collections with special formatting
+should.BeSorted(t, largeSlice)
+// Output:
+// Expected collection to be in ascending order, but it is not:
+// Collection: [Large collection] (total: 10000 elements)
+// Status    : 3 order violations found
+// Problems  :
+//   - Index 4567: 123 > 115
+//   - Index 4702: 890 > 456
+//   - Index 4833: 234 > 111
+
+should.BeSorted(t, []string{"banana", "apple", "cherry"})
+// Output:
+// Expected collection to be in ascending order, but it is not:
+// Collection: (total: 3 elements)
+// Status    : 1 order violation found
+// Problems  :
+//   - Index 0: banana > apple
+
+// With custom messages
+should.BeSorted(t, testScores, should.WithMessage("Test scores must be in ascending order"))
+should.BeSorted(t, timestamps, should.WithMessage("Events must be chronologically ordered"))
+```
+
 ### Map Key and Value Assertions
 
 Check if maps contain specific keys or values with intelligent similarity detection:
@@ -530,6 +590,7 @@ should.NotContainValue(t, userRoles, 3)
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
 - `NotContainDuplicates(t, collection)` - Check if slice/array contains no duplicate values
 - `ContainFunc(t, collection, predicate)` - Check if any element matches a custom predicate
+- `BeSorted(t, slice)` - Check if slice is sorted in ascending order (supports numeric types and strings)
 
 ### Map Operations
 
@@ -611,11 +672,11 @@ should.ContainFunc(t, people, func(item any) bool {
 
 // With custom error message
 should.ContainFunc(t, people, func(item any) bool {
-    person, ok := item.(Person)
-    if !ok {
-        return false
-    }
-    return person.Age >= 65
+	person, ok := item.(Person)
+	if !ok {
+		return false
+	}
+	return person.Age >= 65
 }, should.WithMessage("No elderly users found"))
 ```
 

@@ -2751,3 +2751,345 @@ func TestFormatNotPanicError(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckIfSorted(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name       string
+			collection any
+			failFast   bool
+			expected   sortCheckResult
+		}{
+			{
+				name:       "should return true for empty slice",
+				collection: []int{},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 0},
+			},
+			{
+				name:       "should return true for single element",
+				collection: []int{42},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 1},
+			},
+			{
+				name:       "should return true for sorted int slice",
+				collection: []int{1, 2, 3, 4, 5},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 5},
+			},
+			{
+				name:       "should return true for sorted string slice",
+				collection: []string{"apple", "banana", "cherry"},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 3},
+			},
+			{
+				name:       "should return true for sorted float slice",
+				collection: []float64{1.1, 2.2, 3.3, 4.4},
+				failFast:   false,
+				expected:   sortCheckResult{IsSorted: true, Violations: nil, Total: 4},
+			},
+			{
+				name:       "should return false with violations for unsorted slice",
+				collection: []int{1, 3, 2, 5, 4},
+				failFast:   false,
+				expected: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 1, Value: 3, Next: 2},
+						{Index: 3, Value: 5, Next: 4},
+					},
+					Total: 5,
+				},
+			},
+			{
+				name:       "should return false with violations for reverse sorted slice",
+				collection: []int{5, 4, 3, 2, 1},
+				failFast:   false,
+				expected: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 5, Next: 4},
+						{Index: 1, Value: 4, Next: 3},
+						{Index: 2, Value: 3, Next: 2},
+						{Index: 3, Value: 2, Next: 1},
+					},
+					Total: 5,
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				var result sortCheckResult
+
+				switch coll := tt.collection.(type) {
+				case []int:
+					result = checkIfSorted(coll)
+				case []string:
+					result = checkIfSorted(coll)
+				case []float64:
+					result = checkIfSorted(coll)
+				default:
+					t.Fatalf("Unsupported collection type: %T", tt.collection)
+				}
+
+				if result.IsSorted != tt.expected.IsSorted {
+					t.Errorf("checkIfSorted() IsSorted = %v, want %v", result.IsSorted, tt.expected.IsSorted)
+				}
+
+				if result.Total != tt.expected.Total {
+					t.Errorf("checkIfSorted() Total = %v, want %v", result.Total, tt.expected.Total)
+				}
+
+				if len(result.Violations) != len(tt.expected.Violations) {
+					t.Errorf("checkIfSorted() Violations length = %v, want %v", len(result.Violations), len(tt.expected.Violations))
+					return
+				}
+
+				for i, violation := range result.Violations {
+					expected := tt.expected.Violations[i]
+					if violation.Index != expected.Index || violation.Value != expected.Value || violation.Next != expected.Next {
+						t.Errorf("checkIfSorted() Violation[%d] = {%d, %v, %v}, want {%d, %v, %v}",
+							i, violation.Index, violation.Value, violation.Next,
+							expected.Index, expected.Value, expected.Next)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("should handle duplicates correctly", func(t *testing.T) {
+			t.Parallel()
+			duplicateSlice := []int{1, 2, 2, 3, 3, 3}
+			result := checkIfSorted(duplicateSlice)
+
+			if !result.IsSorted {
+				t.Error("Expected slice with duplicates to be considered sorted")
+			}
+
+			if len(result.Violations) != 0 {
+				t.Errorf("Expected no violations for duplicates, got %d", len(result.Violations))
+			}
+		})
+
+		t.Run("should handle negative numbers", func(t *testing.T) {
+			t.Parallel()
+			negativeSlice := []int{-5, -3, -1, 0, 2}
+			result := checkIfSorted(negativeSlice)
+
+			if !result.IsSorted {
+				t.Error("Expected sorted negative numbers to be considered sorted")
+			}
+		})
+
+		t.Run("should stop at max violations limit", func(t *testing.T) {
+			t.Parallel()
+			largeUnsorted := []int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
+			result := checkIfSorted(largeUnsorted)
+
+			if result.IsSorted {
+				t.Error("Expected large unsorted slice to be not sorted")
+			}
+
+			if len(result.Violations) != 6 {
+				t.Errorf("Expected exactly 6 violations (max limit), got %d", len(result.Violations))
+			}
+		})
+	})
+}
+
+func TestFormatSortErrorGeneric(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic formatting", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name     string
+			result   sortCheckResult
+			contains []string
+		}{
+			{
+				name: "should format error for small collection with single violation",
+				result: sortCheckResult{
+					IsSorted:   false,
+					Violations: []sortViolation{{Index: 0, Value: 3, Next: 1}},
+					Total:      3,
+				},
+				contains: []string{
+					"Expected collection to be in ascending order, but it is not:",
+					"Collection: (total: 3 elements)",
+					"Status    : 1 order violation found",
+					"Problems  :",
+					"Index 0: 3 > 1",
+				},
+			},
+			{
+				name: "should format error for multiple violations",
+				result: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 5, Next: 4},
+						{Index: 1, Value: 4, Next: 3},
+					},
+					Total: 5,
+				},
+				contains: []string{
+					"Expected collection to be in ascending order, but it is not:",
+					"Collection: (total: 5 elements)",
+					"Status    : 2 order violations found",
+					"Index 0: 5 > 4",
+					"Index 1: 4 > 3",
+				},
+			},
+			{
+				name: "should format error for large collection",
+				result: sortCheckResult{
+					IsSorted: false,
+					Violations: []sortViolation{
+						{Index: 0, Value: 100, Next: 99},
+					},
+					Total: 150,
+				},
+				contains: []string{
+					"Collection: [Large collection] (total: 150 elements)",
+					"Status    : 1 order violation found",
+					"Index 0: 100 > 99",
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatSortError(tt.result)
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("formatSortError() result does not contain expected string %q\nActual result:\n%s", expected, result)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("should return empty string when no violations", func(t *testing.T) {
+			t.Parallel()
+			result := sortCheckResult{
+				IsSorted:   true,
+				Violations: []sortViolation{}, // empty violations
+				Total:      3,
+			}
+
+			output := formatSortError(result)
+			if output != "" {
+				t.Errorf("formatSortError() with no violations should return empty string, got: %q", output)
+			}
+		})
+
+		t.Run("should handle many violations with truncation", func(t *testing.T) {
+			t.Parallel()
+			// Create 8 violations to trigger truncation (shows 5, mentions 3 more)
+			violations := make([]sortViolation, 8)
+			for i := 0; i < 8; i++ {
+				violations[i] = sortViolation{
+					Index: i,
+					Value: i + 10, // higher value
+					Next:  i,      // lower value
+				}
+			}
+
+			result := sortCheckResult{
+				IsSorted:   false,
+				Violations: violations,
+				Total:      10,
+			}
+
+			output := formatSortError(result)
+			if !strings.Contains(output, "3 more violations") {
+				t.Errorf("formatSortError() should mention '3 more violations', got:\n%s", output)
+			}
+
+			if !strings.Contains(output, "8 order violations found") {
+				t.Errorf("formatSortError() should mention '8 order violations found', got:\n%s", output)
+			}
+		})
+
+		t.Run("should handle exactly 6 violations (edge case)", func(t *testing.T) {
+			t.Parallel()
+			// Create exactly 6 violations to trigger "1 more violation" message
+			violations := make([]sortViolation, 6)
+			for i := 0; i < 6; i++ {
+				violations[i] = sortViolation{
+					Index: i,
+					Value: i + 10, // higher value
+					Next:  i,      // lower value
+				}
+			}
+
+			result := sortCheckResult{
+				IsSorted:   false,
+				Violations: violations,
+				Total:      10,
+			}
+
+			output := formatSortError(result)
+			if !strings.Contains(output, "1 more violation") && !strings.Contains(output, "... and 1 more violation") {
+				t.Errorf("formatSortError() should mention '1 more violation', got:\n%s", output)
+			}
+		})
+
+		t.Run("should handle different value types", func(t *testing.T) {
+			t.Parallel()
+			tests := []struct {
+				name   string
+				result sortCheckResult
+			}{
+				{
+					name: "string values",
+					result: sortCheckResult{
+						IsSorted:   false,
+						Violations: []sortViolation{{Index: 0, Value: "zebra", Next: "apple"}},
+						Total:      2,
+					},
+				},
+				{
+					name: "float values",
+					result: sortCheckResult{
+						IsSorted:   false,
+						Violations: []sortViolation{{Index: 0, Value: 3.14, Next: 2.71}},
+						Total:      2,
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					result := formatSortError(tt.result)
+
+					if result == "" {
+						t.Error("formatSortError() should not return empty string for violations")
+					}
+
+					if !strings.Contains(result, "Expected collection to be in ascending order") {
+						t.Error("formatSortError() should contain main error message")
+					}
+				})
+			}
+		})
+	})
+}
