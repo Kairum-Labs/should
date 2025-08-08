@@ -1375,8 +1375,8 @@ func TestNotPanic_Extended(t *testing.T) {
 			{
 				name: "should fail with stack trace when runtime panic occurs",
 				testFunc: func() {
-					var x int = 1
-					var y int = 0
+					x := 1
+					y := 0
 					result := x / y
 					_ = result
 				},
