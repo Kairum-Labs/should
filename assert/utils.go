@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 )
 
 // isSliceOrArray checks if the provided value is a slice or an array.
@@ -2289,4 +2290,73 @@ func formatSortError(result sortCheckResult) string {
 	}
 
 	return msg.String()
+}
+
+// formatHaveSameTimeAsError builds a friendly error message for time equality comparisons.
+func formatHaveSameTimeAsError(expected time.Time, actual time.Time, diff time.Duration) string {
+	var msg strings.Builder
+
+	// Human readable difference text (e.g., 2.5s)
+	human := humanizeDurationSeconds(diff)
+
+	// Determine whether actual is later or earlier than expected
+	relation := "later"
+	if actual.Before(expected) {
+		relation = "earlier"
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected times to have same time, but difference is %s\n", human))
+	msg.WriteString(fmt.Sprintf("Expected: %s\n", formatTimeForDisplay(expected)))
+	msg.WriteString(fmt.Sprintf("Actual  : %s (%s %s)", formatTimeForDisplay(actual), human, relation))
+	return msg.String()
+}
+
+// humanizeDurationSeconds returns a concise seconds representation like 2s, 2.5s, 150ms
+func humanizeDurationSeconds(duration time.Duration) string {
+	if duration < 0 {
+		duration = -duration
+	}
+	if duration < time.Millisecond {
+		// show micro/nano as fractional ms to keep output compact
+		return fmt.Sprintf("%.3fms", float64(duration)/float64(time.Millisecond))
+	}
+	if duration < time.Second {
+		// milliseconds
+		ms := float64(duration) / float64(time.Millisecond)
+		if math.Mod(ms, 1) == 0 {
+			return fmt.Sprintf("%.0fms", ms)
+		}
+		return fmt.Sprintf("%.1fms", ms)
+	}
+	// seconds (possibly fractional)
+	secs := float64(duration) / float64(time.Second)
+	if math.Mod(secs, 1) == 0 {
+		return fmt.Sprintf("%.0fs", secs)
+	}
+	// Keep one decimal place like 2.5s
+	return fmt.Sprintf("%.1fs", secs)
+}
+
+// formatTimeForDisplay renders time as "YYYY-MM-DD HH:MM:SS[.fraction] TZ"
+func formatTimeForDisplay(t time.Time) string {
+	// include fractional seconds up to 9 digits, but trim trailing zeros
+	// Build base with seconds
+	base := t.UTC().Format("2006-01-02 15:04:05")
+	// Use actual nanoseconds to see if we need fractional part
+	ns := t.Nanosecond()
+	frac := ""
+	if ns != 0 {
+		// Format as .<up to 9 digits> without trailing zeros
+		s := fmt.Sprintf("%09d", ns)
+		s = strings.TrimRight(s, "0")
+		frac = "." + s
+	}
+	// Location name (UTC offset/name)
+	loc := t.Location()
+	tz := loc.String()
+	if tz == "UTC" || tz == "Local" || tz == "" {
+		// For deterministic tests, display UTC when location is UTC
+		return fmt.Sprintf("%s%s UTC", base, frac)
+	}
+	return fmt.Sprintf("%s%s %s", base, frac, tz)
 }

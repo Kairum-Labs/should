@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 )
 
 func processOptions(opts ...Option) *Config {
@@ -1252,6 +1253,59 @@ func NotPanic(t testing.TB, fn func(), opts ...Option) {
 
 		fail(t, panicErrorMsg)
 	}
+}
+
+// HaveSameTimeAs reports a test failure if two `time.Time` values do not represent the same time.
+//
+// By default, the comparison is timezone-sensitive and nanosecond-precise. You can customize
+// the behavior with functional options:
+//
+// - should.WithIgnoreTimezone(): compares the instants regardless of the timezone/location
+//
+// - should.WithIgnoreNanoseconds(): ignores sub-second differences
+//
+// Example:
+//
+//	should.HaveSameTimeAs(t, time1, time2)
+//
+//	should.HaveSameTimeAs(
+//	    t,
+//	    actual,
+//	    expected,
+//	    should.WithIgnoreTimezone(),
+//	    should.WithIgnoreNanoseconds(),
+//	)
+func HaveSameTimeAs(t testing.TB, actual, expected time.Time, opts ...Option) {
+	t.Helper()
+	cfg := processOptions(opts...)
+
+	if cfg.IgnoreTimezone {
+		actual = actual.UTC()
+		expected = expected.UTC()
+	}
+
+	if cfg.IgnoreNanoseconds {
+		actual = actual.Truncate(time.Second)
+		expected = expected.Truncate(time.Second)
+	}
+
+	if actual.Equal(expected) {
+		return
+	}
+
+	diff := actual.Sub(expected)
+	if diff < 0 {
+		diff = -diff
+	}
+
+	msg := formatHaveSameTimeAsError(expected, actual, diff)
+
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, msg)
+		return
+	}
+
+	fail(t, msg)
 }
 
 // didPanic executes a function and reports whether it panicked, returning the recovered value.

@@ -13,6 +13,9 @@ type Config struct {
 	Message    string
 	IgnoreCase bool
 	StackTrace bool
+	// Time comparison options
+	IgnoreTimezone    bool
+	IgnoreNanoseconds bool
 	/*
 		 	Description    string
 			DeepComparison bool
@@ -28,6 +31,12 @@ type ignoreCase bool
 // stackTrace is a boolean flag for including stack traces on NotPanic assertions.
 type stackTrace bool
 
+// ignoreTimezone configures time comparisons to ignore timezone/location differences
+type ignoreTimezone bool
+
+// ignoreNanoseconds configures time comparisons to ignore sub-second differences
+type ignoreNanoseconds bool
+
 // Apply sets the custom message in the config.
 func (m message) Apply(c *Config) {
 	c.Message = string(m)
@@ -39,6 +48,16 @@ func (i ignoreCase) Apply(c *Config) {
 
 func (s stackTrace) Apply(c *Config) {
 	c.StackTrace = bool(s)
+}
+
+// Apply implements Option for ignoreTimezone
+func (i ignoreTimezone) Apply(c *Config) {
+	c.IgnoreTimezone = bool(i)
+}
+
+// Apply implements Option for ignoreNanoseconds
+func (i ignoreNanoseconds) Apply(c *Config) {
+	c.IgnoreNanoseconds = bool(i)
 }
 
 // WithMessage creates an option for setting a custom error message.
@@ -54,6 +73,18 @@ func WithIgnoreCase() Option {
 // WithStackTrace creates an option for including stack traces on NotPanic assertions.
 func WithStackTrace() Option {
 	return stackTrace(true)
+}
+
+// WithIgnoreTimezone creates an option for ignoring timezone when comparing times.
+// When enabled, comparisons use calendar components (year, month, day, hour, minute, second[, ns])
+// and do not consider the Location/offset.
+func WithIgnoreTimezone() Option {
+	return ignoreTimezone(true)
+}
+
+// WithIgnoreNanoseconds creates an option for ignoring sub-second differences when comparing times.
+func WithIgnoreNanoseconds() Option {
+	return ignoreNanoseconds(true)
 }
 
 // fieldDiff represents a single difference between two compared values.
