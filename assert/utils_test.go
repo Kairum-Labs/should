@@ -369,6 +369,7 @@ func TestFormatComparisonValue_ComplexMapKeys(t *testing.T) {
 }
 
 func TestFindInsertionInfo_Parameterized(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name          string
 		collection    []int
@@ -427,6 +428,7 @@ func TestFindInsertionInfo_Parameterized(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			info, err := findInsertionInfo(tc.collection, tc.target)
 			BeNil(t, err)
 			BeEqual(t, info.found, tc.expectedFound)
@@ -450,6 +452,7 @@ func TestFindInsertionInfo_Parameterized(t *testing.T) {
 }
 
 func TestFormatInsertionContext_WithMessage(t *testing.T) {
+	t.Parallel()
 	collection := []int{2, 3, 5, 1, 0}
 	target := 4
 	info, err := findInsertionInfo(collection, target)
@@ -469,6 +472,7 @@ func TestFormatInsertionContext_BoundaryAndLargeCollections(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Collection with 10 elements (no sorted view)", func(t *testing.T) {
+		t.Parallel()
 		collection := []int{0, 1, 2, 3, 4, 9, 8, 7, 6, 5}
 		info, err := findInsertionInfo(collection, 10)
 		BeNil(t, err)
@@ -479,6 +483,7 @@ func TestFormatInsertionContext_BoundaryAndLargeCollections(t *testing.T) {
 	})
 
 	t.Run("Collection with 12 elements (with sorted view)", func(t *testing.T) {
+		t.Parallel()
 		collection := []int{0, 1, 2, 3, 4, 5, 11, 10, 9, 8, 7, 6}
 		info, err := findInsertionInfo(collection, 100)
 		BeNil(t, err)
@@ -810,6 +815,7 @@ func TestMin3(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			result := min3(tc.a, tc.b, tc.c)
 			BeEqual(t, result, tc.expected)
 		})
@@ -820,6 +826,7 @@ func TestMinMax(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Min function", func(t *testing.T) {
+		t.Parallel()
 		BeEqual(t, min(5, 3), 3)
 		BeEqual(t, min(3, 5), 3)
 		BeEqual(t, min(5, 5), 5)
@@ -827,6 +834,7 @@ func TestMinMax(t *testing.T) {
 	})
 
 	t.Run("Max function", func(t *testing.T) {
+		t.Parallel()
 		BeEqual(t, max(5, 3), 5)
 		BeEqual(t, max(3, 5), 5)
 		BeEqual(t, max(5, 5), 5)
@@ -838,21 +846,25 @@ func TestIsFloat(t *testing.T) {
 	t.Parallel()
 
 	t.Run("With float32", func(t *testing.T) {
+		t.Parallel()
 		result := isFloat(float32(3.14))
 		BeTrue(t, result)
 	})
 
 	t.Run("With float64", func(t *testing.T) {
+		t.Parallel()
 		result := isFloat(3.14)
 		BeTrue(t, result)
 	})
 
 	t.Run("With int", func(t *testing.T) {
+		t.Parallel()
 		result := isFloat(42)
 		BeFalse(t, result)
 	})
 
 	t.Run("With uint", func(t *testing.T) {
+		t.Parallel()
 		result := isFloat(uint(42))
 		BeFalse(t, result)
 	})
@@ -862,12 +874,14 @@ func TestFormatMultilineString(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Short string", func(t *testing.T) {
+		t.Parallel()
 		input := "Hello, World!"
 		result := formatMultilineString(input)
 		BeEqual(t, result, input)
 	})
 
 	t.Run("Long string", func(t *testing.T) {
+		t.Parallel()
 		// Create a string longer than 280 characters
 		input := strings.Repeat("a", 300)
 		result := formatMultilineString(input)
@@ -885,6 +899,7 @@ func TestFormatMultilineString(t *testing.T) {
 	})
 
 	t.Run("Very long string with last lines", func(t *testing.T) {
+		t.Parallel()
 		// Create a string that will trigger "Last lines" section
 		input := strings.Repeat("a", 56*7) // 7 lines worth
 		result := formatMultilineString(input)
@@ -944,6 +959,7 @@ func TestIsSliceOrArray(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			result := isSliceOrArray(tc.input)
 			BeEqual(t, result, tc.expected)
 		})
@@ -954,6 +970,7 @@ func TestFormatSlice(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Valid slice", func(t *testing.T) {
+		t.Parallel()
 		input := []int{1, 2, 3}
 		result := formatSlice(input)
 		expected := "[1, 2, 3]"
@@ -961,6 +978,7 @@ func TestFormatSlice(t *testing.T) {
 	})
 
 	t.Run("Non-slice input", func(t *testing.T) {
+		t.Parallel()
 		input := "not a slice"
 		result := formatSlice(input)
 		expected := "<not a slice or array: string>"
@@ -972,6 +990,7 @@ func TestFormatValueComparison_EdgeCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Invalid value", func(t *testing.T) {
+		t.Parallel()
 		var v reflect.Value
 		result := formatValueComparison(v)
 		expected := "nil"
@@ -979,6 +998,7 @@ func TestFormatValueComparison_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("Unexported interface", func(t *testing.T) {
+		t.Parallel()
 		// Test case for interface{} that can't be interfaced
 		v := reflect.ValueOf(42)
 		result := formatValueComparison(v)
@@ -1029,6 +1049,7 @@ func TestLevenshteinDistance(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			result := levenshteinDistance(tc.s1, tc.s2)
 			BeEqual(t, result, tc.expected)
 		})
@@ -1077,6 +1098,7 @@ func TestGenerateTypoDetails(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			result := generateTypoDetails(tc.target, tc.candidate, tc.distance)
 			BeEqual(t, result, tc.expected)
 		})
@@ -1089,6 +1111,7 @@ func TestFormatEmptyError(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Empty string - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		result := formatEmptyError("", true)
 		expectedParts := []string{
 			"Expected value to be empty, but it was not:",
@@ -1104,6 +1127,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Non-empty string - expecting not empty", func(t *testing.T) {
+		t.Parallel()
 		result := formatEmptyError("hello", false)
 		expectedParts := []string{
 			"Expected value to be not empty, but it was empty:",
@@ -1119,6 +1143,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Large slice - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		largeSlice := make([]int, 10)
 		for i := range largeSlice {
 			largeSlice[i] = i
@@ -1140,6 +1165,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Long string - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		longString := strings.Repeat("a", 200)
 		result := formatEmptyError(longString, true)
 
@@ -1166,6 +1192,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Map - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		testMap := map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
 		result := formatEmptyError(testMap, true)
 
@@ -1183,6 +1210,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Channel - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		ch := make(chan int)
 		result := formatEmptyError(ch, true)
 
@@ -1200,6 +1228,7 @@ func TestFormatEmptyError(t *testing.T) {
 	})
 
 	t.Run("Other type - expecting empty", func(t *testing.T) {
+		t.Parallel()
 		result := formatEmptyError(42, true)
 
 		expectedParts := []string{
@@ -1220,6 +1249,7 @@ func TestFormatNumericComparisonError(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Greater than - positive difference", func(t *testing.T) {
+		t.Parallel()
 		result := formatNumericComparisonError(10, 5, "greater")
 
 		expectedParts := []string{
@@ -1237,6 +1267,7 @@ func TestFormatNumericComparisonError(t *testing.T) {
 	})
 
 	t.Run("Less than - should fail with larger value", func(t *testing.T) {
+		t.Parallel()
 		result := formatNumericComparisonError(8, 3, "less")
 
 		expectedParts := []string{
@@ -1255,6 +1286,7 @@ func TestFormatNumericComparisonError(t *testing.T) {
 	})
 
 	t.Run("Equal values", func(t *testing.T) {
+		t.Parallel()
 		result := formatNumericComparisonError(5, 5, "greater")
 
 		expectedParts := []string{
@@ -1273,6 +1305,7 @@ func TestFormatNumericComparisonError(t *testing.T) {
 	})
 
 	t.Run("GreaterOrEqual operation", func(t *testing.T) {
+		t.Parallel()
 		result := formatNumericComparisonError(3, 5, "greaterOrEqual")
 
 		expectedParts := []string{
@@ -1288,6 +1321,7 @@ func TestFormatNumericComparisonError(t *testing.T) {
 	})
 
 	t.Run("LessOrEqual operation", func(t *testing.T) {
+		t.Parallel()
 		result := formatNumericComparisonError(8, 5, "lessOrEqual")
 
 		expectedParts := []string{
@@ -1840,6 +1874,7 @@ func TestFormatMapContainValueError(t *testing.T) {
 }
 
 func TestFormatComplexType(t *testing.T) {
+	t.Parallel()
 	type SimpleStruct struct {
 		Name string
 		Age  int
@@ -1873,14 +1908,18 @@ func TestFormatComplexType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := formatComplexType(test.input)
-		if result != test.expected {
-			t.Errorf("formatComplexType(%s): expected %q, got %q", test.name, test.expected, result)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := formatComplexType(test.input)
+			if result != test.expected {
+				t.Errorf("formatComplexType(%s): expected %q, got %q", test.name, test.expected, result)
+			}
+		})
 	}
 }
 
 func TestFormatStructWithTruncation(t *testing.T) {
+	t.Parallel()
 	type LongStruct struct {
 		Field1 string
 		Field2 string
@@ -1910,6 +1949,7 @@ func TestFormatStructWithTruncation(t *testing.T) {
 }
 
 func TestFormatFieldWithTruncation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -1958,15 +1998,19 @@ func TestFormatFieldWithTruncation(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		v := reflect.ValueOf(test.input)
-		result := formatFieldWithTruncation(v)
-		if result != test.expected {
-			t.Errorf("formatFieldWithTruncation(%s): expected %q, got %q", test.name, test.expected, result)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			v := reflect.ValueOf(test.input)
+			result := formatFieldWithTruncation(v)
+			if result != test.expected {
+				t.Errorf("formatFieldWithTruncation(%s): expected %q, got %q", test.name, test.expected, result)
+			}
+		})
 	}
 }
 
 func TestFormatDiffValueConcise(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -2035,14 +2079,18 @@ func TestFormatDiffValueConcise(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := formatDiffValueConcise(test.input)
-		if result != test.expected {
-			t.Errorf("formatDiffValueConcise(%s): expected %q, got %q", test.name, test.expected, result)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := formatDiffValueConcise(test.input)
+			if result != test.expected {
+				t.Errorf("formatDiffValueConcise(%s): expected %q, got %q", test.name, test.expected, result)
+			}
+		})
 	}
 }
 
 func TestContainsMapValue_CloseMatches(t *testing.T) {
+	t.Parallel()
 	type TestStruct struct {
 		Name string
 		Age  int
@@ -2074,6 +2122,7 @@ func TestContainsMapValue_CloseMatches(t *testing.T) {
 }
 
 func TestContainsMapValue_NonStruct(t *testing.T) {
+	t.Parallel()
 	testMap := map[string]string{
 		"key1": "value1",
 		"key2": "value2",
@@ -2094,6 +2143,7 @@ func TestContainsMapValue_NonStruct(t *testing.T) {
 }
 
 func TestFormatMapContainValueError_ComplexTypes(t *testing.T) {
+	t.Parallel()
 	type TestStruct struct {
 		Name string
 		Age  int
@@ -2128,6 +2178,7 @@ func TestFormatMapContainValueError_ComplexTypes(t *testing.T) {
 }
 
 func TestFormatMapContainValueError_SimpleTypes(t *testing.T) {
+	t.Parallel()
 	result := MapContainResult{
 		Found:   false,
 		Total:   2,
@@ -2147,6 +2198,7 @@ func TestFormatMapContainValueError_SimpleTypes(t *testing.T) {
 }
 
 func TestFormatMapNotContainKeyError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		target   interface{}
@@ -2177,6 +2229,7 @@ Associated Value: "forty-two"`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := formatMapNotContainKeyError(tt.target, tt.mapValue)
 			if result != tt.expected {
 				t.Errorf("Expected:\n%s\n\nGot:\n%s", tt.expected, result)
@@ -2186,6 +2239,7 @@ Associated Value: "forty-two"`,
 }
 
 func TestFormatMapNotContainValueError_SimpleTypes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		target   interface{}
@@ -2216,6 +2270,7 @@ Found At: key "b"`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := formatMapNotContainValueError(tt.target, tt.mapValue)
 			if !strings.Contains(result, tt.contains) {
 				t.Errorf("Expected result to contain:\n%s\n\nGot:\n%s", tt.contains, result)
@@ -2225,6 +2280,7 @@ Found At: key "b"`,
 }
 
 func TestFormatMapNotContainValueError_ComplexTypes(t *testing.T) {
+	t.Parallel()
 	type User struct {
 		ID   int
 		Name string
@@ -2674,11 +2730,22 @@ func TestFormatRangeError(t *testing.T) {
 		actual := -0.1
 		minValue := 0.0
 		maxValue := 1.0
-		expected := fmt.Sprintf(`Expected value to be in range [%v, %v], but it was below:
+		expected := fmt.Sprintf(
+			`Expected value to be in range [%v, %v], but it was below:
         Value    : %v
         Range    : [%v, %v]
         Distance : %v below minimum (%v < %v)
-        Hint     : Value should be >= %v`, minValue, maxValue, actual, minValue, maxValue, minValue-actual, actual, minValue, minValue)
+        Hint     : Value should be >= %v`,
+			minValue,
+			maxValue,
+			actual,
+			minValue,
+			maxValue,
+			minValue-actual,
+			actual,
+			minValue,
+			minValue,
+		)
 		result := formatRangeError(actual, minValue, maxValue)
 		if result != expected {
 			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
@@ -2690,11 +2757,22 @@ func TestFormatRangeError(t *testing.T) {
 		actual := 1.1
 		minValue := 0.0
 		maxValue := 1.0
-		expected := fmt.Sprintf(`Expected value to be in range [%v, %v], but it was above:
+		expected := fmt.Sprintf(
+			`Expected value to be in range [%v, %v], but it was above:
         Value    : %v
         Range    : [%v, %v]
         Distance : %v above maximum (%v > %v)
-        Hint     : Value should be <= %v`, minValue, maxValue, actual, minValue, maxValue, actual-maxValue, actual, maxValue, maxValue)
+        Hint     : Value should be <= %v`,
+			minValue,
+			maxValue,
+			actual,
+			minValue,
+			maxValue,
+			actual-maxValue,
+			actual,
+			maxValue,
+			maxValue,
+		)
 		result := formatRangeError(actual, minValue, maxValue)
 		if result != expected {
 			t.Errorf("Expected message:\n%s\n\nGot:\n%s", expected, result)
