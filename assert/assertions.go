@@ -799,7 +799,13 @@ func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 			return
 		}
 
-		fail(t, "%s\nExpected no duplicates, but found %d duplicate values: %s", customMsg, len(duplicates), formatDuplicatesErrors(duplicates))
+		fail(
+			t,
+			"%s\nExpected no duplicates, but found %d duplicate values: %s",
+			customMsg,
+			len(duplicates),
+			formatDuplicatesErrors(duplicates),
+		)
 		return
 	}
 

@@ -1,37 +1,34 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
 
-linters-settings:
-  gofmt:
-    simplify: true
-
-  goimports:
-    local-prefixes: github.com/Kairum-Labs/should
-
-  lll:
-    line-length: 120
-
-  misspell:
-    locale: US
-
 linters:
   enable:
     - errcheck
-    - gofmt
-    - goimports
     - govet
     - ineffassign
     - misspell
     - staticcheck
-    - typecheck
     - unused
-    - gosimple
+    - paralleltest
+    - lll
+  settings:
+    lll:
+      line-length: 130
+    misspell:
+      locale: US
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/Kairum-Labs/should
 
 issues:
-  exclude-rules:
-    # Allow long lines in test files
-    - path: _test\.go
-      text: "line is \\d+ characters"
-      linters:
-        - lll
+  max-issues-per-linter: 0
+  max-same-issues: 0

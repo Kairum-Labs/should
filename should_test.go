@@ -30,7 +30,9 @@ func (m *mockTB) FailNow() {
 }
 
 func TestAssertions(t *testing.T) {
+	t.Parallel()
 	t.Run("BeEqual should pass for equal values", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeEqual(mockT, "some value", "some value")
 		if mockT.failed {
@@ -39,6 +41,7 @@ func TestAssertions(t *testing.T) {
 	})
 
 	t.Run("BeEqual should fail for unequal values", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeEqual(mockT, "some value", "another value")
 		if !mockT.failed {
@@ -48,6 +51,7 @@ func TestAssertions(t *testing.T) {
 }
 
 func TestPanic(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name        string
 		fn          func()
@@ -79,6 +83,7 @@ func TestPanic(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mockT := &mockTB{}
 			Panic(mockT, tc.fn, tc.opts...)
 
@@ -94,6 +99,7 @@ func TestPanic(t *testing.T) {
 }
 
 func TestNotPanic(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name        string
 		fn          func()
@@ -125,6 +131,7 @@ func TestNotPanic(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mockT := &mockTB{}
 			NotPanic(mockT, tc.fn, tc.opts...)
 
@@ -140,8 +147,10 @@ func TestNotPanic(t *testing.T) {
 }
 
 func TestWrappers(t *testing.T) {
+	t.Parallel()
 	// BeTrue
 	t.Run("BeTrue passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeTrue(mockT, true)
 		if mockT.failed {
@@ -149,6 +158,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeTrue fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeTrue(mockT, false)
 		if !mockT.failed {
@@ -158,6 +168,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeFalse
 	t.Run("BeFalse passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeFalse(mockT, false)
 		if mockT.failed {
@@ -165,6 +176,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeFalse fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeFalse(mockT, true)
 		if !mockT.failed {
@@ -174,6 +186,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeEmpty
 	t.Run("BeEmpty passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeEmpty(mockT, "")
 		if mockT.failed {
@@ -181,6 +194,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeEmpty fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeEmpty(mockT, "not empty")
 		if !mockT.failed {
@@ -190,6 +204,7 @@ func TestWrappers(t *testing.T) {
 
 	// NotBeEmpty
 	t.Run("NotBeEmpty passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotBeEmpty(mockT, "not empty")
 		if mockT.failed {
@@ -197,6 +212,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("NotBeEmpty fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotBeEmpty(mockT, "")
 		if !mockT.failed {
@@ -206,6 +222,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeNil
 	t.Run("BeNil passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeNil(mockT, nil)
 		if mockT.failed {
@@ -213,6 +230,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeNil fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		var x = 1
 		BeNil(mockT, &x)
@@ -223,6 +241,7 @@ func TestWrappers(t *testing.T) {
 
 	// NotBeNil
 	t.Run("NotBeNil passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		var x = 1
 		NotBeNil(mockT, &x)
@@ -231,6 +250,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("NotBeNil fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotBeNil(mockT, nil)
 		if !mockT.failed {
@@ -239,6 +259,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotBeEqual passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotBeEqual(mockT, "a", "b")
 		if mockT.failed {
@@ -248,6 +269,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeGreaterThan
 	t.Run("BeGreaterThan passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeGreaterThan(mockT, 10, 5)
 		if mockT.failed {
@@ -255,6 +277,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeGreaterThan fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeGreaterThan(mockT, 5, 10)
 		if !mockT.failed {
@@ -264,6 +287,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeLessThan
 	t.Run("BeLessThan passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeLessThan(mockT, 5, 10)
 		if mockT.failed {
@@ -271,6 +295,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeLessThan fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeLessThan(mockT, 10, 5)
 		if !mockT.failed {
@@ -280,6 +305,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeGreaterOrEqualTo
 	t.Run("BeGreaterOrEqualTo passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeGreaterOrEqualTo(mockT, 10, 10)
 		if mockT.failed {
@@ -287,6 +313,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeGreaterOrEqualTo fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeGreaterOrEqualTo(mockT, 9, 10)
 		if !mockT.failed {
@@ -295,6 +322,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("BeLessOrEqualTo passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeLessOrEqualTo(mockT, 10, 10)
 		if mockT.failed {
@@ -304,6 +332,7 @@ func TestWrappers(t *testing.T) {
 
 	// Contain
 	t.Run("Contain passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		Contain(mockT, []int{1, 2, 3}, 2)
 		if mockT.failed {
@@ -311,6 +340,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("Contain fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		Contain(mockT, []int{1, 2, 3}, 4)
 		if !mockT.failed {
@@ -320,6 +350,7 @@ func TestWrappers(t *testing.T) {
 
 	// NotContain
 	t.Run("NotContain passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotContain(mockT, []int{1, 2, 3}, 4)
 		if mockT.failed {
@@ -328,6 +359,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotContain fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotContain(mockT, []int{1, 2, 3}, 2)
 		if !mockT.failed {
@@ -336,6 +368,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotContainDuplicates passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotContainDuplicates(mockT, []int{1, 2, 3})
 		if mockT.failed {
@@ -344,6 +377,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotContainKey passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotContainKey(mockT, map[string]int{"a": 1, "b": 2}, "c")
 		if mockT.failed {
@@ -352,6 +386,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotContainValue passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotContainValue(mockT, map[string]int{"a": 1, "b": 2}, 3)
 		if mockT.failed {
@@ -360,6 +395,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("StartWith passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		StartWith(mockT, "Hello, world!", "Hello")
 		StartWith(mockT, "Hello, world!", "hello", WithIgnoreCase())
@@ -369,6 +405,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("EndWith passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		EndWith(mockT, "Hello, world", "world")
 		if mockT.failed {
@@ -378,6 +415,7 @@ func TestWrappers(t *testing.T) {
 
 	// ContainFunc
 	t.Run("ContainFunc passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		ContainFunc(mockT, []int{1, 2, 3}, func(item any) bool { return item.(int) == 2 })
 		if mockT.failed {
@@ -385,6 +423,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("ContainFunc fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		ContainFunc(mockT, []int{1, 2, 3}, func(item any) bool { return item.(int) == 4 })
 		if !mockT.failed {
@@ -393,6 +432,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("ContainSubstring passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		ContainSubstring(mockT, "Hello, world!", "world")
 		if mockT.failed {
@@ -402,6 +442,7 @@ func TestWrappers(t *testing.T) {
 
 	// HaveLength
 	t.Run("HaveLength passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		HaveLength(mockT, []int{1, 2, 3}, 3)
 		if mockT.failed {
@@ -409,6 +450,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("HaveLength fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		HaveLength(mockT, []int{1, 2, 3}, 4)
 		if !mockT.failed {
@@ -418,6 +460,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeOfType
 	t.Run("BeOfType passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeOfType(mockT, "hello", "world")
 		if mockT.failed {
@@ -425,6 +468,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeOfType fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeOfType(mockT, "hello", 123)
 		if !mockT.failed {
@@ -434,6 +478,7 @@ func TestWrappers(t *testing.T) {
 
 	// BeOneOf
 	t.Run("BeOneOf passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeOneOf(mockT, "a", []string{"a", "b"})
 		if mockT.failed {
@@ -441,6 +486,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeOneOf fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeOneOf(mockT, "c", []string{"a", "b"})
 		if !mockT.failed {
@@ -449,6 +495,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("BeSorted passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeSorted(mockT, []int{1, 2, 3})
 		if mockT.failed {
@@ -457,6 +504,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("BeInRange passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeInRange(mockT, 5, 0, 10)
 		if mockT.failed {
@@ -464,6 +512,7 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 	t.Run("BeInRange fails", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		BeInRange(mockT, 15, 0, 10)
 		if !mockT.failed {
@@ -472,6 +521,7 @@ func TestWrappers(t *testing.T) {
 	})
 
 	t.Run("NotPanic with stack trace passes", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockTB{}
 		NotPanic(mockT, func() {
 		}, WithStackTrace())
