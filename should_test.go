@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 type mockTB struct {
@@ -455,6 +456,15 @@ func TestWrappers(t *testing.T) {
 		HaveLength(mockT, []int{1, 2, 3}, 4)
 		if !mockT.failed {
 			t.Error("HaveLength should fail")
+		}
+	})
+
+	t.Run("HaveSameTimeAs passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		HaveSameTimeAs(mockT, time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC), time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC))
+		if mockT.failed {
+			t.Error("HaveSameTimeAs should pass")
 		}
 	})
 

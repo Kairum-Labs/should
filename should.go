@@ -17,6 +17,7 @@ package should
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Kairum-Labs/should/assert"
 )
@@ -55,6 +56,28 @@ func WithIgnoreCase() Option {
 //	}, should.WithStackTrace())
 func WithStackTrace() Option {
 	return assert.WithStackTrace()
+}
+
+// WithIgnoreTimezone returns an option that makes time comparisons ignore timezone/location differences.
+//
+// Currently, this option is only supported by HaveSameTimeAs.
+//
+// Example:
+//
+//	should.HaveSameTimeAs(t, actual, expected, should.WithIgnoreTimezone())
+func WithIgnoreTimezone() Option {
+	return assert.WithIgnoreTimezone()
+}
+
+// WithIgnoreNanoseconds returns an option that makes time comparisons ignore sub-second differences.
+//
+// Currently, this option is only supported by HaveSameTimeAs.
+//
+// Example:
+//
+//	should.HaveSameTimeAs(t, actual, expected, should.WithIgnoreNanoseconds())
+func WithIgnoreNanoseconds() Option {
+	return assert.WithIgnoreNanoseconds()
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -490,6 +513,31 @@ func NotPanic(t testing.TB, fn func(), opts ...Option) {
 func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	t.Helper()
 	assert.HaveLength(t, actual, expected, opts...)
+}
+
+// HaveSameTimeAs reports a test failure if two `time.Time` values do not represent the same time.
+//
+// By default, the comparison is timezone-sensitive and nanosecond-precise. You can customize
+// the behavior with functional options:
+//
+// - should.WithIgnoreTimezone(): compares the instants regardless of the timezone/location
+//
+// - should.WithIgnoreNanoseconds(): ignores sub-second differences
+//
+// Example:
+//
+//	should.HaveSameTimeAs(t, time1, time2)
+//
+//	should.HaveSameTimeAs(
+//	    t,
+//	    actual,
+//	    expected,
+//	    should.WithIgnoreTimezone(),
+//	    should.WithIgnoreNanoseconds(),
+//	)
+func HaveSameTimeAs(t testing.TB, actual time.Time, expected time.Time, opts ...Option) {
+	t.Helper()
+	assert.HaveSameTimeAs(t, actual, expected, opts...)
 }
 
 // BeOfType reports a test failure if the value is not of the expected type.
