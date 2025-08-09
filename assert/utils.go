@@ -258,7 +258,14 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 		for i := 0; i < expectedValue.Len(); i++ {
 			if !reflect.DeepEqual(expectedValue.Index(i).Interface(), actualValue.Index(i).Interface()) {
 				elementPath := buildPath(path, fmt.Sprintf("[%d]", i))
-				diffs = append(diffs, compareExpectedActual(expectedValue.Index(i).Interface(), actualValue.Index(i).Interface(), elementPath)...)
+				diffs = append(
+					diffs,
+					compareExpectedActual(
+						expectedValue.Index(i).Interface(),
+						actualValue.Index(i).Interface(),
+						elementPath,
+					)...,
+				)
 			}
 		}
 
@@ -1089,7 +1096,12 @@ func formatDuplicatesErrors(duplicates []duplicateGroup) string {
 		if len(group.Indexes) > 4 {
 			windowMsg := formatIndexesWindow(group.Indexes, 4)
 
-			msg.WriteString(fmt.Sprintf("\n└─ %s appears %d times at indexes %v", formatDuplicateItem(group.Value), len(group.Indexes), windowMsg))
+			msg.WriteString(fmt.Sprintf(
+				"\n└─ %s appears %d times at indexes %v",
+				formatDuplicateItem(group.Value),
+				len(group.Indexes),
+				windowMsg,
+			))
 			continue
 		}
 
@@ -1598,7 +1610,15 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainR
 			if len(diffs) > 0 {
 				var diffStrings []string
 				for _, d := range diffs {
-					diffStrings = append(diffStrings, fmt.Sprintf("%s (%v ≠ %v)", d.Path, formatDiffValueConcise(d.Expected), formatDiffValueConcise(d.Actual)))
+					diffStrings = append(
+						diffStrings,
+						fmt.Sprintf(
+							"%s (%v ≠ %v)",
+							d.Path,
+							formatDiffValueConcise(d.Expected),
+							formatDiffValueConcise(d.Actual),
+						),
+					)
 				}
 				closeMatches = append(closeMatches, struct {
 					match CloseMatch

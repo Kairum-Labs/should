@@ -1,7 +1,6 @@
 version: "2"
 
 run:
-  go: "1.23"
   timeout: 5m
   tests: true
 
@@ -13,9 +12,11 @@ linters:
     - misspell
     - staticcheck
     - unused
+    - paralleltest
+    - lll
   settings:
     lll:
-      line-length: 120
+      line-length: 130
     misspell:
       locale: US
 

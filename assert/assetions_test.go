@@ -127,6 +127,7 @@ func TestNotBeEqual(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     interface{}
@@ -178,6 +179,7 @@ func TestNotBeEqual(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				NotBeEqual(mockT, tt.actual, tt.expected)
 
@@ -195,6 +197,7 @@ func TestNotBeEqual(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     interface{}
@@ -226,6 +229,7 @@ func TestNotBeEqual(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				NotBeEqual(mockT, tt.actual, tt.expected, tt.opts...)
 
@@ -243,6 +247,7 @@ func TestNotBeEqual(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     interface{}
@@ -320,6 +325,7 @@ func TestNotBeEqual(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				NotBeEqual(mockT, tt.actual, tt.expected)
 
@@ -600,6 +606,7 @@ func TestContain_WithIntSlices(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			if tc.expected {
 				// Should pass
 				Contain(t, tc.slice, tc.target)
@@ -668,6 +675,7 @@ func TestBeEmpty_Succeeds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			BeEmpty(t, tt.value)
 		})
 	}
@@ -1343,6 +1351,7 @@ func TestNotPanic_Extended(t *testing.T) {
 	t.Parallel()
 
 	t.Run("With WithStackTrace option", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name          string
 			testFunc      func()
@@ -1392,6 +1401,7 @@ func TestNotPanic_Extended(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				if tt.shouldFail {
 					failed, message := assertFails(t, func(t testing.TB) {
 						NotPanic(t, tt.testFunc, tt.opts...)
@@ -1414,6 +1424,7 @@ func TestNotPanic_Extended(t *testing.T) {
 	})
 
 	t.Run("Combined options", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name          string
 			testFunc      func()
@@ -1442,6 +1453,7 @@ func TestNotPanic_Extended(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				if tt.shouldFail {
 					failed, message := assertFails(t, func(t testing.TB) {
 						NotPanic(t, tt.testFunc, tt.opts...)
@@ -1551,7 +1563,10 @@ func TestBeGreaterOrEqualTo_Fails_WithMixedIntFloat(t *testing.T) {
 // === Tests for BeLessOrEqualTo ===
 
 func TestBeLessOrEqualTo(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		// Integer tests
 		BeLessOrEqualTo(t, 5, 10)
 		BeLessOrEqualTo(t, 10, 10)
@@ -1562,6 +1577,7 @@ func TestBeLessOrEqualTo(t *testing.T) {
 
 		// Test failures
 		t.Run("Fails when actual is greater than expected", func(t *testing.T) {
+			t.Parallel()
 			failed, message := assertFails(t, func(t testing.TB) {
 				BeLessOrEqualTo(t, 15, 10)
 			})
@@ -1585,6 +1601,7 @@ func TestBeLessOrEqualTo(t *testing.T) {
 		})
 
 		t.Run("Fails with float precision", func(t *testing.T) {
+			t.Parallel()
 			failed, message := assertFails(t, func(t testing.TB) {
 				BeLessOrEqualTo(t, 3.15, 3.14)
 			})
@@ -1608,11 +1625,13 @@ func TestBeLessOrEqualTo(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		// Success with custom message
 		BeLessOrEqualTo(t, 5, 10, WithMessage("Value should be within limit"))
 
 		// Fails with custom error message
 		t.Run("Fails with custom error message", func(t *testing.T) {
+			t.Parallel()
 			failed, message := assertFails(t, func(t testing.TB) {
 				BeLessOrEqualTo(t, 100, 50, WithMessage("Score should not exceed maximum"))
 			})
@@ -1636,6 +1655,7 @@ func TestBeLessOrEqualTo(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		// Success with zero values
 		BeLessOrEqualTo(t, 0, 0)
 
@@ -1647,6 +1667,7 @@ func TestBeLessOrEqualTo(t *testing.T) {
 
 		// Fails with negative comparison
 		t.Run("Fails with negative comparison", func(t *testing.T) {
+			t.Parallel()
 			failed, message := assertFails(t, func(t testing.TB) {
 				BeLessOrEqualTo(t, -5, -10)
 			})
@@ -1670,6 +1691,7 @@ func TestBeLessOrEqualTo(t *testing.T) {
 	})
 
 	t.Run("Type compatibility", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			testFunc   func()
@@ -2332,7 +2354,11 @@ func TestNotContainDuplicates_Fails_WhenDuplicatesExist(t *testing.T) {
 
 	// Test that it correctly identifies duplicates in int slice
 	failed, message := assertFails(t, func(t testing.TB) {
-		NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4}, WithMessage("Expected no duplicates, but found 1 duplicate value: 2"))
+		NotContainDuplicates(
+			t,
+			[]int{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4},
+			WithMessage("Expected no duplicates, but found 1 duplicate value: 2"),
+		)
 	})
 	if !failed {
 		t.Fatal("Expected test to fail due to duplicates, but it passed")
@@ -2528,6 +2554,7 @@ func TestStartsWith(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2569,6 +2596,7 @@ func TestStartsWith(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				StartWith(mockT, tt.actual, tt.expected)
 
@@ -2586,6 +2614,7 @@ func TestStartsWith(t *testing.T) {
 	})
 
 	t.Run("Case sensitivity", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2616,6 +2645,7 @@ func TestStartsWith(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				StartWith(mockT, tt.actual, tt.expected, tt.opts...)
 
@@ -2633,6 +2663,7 @@ func TestStartsWith(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2651,6 +2682,7 @@ func TestStartsWith(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				StartWith(mockT, tt.actual, tt.expected, tt.opts...)
 
@@ -2665,6 +2697,7 @@ func TestStartsWith(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2704,8 +2737,8 @@ func TestStartsWith(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				StartWith(mockT, tt.actual, tt.expected)
 
@@ -2723,6 +2756,7 @@ func TestStartsWith(t *testing.T) {
 	})
 
 	t.Run("String truncation", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2768,6 +2802,7 @@ func TestStartsWith(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				StartWith(mockT, tt.actual, tt.expected)
 
@@ -2788,7 +2823,10 @@ func TestStartsWith(t *testing.T) {
 // === Tests for EndWith ===
 
 func TestEndsWith(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2855,6 +2893,7 @@ func TestEndsWith(t *testing.T) {
 	})
 
 	t.Run("Case sensitivity", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2896,7 +2935,9 @@ func TestEndsWith(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		t.Run("Fails with custom message", func(t *testing.T) {
+			t.Parallel()
 			mockT := &mockT{}
 			EndWith(mockT, "Hello, world!", "planet", WithMessage("String should end with 'planet'"))
 
@@ -2918,6 +2959,7 @@ func TestEndsWith(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -2962,6 +3004,7 @@ func TestEndsWith(t *testing.T) {
 	})
 
 	t.Run("String truncation", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -3089,42 +3132,52 @@ func TestNumericTypeConversions_AllTypes(t *testing.T) {
 
 	// Test all supported numeric types for better compareOrderable coverage
 	t.Run("int8", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, int8(10), int8(9))
 	})
 
 	t.Run("int16", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, int16(20), int16(19))
 	})
 
 	t.Run("int32", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, int32(30), int32(29))
 	})
 
 	t.Run("int64", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, int64(40), int64(39))
 	})
 
 	t.Run("uint8", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, uint8(50), uint8(49))
 	})
 
 	t.Run("uint16", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, uint16(60), uint16(59))
 	})
 
 	t.Run("uint32", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, uint32(70), uint32(69))
 	})
 
 	t.Run("uint64", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, uint64(80), uint64(79))
 	})
 
 	t.Run("float32", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, float32(3.14), float32(3.13))
 	})
 
 	t.Run("float64", func(t *testing.T) {
+		t.Parallel()
 		BeGreaterThan(t, float64(2.718), float64(2.717))
 	})
 }
@@ -3159,7 +3212,10 @@ func TestIsNumericType_Coverage(t *testing.T) {
 // === Tests for HaveLength ===
 
 func TestHaveLength(t *testing.T) {
+	t.Parallel()
+
 	t.Run("should pass for correct length of slice", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, []int{1, 2, 3}, 3)
 		if mockT.failed {
@@ -3168,6 +3224,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should pass for correct length of string", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, "abc", 3)
 		if mockT.failed {
@@ -3176,6 +3233,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should pass for correct length of map", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, map[int]int{1: 1, 2: 2}, 2)
 		if mockT.failed {
@@ -3184,6 +3242,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should fail for incorrect length with custom message", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, []int{1, 2}, 3, WithMessage("Custom message"))
 		if !mockT.failed {
@@ -3196,6 +3255,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should fail for incorrect length and show detailed error", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, []int{1, 2}, 3)
 		if !mockT.failed {
@@ -3212,6 +3272,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should fail for incorrect length (more elements)", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, []int{1, 2, 3, 4}, 3)
 		if !mockT.failed {
@@ -3223,6 +3284,7 @@ func TestHaveLength(t *testing.T) {
 	})
 
 	t.Run("should fail for unsupported type", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		HaveLength(mockT, 123, 1)
 		if !mockT.failed {
@@ -3238,10 +3300,12 @@ func TestHaveLength(t *testing.T) {
 // === Tests for BeOfType ===
 
 func TestBeOfType(t *testing.T) {
+	t.Parallel()
 	type Cat struct{ Name string }
 	type Dog struct{ Name string }
 
 	t.Run("should pass for same type", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		var c *Cat
 		BeOfType(mockT, &Cat{}, c)
@@ -3251,6 +3315,7 @@ func TestBeOfType(t *testing.T) {
 	})
 
 	t.Run("should fail for different types", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		var d *Dog
 		BeOfType(mockT, &Cat{Name: "Whiskers"}, d)
@@ -3268,6 +3333,7 @@ func TestBeOfType(t *testing.T) {
 	})
 
 	t.Run("should pass for primitive types", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeOfType(mockT, 1, 0) // int and int
 		if mockT.failed {
@@ -3276,6 +3342,7 @@ func TestBeOfType(t *testing.T) {
 	})
 
 	t.Run("should fail for different primitive types", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeOfType(mockT, int32(1), int64(0))
 		if !mockT.failed {
@@ -3292,7 +3359,10 @@ func TestBeOfType(t *testing.T) {
 // === Tests for BeOneOf ===
 
 func TestBeOneOf(t *testing.T) {
+	t.Parallel()
+
 	t.Run("should pass if value is one of the options", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		options := []string{"active", "inactive"}
 		BeOneOf(mockT, "active", options)
@@ -3302,6 +3372,7 @@ func TestBeOneOf(t *testing.T) {
 	})
 
 	t.Run("should fail if value is not one of the options", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		options := []string{"active", "inactive", "suspended"}
 		BeOneOf(mockT, "pending", options)
@@ -3318,6 +3389,7 @@ func TestBeOneOf(t *testing.T) {
 	})
 
 	t.Run("should fail for empty options", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeOneOf(mockT, "any", []string{})
 		if !mockT.failed {
@@ -3329,6 +3401,7 @@ func TestBeOneOf(t *testing.T) {
 	})
 
 	t.Run("should truncate long option lists in the error message", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		options := []string{"active", "inactive", "suspended", "deleted", "archived"}
 		BeOneOf(mockT, "pending", options)
@@ -3742,7 +3815,9 @@ func TestNotContainKey(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		t.Run("string keys", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -3786,6 +3861,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -3802,6 +3878,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("int keys", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[int]string
@@ -3838,6 +3915,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -3854,6 +3932,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("custom struct keys", func(t *testing.T) {
+			t.Parallel()
 			type CustomKey struct {
 				ID   int
 				Name string
@@ -3881,6 +3960,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -3895,7 +3975,9 @@ func TestNotContainKey(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		t.Run("string-int maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -3915,6 +3997,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key, tt.opts...)
 					if tt.shouldFail && !mockT.Failed() {
@@ -3931,6 +4014,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("string-string maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]string
@@ -3958,6 +4042,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key, tt.opts...)
 					if tt.shouldFail && !mockT.Failed() {
@@ -3975,7 +4060,9 @@ func TestNotContainKey(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		t.Run("nil map handling", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -3992,6 +4079,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4005,6 +4093,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("zero value keys", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[int]string
@@ -4027,6 +4116,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4040,6 +4130,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("empty string keys", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -4062,6 +4153,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4075,6 +4167,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("complex key types", func(t *testing.T) {
+			t.Parallel()
 			type ComplexKey struct {
 				ID   int
 				Name string
@@ -4102,6 +4195,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4115,6 +4209,7 @@ func TestNotContainKey(t *testing.T) {
 		})
 
 		t.Run("pointer keys", func(t *testing.T) {
+			t.Parallel()
 			key1 := "test1"
 			key2 := "test2"
 			key3 := "test3"
@@ -4141,6 +4236,7 @@ func TestNotContainKey(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainKey(mockT, tt.mapValue, tt.key)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4161,7 +4257,9 @@ func TestNotContainValue(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		t.Run("string-int maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -4205,6 +4303,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4221,6 +4320,7 @@ func TestNotContainValue(t *testing.T) {
 		})
 
 		t.Run("int-string maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[int]string
@@ -4257,6 +4357,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value)
 					if tt.shouldFail && !mockT.Failed() {
@@ -4274,7 +4375,9 @@ func TestNotContainValue(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		t.Run("string to int map", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -4309,6 +4412,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
 
@@ -4326,6 +4430,7 @@ func TestNotContainValue(t *testing.T) {
 		})
 
 		t.Run("string to string map", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]string
@@ -4360,6 +4465,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
 
@@ -4377,6 +4483,7 @@ func TestNotContainValue(t *testing.T) {
 		})
 
 		t.Run("int to string map", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[int]string
@@ -4411,6 +4518,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value, tt.opts...)
 
@@ -4429,7 +4537,9 @@ func TestNotContainValue(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		t.Run("string-int maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[string]int
@@ -4470,6 +4580,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value)
 
@@ -4487,6 +4598,7 @@ func TestNotContainValue(t *testing.T) {
 		})
 
 		t.Run("int-string maps", func(t *testing.T) {
+			t.Parallel()
 			tests := []struct {
 				name       string
 				mapValue   map[int]string
@@ -4510,6 +4622,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value)
 
@@ -4527,6 +4640,7 @@ func TestNotContainValue(t *testing.T) {
 		})
 
 		t.Run("complex struct values", func(t *testing.T) {
+			t.Parallel()
 			type User struct{ Name string }
 
 			tests := []struct {
@@ -4580,6 +4694,7 @@ func TestNotContainValue(t *testing.T) {
 
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					mockT := &mockT{}
 					NotContainValue(mockT, tt.mapValue, tt.value)
 
@@ -4625,6 +4740,7 @@ func TestContainSubstring(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -4679,6 +4795,7 @@ func TestContainSubstring(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				ContainSubstring(mockT, tt.actual, tt.substring)
 
@@ -4696,6 +4813,7 @@ func TestContainSubstring(t *testing.T) {
 	})
 
 	t.Run("Case sensitivity", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -4733,6 +4851,7 @@ func TestContainSubstring(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				ContainSubstring(mockT, tt.actual, tt.substring, tt.opts...)
 
@@ -4750,6 +4869,7 @@ func TestContainSubstring(t *testing.T) {
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -4768,6 +4888,7 @@ func TestContainSubstring(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				ContainSubstring(mockT, tt.actual, tt.substring, tt.opts...)
 
@@ -4782,6 +4903,7 @@ func TestContainSubstring(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -4828,6 +4950,7 @@ func TestContainSubstring(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				ContainSubstring(mockT, tt.actual, tt.substring)
 
@@ -4845,6 +4968,7 @@ func TestContainSubstring(t *testing.T) {
 	})
 
 	t.Run("Long string handling", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name       string
 			actual     string
@@ -4853,8 +4977,10 @@ func TestContainSubstring(t *testing.T) {
 			errorCheck func(t *testing.T, message string)
 		}{
 			{
-				name:       "should use multiline formatting for long strings",
-				actual:     "This is a very long string that exceeds the 200 character limit and should trigger multiline formatting in the error message to provide better readability for developers debugging their tests when the assertion fails",
+				name: "should use multiline formatting for long strings",
+				actual: "This is a very long string that exceeds the 200 character limit and should trigger " +
+					"multiline formatting in the error message to provide better readability for developers " +
+					"debugging their tests when the assertion fails",
 				substring:  "nonexistent",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
@@ -4900,6 +5026,7 @@ func TestContainSubstring(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				ContainSubstring(mockT, tt.actual, tt.substring)
 
@@ -4923,6 +5050,7 @@ func TestFail(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name           string
 			message        string
@@ -4962,6 +5090,7 @@ func TestFail(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				fail(mockT, tt.message, tt.args...)
 
@@ -4977,6 +5106,7 @@ func TestFail(t *testing.T) {
 	})
 
 	t.Run("Security - Percent character handling", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name           string
 			message        string
@@ -5016,6 +5146,7 @@ func TestFail(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				fail(mockT, tt.message, tt.args...)
 
@@ -5031,6 +5162,7 @@ func TestFail(t *testing.T) {
 	})
 
 	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name           string
 			message        string
@@ -5070,6 +5202,7 @@ func TestFail(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				fail(mockT, tt.message, tt.args...)
 
@@ -5085,6 +5218,7 @@ func TestFail(t *testing.T) {
 	})
 
 	t.Run("Format string validation", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name        string
 			message     string
@@ -5117,6 +5251,7 @@ func TestFail(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 
 				defer func() {
@@ -5140,8 +5275,10 @@ func TestFail(t *testing.T) {
 
 	t.Run("Helper method call", func(t *testing.T) {
 		// This test verifies that fail calls t.Helper()
+		t.Parallel()
 
 		t.Run("should call Helper method", func(t *testing.T) {
+			t.Parallel()
 			mockT := &mockT{}
 
 			fail(mockT, "test message")
@@ -5157,6 +5294,7 @@ func TestFail_Integration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Integration with BeTrue", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeTrue(mockT, false)
 
@@ -5171,6 +5309,7 @@ func TestFail_Integration(t *testing.T) {
 	})
 
 	t.Run("Integration with custom message", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeTrue(mockT, false, WithMessage("custom error"))
 
@@ -5187,6 +5326,7 @@ func TestFail_Integration(t *testing.T) {
 	})
 
 	t.Run("Integration with percent characters in custom message", func(t *testing.T) {
+		t.Parallel()
 		mockT := &mockT{}
 		BeTrue(mockT, false, WithMessage("progress: 100% complete"))
 
@@ -5241,6 +5381,7 @@ func TestBeInRange(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue, tt.opts...)
 
@@ -5289,6 +5430,7 @@ func TestBeInRange(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 				mockT := &mockT{}
 				BeInRange(mockT, tt.value, tt.minValue, tt.maxValue)
 
@@ -5340,6 +5482,7 @@ func TestBeInRange(t *testing.T) {
 }
 
 func TestBeSorted(t *testing.T) {
+	t.Parallel()
 	// Helper function to reduce repetition
 	runSortTest := func(collection any, shouldFail bool, msgCheck string) {
 		mockTest := &mockT{}
