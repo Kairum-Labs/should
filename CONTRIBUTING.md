@@ -66,6 +66,27 @@ git checkout -b feature/your-feature-name
 - Add tests for new functionality
 - Ensure all tests pass: `go test ./...`
 
+## Linting (golangci-lint)
+
+- CI: we use `golangci-lint` version `v2.3.0` (via `golangci/golangci-lint-action@v8`), configured by `.golangci.yml`.
+
+### Local installation
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
+```
+
+### How to run
+
+```bash
+golangci-lint run ./...
+```
+
+Tips:
+
+- Run in a specific directory: `golangci-lint run ./assert/...`
+- Run on a specific file: `golangci-lint run assert/utils.go`
+
 ### 3. Commit
 
 Use clear commit messages:
