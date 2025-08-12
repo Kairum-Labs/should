@@ -15,6 +15,7 @@
 - **Detailed Error Messages**: Get comprehensive, contextual error information for every assertion type.
 - **Smart String Handling**: Automatic multiline formatting for long strings and truncation with context.
 - **Numeric Comparisons**: Detailed difference calculations with helpful hints for numeric assertions.
+- **Time Comparisons**: Compare times with options to ignore timezone and/or nanoseconds with clear diffs.
 - **Empty/Non-Empty Checks**: Rich context about collection types, sizes, and content.
 - **String Similarity**: When a string assertion fails, `Should` suggests similar strings from your collection to help you spot typos.
 - **Numeric Context**: When a numeric assertion fails, `Should` shows nearby values in the collection to help you reason about missing or unexpected numbers.
@@ -56,6 +57,11 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeInRange(t, user.Age, 18, 65)
 	should.BeInRange(t, testScore, 0, 100)
 	should.BeInRange(t, response.StatusCode, 200, 299)
+
+	// Time comparisons
+	should.BeSameTime(t, t1, t2)
+	should.BeSameTime(t, t1, t2, should.WithIgnoreTimezone())
+	should.BeSameTime(t, t1, t2, should.WithTruncate(time.Second))
 
 	// Numeric comparisons with custom messages
 	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
@@ -423,6 +429,42 @@ should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
 // └─ 3 appears 3 times at indexes [3, 4, 5]
 ```
 
+### Time Assertions
+
+Compare times with flexible options:
+
+```go
+// Basic usage
+should.BeSameTime(t, actual, expected)
+
+// With custom messages
+should.BeSameTime(t, actual, expected, should.WithMessage("Expected times to match but they differ"))
+
+// With options
+should.BeSameTime(t, actual, expected,
+    should.WithIgnoreTimezone(),
+    should.WithTruncate(time.Second),
+)
+
+time1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+time2 := time.Date(2024, 1, 15, 14, 30, 2, 500000000, time.UTC)
+
+should.BeSameTime(t, time1, time2)
+// Expected times to have same time, but difference is 2.5s
+// Expected: 2024-01-15 14:30:00.000000000 UTC
+// Actual  : 2024-01-15 14:30:02.500000000 UTC (2.5s later)
+
+should.BeSameTime(t, time2, time1)
+// Expected times to have same time, but difference is 2.5s
+// Expected: 2024-01-15 14:30:02.500000000 UTC
+// Actual  : 2024-01-15 14:30:00.000000000 UTC (2.5s earlier)
+
+// Ignore timezone differences
+utc := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+est := time.Date(2024, 1, 15, 9, 30, 0, 0, time.FixedZone("EST", -5*3600))
+should.BeSameTime(t, utc, est, should.WithIgnoreTimezone()) // Pass
+```
+
 ### Sorted Check
 
 Verify that collections are sorted in ascending order with detailed violation reporting:
@@ -562,6 +604,7 @@ should.NotContainValue(t, userRoles, 3)
 - `NotBeEqual(t, actual, unexpected)` - Ensure two values are not equal
 - `BeNil(t, actual)` / `NotBeNil(t, actual)` - Nil pointer checks
 - `BeOfType(t, actual, expected)` - Checks if a value is of a specific type
+- `BeSameTime(t, actual, expected, options...)` - Compare times with optional timezone/nanosecond ignoring
 - `HaveLength(t, collection, length)` - Checks if a collection has a specific length
 
 ### Empty/Non-Empty Checks
@@ -650,6 +693,28 @@ For `NotPanic` assert, you can capture detailed stack traces using `should.WithS
 should.NotPanic(t, func() {
     riskyOperation()
 }, should.WithStackTrace())
+```
+
+#### Time comparisons with options
+
+These options customize time comparisons for `BeSameTime`.
+
+- `should.WithIgnoreTimezone()`: compares instants regardless of timezone/location
+- `should.WithTruncate(unit)`: truncates both times to specified precision before comparison
+
+```go
+// Ignore timezone while comparing the same instant represented in different locations
+t1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+t2 := time.Date(2024, 1, 15, 16, 30, 0, 0, time.FixedZone("UTC+2", 2*3600))
+should.BeSameTime(t, t1, t2, should.WithIgnoreTimezone())
+
+// Ignore nanoseconds precision
+t1 = time.Date(2024, 1, 15, 14, 30, 0, 123456789, time.UTC)
+t2 = time.Date(2024, 1, 15, 14, 30, 0, 987654321, time.UTC)
+should.BeSameTime(t, t1, t2, should.WithTruncate(time.Second))
+
+// Compare only up to minute precision
+should.BeSameTime(t, t1, t2, should.WithTruncate(time.Minute))
 ```
 
 ### Custom Predicate Functions

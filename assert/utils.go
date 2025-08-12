@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 )
 
 // isSliceOrArray checks if the provided value is a slice or an array.
@@ -2289,4 +2290,115 @@ func formatSortError(result sortCheckResult) string {
 	}
 
 	return msg.String()
+}
+
+// formatBeSameTimeError builds a friendly error message for time equality comparisons.
+func formatBeSameTimeError(expected time.Time, actual time.Time, diff time.Duration) string {
+	var msg strings.Builder
+
+	// Human readable difference text (e.g., 2.5s)
+	human := humanizeDuration(diff)
+
+	// Determine whether actual is later or earlier than expected
+	relation := "later"
+	if actual.Before(expected) {
+		relation = "earlier"
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected times to have same time, but difference is %s\n", human))
+	msg.WriteString(fmt.Sprintf("Expected: %s\n", formatTimeForDisplay(expected)))
+	msg.WriteString(fmt.Sprintf("Actual  : %s (%s %s)", formatTimeForDisplay(actual), human, relation))
+	return msg.String()
+}
+
+// humanizeDuration returns a concise string representation of a duration,
+// such as 2s, 2.5s, 150ms, 10m30s, or 1d1h.
+//
+// Negative durations are handled by returning their positive equivalent.
+func humanizeDuration(duration time.Duration) string {
+	if duration < 0 {
+		duration = -duration
+	}
+
+	// Handle short durations with millisecond and second precision
+	if duration < time.Millisecond {
+		return fmt.Sprintf("%.3fms", float64(duration)/float64(time.Millisecond))
+	}
+	if duration < time.Second {
+		ms := float64(duration) / float64(time.Millisecond)
+		if ms-math.Floor(ms) == 0 {
+			return fmt.Sprintf("%.0fms", ms)
+		}
+		return fmt.Sprintf("%.1fms", ms)
+	}
+	if duration < time.Minute {
+		s := float64(duration) / float64(time.Second)
+		if s-math.Floor(s) == 0 {
+			return fmt.Sprintf("%.0fs", s)
+		}
+		return fmt.Sprintf("%.1fs", s)
+	}
+
+	// Handle longer durations with discrete units (minutes, hours, days)
+	switch {
+	case duration < time.Hour:
+		minutes := duration / time.Minute
+		seconds := (duration % time.Minute) / time.Second
+		if seconds == 0 {
+			return fmt.Sprintf("%dm", minutes)
+		}
+		return fmt.Sprintf("%dm%ds", minutes, seconds)
+	case duration < 24*time.Hour:
+		hours := duration / time.Hour
+		minutes := (duration % time.Hour) / time.Minute
+		if minutes == 0 {
+			return fmt.Sprintf("%dh", hours)
+		}
+		return fmt.Sprintf("%dh%dm", hours, minutes)
+	default:
+		days := duration / (24 * time.Hour)
+		hours := (duration % (24 * time.Hour)) / time.Hour
+		if hours == 0 {
+			return fmt.Sprintf("%dd", days)
+		}
+		return fmt.Sprintf("%dd%dh", days, hours)
+	}
+}
+
+// formatTimeForDisplay formats a time.Time value for display, including
+// fractional seconds up to nanosecond precision and the time zone name.
+//
+// Fractional seconds are trimmed of trailing zeros. The time zone is
+// displayed as "UTC" for both UTC and the system's local time for
+// consistent output, particularly in tests.
+//
+// Example output: "2006-01-02 15:04:05.123456789 UTC"
+//
+// Example output: "2006-01-02 15:04:05.5 EST"
+func formatTimeForDisplay(t time.Time) string {
+	// Use UTC for the base time to ensure consistent formatting.
+	utcTime := t.UTC()
+
+	// Format the base date and time string.
+	baseFormat := "2006-01-02 15:04:05"
+	formattedBase := utcTime.Format(baseFormat)
+
+	// Build the fractional seconds part, if needed.
+	fractionalPart := ""
+	nanoseconds := utcTime.Nanosecond()
+	if nanoseconds != 0 {
+		// Format nanoseconds with leading zeros to 9 digits, then trim trailing zeros.
+		fractionalStr := fmt.Sprintf("%09d", nanoseconds)
+		fractionalStr = strings.TrimRight(fractionalStr, "0")
+		fractionalPart = "." + fractionalStr
+	}
+
+	// Determine the time zone name. We use "UTC" for time.Local and time.UTC
+	// to make test output consistent regardless of the machine's time zone.
+	timeZoneName := t.Location().String()
+	if t.Location() == time.UTC || t.Location() == time.Local {
+		timeZoneName = "UTC"
+	}
+
+	return fmt.Sprintf("%s%s %s", formattedBase, fractionalPart, timeZoneName)
 }

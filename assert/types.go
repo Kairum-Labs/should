@@ -1,6 +1,9 @@
 package assert
 
-import "cmp"
+import (
+	"cmp"
+	"time"
+)
 
 // Option is a functional option for configuring assertions.
 type Option interface {
@@ -13,10 +16,16 @@ type Config struct {
 	Message    string
 	IgnoreCase bool
 	StackTrace bool
+	Time       TimeOptions
 	/*
 		 	Description    string
 			DeepComparison bool
 	*/
+}
+
+type TimeOptions struct {
+	IgnoreTimezone bool
+	TruncateUnit   time.Duration
 }
 
 // message implements the Option interface for custom messages.
@@ -27,6 +36,12 @@ type ignoreCase bool
 
 // stackTrace is a boolean flag for including stack traces on NotPanic assertions.
 type stackTrace bool
+
+// ignoreTimezone configures time comparisons to ignore timezone/location differences
+type ignoreTimezone bool
+
+// truncateDuration configures time comparisons to truncate both values before comparing
+type truncateDuration time.Duration
 
 // Apply sets the custom message in the config.
 func (m message) Apply(c *Config) {
@@ -39,6 +54,16 @@ func (i ignoreCase) Apply(c *Config) {
 
 func (s stackTrace) Apply(c *Config) {
 	c.StackTrace = bool(s)
+}
+
+// Apply implements Option for ignoreTimezone
+func (i ignoreTimezone) Apply(c *Config) {
+	c.Time.IgnoreTimezone = bool(i)
+}
+
+// Apply implements Option for truncateDuration
+func (u truncateDuration) Apply(c *Config) {
+	c.Time.TruncateUnit = time.Duration(u)
 }
 
 // WithMessage creates an option for setting a custom error message.
@@ -54,6 +79,21 @@ func WithIgnoreCase() Option {
 // WithStackTrace creates an option for including stack traces on NotPanic assertions.
 func WithStackTrace() Option {
 	return stackTrace(true)
+}
+
+// WithIgnoreTimezone creates an option for ignoring timezone when comparing times.
+// When enabled, comparisons use calendar components (year, month, day, hour, minute, second[, ns])
+// and do not consider the Location/offset.
+func WithIgnoreTimezone() Option {
+	return ignoreTimezone(true)
+}
+
+// WithTruncate truncates the actual and expected times to the specified unit before comparing.
+//
+// This is useful for asserting that two times are the same up to a certain level of precision,
+// ignoring differences in smaller units.
+func WithTruncate(unit time.Duration) Option {
+	return truncateDuration(unit)
 }
 
 // fieldDiff represents a single difference between two compared values.
