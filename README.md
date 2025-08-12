@@ -58,6 +58,11 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeInRange(t, testScore, 0, 100)
 	should.BeInRange(t, response.StatusCode, 200, 299)
 
+	// Time comparisons
+	should.BeSameTime(t, t1, t2)
+	should.BeSameTime(t, t1, t2, should.WithIgnoreTimezone())
+	should.BeSameTime(t, t1, t2, should.WithTruncate(time.Second))
+
 	// Numeric comparisons with custom messages
 	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
@@ -429,39 +434,35 @@ should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
 Compare times with flexible options:
 
 ```go
-// HaveSameTimeAs compares two time.Time values for equality
-
 // Basic usage
-should.HaveSameTimeAs(t, actual, expected)
+should.BeSameTime(t, actual, expected)
+
+// With custom messages
+should.BeSameTime(t, actual, expected, should.WithMessage("Expected times to match but they differ"))
 
 // With options
-should.HaveSameTimeAs(t, actual, expected,
+should.BeSameTime(t, actual, expected,
     should.WithIgnoreTimezone(),
-    should.WithIgnoreNanoseconds(),
+    should.WithTruncate(time.Second),
 )
 
 time1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
 time2 := time.Date(2024, 1, 15, 14, 30, 2, 500000000, time.UTC)
 
-should.HaveSameTimeAs(t, time1, time2)
+should.BeSameTime(t, time1, time2)
 // Expected times to have same time, but difference is 2.5s
 // Expected: 2024-01-15 14:30:00.000000000 UTC
 // Actual  : 2024-01-15 14:30:02.500000000 UTC (2.5s later)
 
-should.HaveSameTimeAs(t, time2, time1)
+should.BeSameTime(t, time2, time1)
 // Expected times to have same time, but difference is 2.5s
-// Expected: 2024-01-15 14:30:00.000000000 UTC
-// Actual  : 2024-01-15 14:30:02.500000000 UTC (2.5s earlier)
+// Expected: 2024-01-15 14:30:02.500000000 UTC
+// Actual  : 2024-01-15 14:30:00.000000000 UTC (2.5s earlier)
 
 // Ignore timezone differences
 utc := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
 est := time.Date(2024, 1, 15, 9, 30, 0, 0, time.FixedZone("EST", -5*3600))
-should.HaveSameTimeAs(t, utc, est, should.WithIgnoreTimezone()) // Pass
-
-// Ignore nanosecond precision
-time1 = time.Date(2024, 1, 15, 14, 30, 0, 123456789, time.UTC)
-time2 = time.Date(2024, 1, 15, 14, 30, 0, 987654321, time.UTC)
-should.HaveSameTimeAs(t, time1, time2, should.WithIgnoreNanoseconds()) // Pass
+should.BeSameTime(t, utc, est, should.WithIgnoreTimezone()) // Pass
 ```
 
 ### Sorted Check
@@ -603,8 +604,8 @@ should.NotContainValue(t, userRoles, 3)
 - `NotBeEqual(t, actual, unexpected)` - Ensure two values are not equal
 - `BeNil(t, actual)` / `NotBeNil(t, actual)` - Nil pointer checks
 - `BeOfType(t, actual, expected)` - Checks if a value is of a specific type
+- `BeSameTime(t, actual, expected, options...)` - Compare times with optional timezone/nanosecond ignoring
 - `HaveLength(t, collection, length)` - Checks if a collection has a specific length
-- `HaveSameTimeAs(t, actual, expected, options...)` - Compare times with optional timezone/nanosecond ignoring
 
 ### Empty/Non-Empty Checks
 
@@ -694,28 +695,26 @@ should.NotPanic(t, func() {
 }, should.WithStackTrace())
 ```
 
-#### Time comparisons with `WithIgnoreTimezone` and `WithIgnoreNanoseconds`
+#### Time comparisons with options
 
-These options customize time comparisons for `HaveSameTimeAs`.
+These options customize time comparisons for `BeSameTime`.
 
 - `should.WithIgnoreTimezone()`: compares instants regardless of timezone/location
-- `should.WithIgnoreNanoseconds()`: ignores sub-second differences
+- `should.WithTruncate(unit)`: truncates both times to specified precision before comparison
 
 ```go
 // Ignore timezone while comparing the same instant represented in different locations
 t1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
 t2 := time.Date(2024, 1, 15, 16, 30, 0, 0, time.FixedZone("UTC+2", 2*3600))
-should.HaveSameTimeAs(t, t1, t2, should.WithIgnoreTimezone())
+should.BeSameTime(t, t1, t2, should.WithIgnoreTimezone())
 
-// Ignore sub-second differences
-t3 := time.Date(2024, 1, 15, 14, 30, 2, 999_000_000, time.UTC)
-t4 := time.Date(2024, 1, 15, 14, 30, 2, 001_000_000, time.UTC)
-should.HaveSameTimeAs(t, t3, t4, should.WithIgnoreNanoseconds())
+// Ignore nanoseconds precision
+t1 = time.Date(2024, 1, 15, 14, 30, 0, 123456789, time.UTC)
+t2 = time.Date(2024, 1, 15, 14, 30, 0, 987654321, time.UTC)
+should.BeSameTime(t, t1, t2, should.WithTruncate(time.Second))
 
-// Combine both options
-should.HaveSameTimeAs(
-    t, t1, t2, should.WithIgnoreTimezone(), should.WithIgnoreNanoseconds(),
-)
+// Compare only up to minute precision
+should.BeSameTime(t, t1, t2, should.WithTruncate(time.Minute))
 ```
 
 ### Custom Predicate Functions

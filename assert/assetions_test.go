@@ -3298,7 +3298,7 @@ func TestHaveLength(t *testing.T) {
 	})
 }
 
-func TestHaveSameTimeAs(t *testing.T) {
+func TestBeSameTime(t *testing.T) {
 	t.Parallel()
 
 	// Helper times for testing
@@ -3306,7 +3306,6 @@ func TestHaveSameTimeAs(t *testing.T) {
 	sameTimeUTC := time.Date(2023, 12, 25, 15, 30, 45, 123456789, time.UTC)
 	sameTimeEST := time.Date(2023, 12, 25, 10, 30, 45, 123456789, time.FixedZone("EST", -5*3600))
 	differentTime := time.Date(2023, 12, 25, 15, 30, 46, 123456789, time.UTC)
-	sameTimeNoNanos := time.Date(2023, 12, 25, 15, 30, 45, 0, time.UTC)
 	differentNanos := time.Date(2023, 12, 25, 15, 30, 45, 987654321, time.UTC)
 
 	t.Run("Basic functionality", func(t *testing.T) {
@@ -3316,12 +3315,25 @@ func TestHaveSameTimeAs(t *testing.T) {
 			expected   time.Time
 			opts       []Option
 			shouldFail bool
+			errorCheck func(t *testing.T, message string)
 		}{
 			{
 				name:       "exact same time should pass",
 				actual:     baseTime,
 				expected:   sameTimeUTC,
 				shouldFail: false,
+			},
+			{
+				name:       "different time should fail with custom message",
+				actual:     baseTime,
+				expected:   differentTime,
+				opts:       []Option{WithMessage("Expected times to match but they differ")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected times to match but they differ") {
+						t.Errorf("Expected error message to contain custom message, got: %s", message)
+					}
+				},
 			},
 			{
 				name:       "different times should fail",
@@ -3348,40 +3360,23 @@ func TestHaveSameTimeAs(t *testing.T) {
 				expected:   differentNanos,
 				shouldFail: true,
 			},
-			{
-				name:       "different nanoseconds should pass with IgnoreNanoseconds",
-				actual:     baseTime,
-				expected:   differentNanos,
-				opts:       []Option{WithIgnoreNanoseconds()},
-				shouldFail: false,
-			},
-			{
-				name:       "same time without nanoseconds should pass with IgnoreNanoseconds",
-				actual:     baseTime,
-				expected:   sameTimeNoNanos,
-				opts:       []Option{WithIgnoreNanoseconds()},
-				shouldFail: false,
-			},
-			{
-				name:       "both timezone and nanoseconds ignored",
-				actual:     time.Date(2023, 12, 25, 15, 30, 45, 123456789, time.UTC),
-				expected:   time.Date(2023, 12, 25, 10, 30, 45, 987654321, time.FixedZone("EST", -5*3600)),
-				opts:       []Option{WithIgnoreTimezone(), WithIgnoreNanoseconds()},
-				shouldFail: false,
-			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				HaveSameTimeAs(mockT, tt.actual, tt.expected, tt.opts...)
+				BeSameTime(mockT, tt.actual, tt.expected, tt.opts...)
 
 				if tt.shouldFail && !mockT.failed {
 					t.Fatal("Expected test to fail, but it passed")
 				}
 				if !tt.shouldFail && mockT.failed {
 					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+
+				if tt.shouldFail && tt.errorCheck != nil {
+					tt.errorCheck(t, mockT.message)
 				}
 			})
 		}
@@ -3390,40 +3385,13 @@ func TestHaveSameTimeAs(t *testing.T) {
 	t.Run("Options handling", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("WithIgnoreTimezone works correctly", func(t *testing.T) {
-			t.Parallel()
-			// Different timezone representations of the same instant
-			utcTime := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
-			estTime := time.Date(2023, 1, 1, 7, 0, 0, 0, time.FixedZone("EST", -5*3600))
-
-			mockT := &mockT{}
-			HaveSameTimeAs(mockT, utcTime, estTime, WithIgnoreTimezone())
-
-			if mockT.failed {
-				t.Errorf("Same instant in different timezones should pass with IgnoreTimezone: %s", mockT.message)
-			}
-		})
-
-		t.Run("WithIgnoreNanoseconds truncates properly", func(t *testing.T) {
-			t.Parallel()
-			t1 := time.Date(2023, 1, 1, 12, 0, 0, 999999999, time.UTC)
-			t2 := time.Date(2023, 1, 1, 12, 0, 0, 1, time.UTC)
-
-			mockT := &mockT{}
-			HaveSameTimeAs(mockT, t1, t2, WithIgnoreNanoseconds())
-
-			if mockT.failed {
-				t.Errorf("Times should be equal when ignoring nanoseconds: %s", mockT.message)
-			}
-		})
-
 		t.Run("Multiple options work together", func(t *testing.T) {
 			t.Parallel()
 			t1 := time.Date(2023, 6, 15, 14, 30, 25, 123456789, time.UTC)
 			t2 := time.Date(2023, 6, 15, 9, 30, 25, 987654321, time.FixedZone("EST", -5*3600))
 
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, t1, t2, WithIgnoreTimezone(), WithIgnoreNanoseconds())
+			BeSameTime(mockT, t1, t2, WithIgnoreTimezone(), WithTruncate(time.Second))
 
 			if mockT.failed {
 				t.Errorf("Times should be equal with both options: %s", mockT.message)
@@ -3436,7 +3404,7 @@ func TestHaveSameTimeAs(t *testing.T) {
 			t2 := time.Date(2023, 1, 1, 12, 0, 1, 0, time.UTC)
 
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, t1, t2, WithMessage("Time validation failed"))
+			BeSameTime(mockT, t1, t2, WithMessage("Time validation failed"))
 
 			if !mockT.failed {
 				t.Fatal("Expected test to fail")
@@ -3448,13 +3416,123 @@ func TestHaveSameTimeAs(t *testing.T) {
 		})
 	})
 
+	t.Run("WithIgnoreTimezone works correctly", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     time.Time
+			expected   time.Time
+			shouldFail bool
+		}{
+			{
+				name:       "pass when same instant but different positive fixed zones",
+				actual:     time.Date(2023, 1, 1, 15, 30, 0, 0, time.UTC),
+				expected:   time.Date(2023, 1, 1, 18, 30, 0, 0, time.FixedZone("UTC+3", 3*3600)),
+				shouldFail: false,
+			},
+			{
+				name:       "pass when same instant but with negative fixed zones",
+				actual:     time.Date(2023, 1, 1, 15, 30, 0, 0, time.UTC),
+				expected:   time.Date(2023, 1, 1, 10, 30, 0, 0, time.FixedZone("UTC-5", -5*3600)),
+				shouldFail: false,
+			},
+			{
+				name:       "pass when same instant but with named timezone (e.g., America/Sao_Paulo)",
+				actual:     time.Date(2023, 1, 1, 15, 30, 0, 0, time.UTC),
+				expected:   time.Date(2023, 1, 1, 12, 30, 0, 0, time.FixedZone("America/Sao_Paulo", -3*3600)),
+				shouldFail: false,
+			},
+			{
+				name:       "fail when instants are different with different timezones",
+				actual:     time.Date(2023, 1, 1, 15, 30, 0, 0, time.UTC),
+				expected:   time.Date(2023, 1, 1, 15, 30, 1, 0, time.FixedZone("UTC+3", 3*3600)),
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				BeSameTime(mockT, tt.actual, tt.expected, WithIgnoreTimezone())
+
+				if mockT.failed != tt.shouldFail {
+					t.Errorf("Test failed for scenario '%s'. Expected failure: %t, but got failure: %t. Error: %s",
+						tt.name, tt.shouldFail, mockT.failed, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("WithTruncate works correctly", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name         string
+			actual       time.Time
+			expected     time.Time
+			truncateUnit time.Duration
+			shouldFail   bool
+		}{
+			{
+				name:         "pass when times are truncated to seconds",
+				actual:       time.Date(2023, 1, 1, 12, 0, 0, 1, time.UTC),
+				expected:     time.Date(2023, 1, 1, 12, 0, 0, 999999999, time.UTC),
+				truncateUnit: time.Second,
+				shouldFail:   false,
+			},
+			{
+				name:         "fail when times are different even after truncating to seconds",
+				actual:       time.Date(2023, 1, 1, 12, 0, 1, 0, time.UTC),
+				expected:     time.Date(2023, 1, 1, 12, 0, 2, 0, time.UTC),
+				truncateUnit: time.Second,
+				shouldFail:   true,
+			},
+			{
+				name:         "pass when times are truncated to minutes",
+				actual:       time.Date(2023, 1, 1, 12, 1, 10, 0, time.UTC),
+				expected:     time.Date(2023, 1, 1, 12, 1, 50, 0, time.UTC),
+				truncateUnit: time.Minute,
+				shouldFail:   false,
+			},
+			{
+				name:         "fail when times are different even after truncating to minutes",
+				actual:       time.Date(2023, 1, 1, 12, 1, 0, 0, time.UTC),
+				expected:     time.Date(2023, 1, 1, 12, 2, 0, 0, time.UTC),
+				truncateUnit: time.Minute,
+				shouldFail:   true,
+			},
+			{
+				name:         "edge case: truncating just below a minute boundary",
+				actual:       time.Date(2023, 1, 1, 12, 0, 59, 999999999, time.UTC),
+				expected:     time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC),
+				truncateUnit: time.Minute,
+				shouldFail:   false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				BeSameTime(mockT, tt.actual, tt.expected, WithTruncate(tt.truncateUnit))
+
+				if mockT.failed != tt.shouldFail {
+					t.Errorf("Test failed for scenario '%s'. Expected failure: %t, but got failure: %t. Error: %s",
+						tt.name, tt.shouldFail, mockT.failed, mockT.message)
+				}
+			})
+		}
+	})
+
 	t.Run("Edge cases", func(t *testing.T) {
 		t.Parallel()
 
 		t.Run("zero times", func(t *testing.T) {
 			t.Parallel()
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, time.Time{}, time.Time{})
+			BeSameTime(mockT, time.Time{}, time.Time{})
 
 			if mockT.failed {
 				t.Errorf("Zero times should be equal: %s", mockT.message)
@@ -3464,7 +3542,7 @@ func TestHaveSameTimeAs(t *testing.T) {
 		t.Run("zero vs non-zero time", func(t *testing.T) {
 			t.Parallel()
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, time.Time{}, time.Now())
+			BeSameTime(mockT, time.Time{}, time.Now())
 
 			if !mockT.failed {
 				t.Error("Zero time should not equal non-zero time")
@@ -3484,7 +3562,7 @@ func TestHaveSameTimeAs(t *testing.T) {
 			afterDST := time.Date(2023, 3, 12, 3, 30, 0, 0, loc)
 
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, beforeDST, afterDST)
+			BeSameTime(mockT, beforeDST, afterDST)
 
 			if !mockT.failed {
 				t.Error("Different DST times should not be equal")
@@ -3497,7 +3575,7 @@ func TestHaveSameTimeAs(t *testing.T) {
 			t2 := time.Date(9999, 12, 31, 23, 59, 59, 999999999, time.UTC)
 
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, t1, t2)
+			BeSameTime(mockT, t1, t2)
 
 			if !mockT.failed {
 				t.Error("Maximum time difference should fail")
@@ -3517,14 +3595,14 @@ func TestHaveSameTimeAs(t *testing.T) {
 
 			// Without ignoring nanoseconds - should fail
 			mockT1 := &mockT{}
-			HaveSameTimeAs(mockT1, t1, t2)
+			BeSameTime(mockT1, t1, t2)
 			if !mockT1.failed {
 				t.Error("Times differing by 1ns should fail without IgnoreNanoseconds")
 			}
 
 			// With ignoring nanoseconds - should pass
 			mockT2 := &mockT{}
-			HaveSameTimeAs(mockT2, t1, t2, WithIgnoreNanoseconds())
+			BeSameTime(mockT2, t1, t2, WithTruncate(time.Second))
 			if mockT2.failed {
 				t.Errorf("Times should be equal when ignoring nanoseconds: %s", mockT2.message)
 			}
@@ -3541,13 +3619,13 @@ func TestHaveSameTimeAs(t *testing.T) {
 
 			// These should pass even without IgnoreTimezone because they're the same instant
 			mockT1 := &mockT{}
-			HaveSameTimeAs(mockT1, utc, plus14)
+			BeSameTime(mockT1, utc, plus14)
 			if mockT1.failed {
 				t.Errorf("Same instant should pass regardless of timezone representation: %s", mockT1.message)
 			}
 
 			mockT2 := &mockT{}
-			HaveSameTimeAs(mockT2, utc, minus12)
+			BeSameTime(mockT2, utc, minus12)
 			if mockT2.failed {
 				t.Errorf("Same instant should pass regardless of timezone representation: %s", mockT2.message)
 			}
@@ -3561,7 +3639,7 @@ func TestHaveSameTimeAs(t *testing.T) {
 			west := time.Date(2022, 12, 31, 14, 0, 0, 0, time.FixedZone("UTC-10", -10*3600))
 
 			mockT := &mockT{}
-			HaveSameTimeAs(mockT, utc, west)
+			BeSameTime(mockT, utc, west)
 
 			if mockT.failed {
 				t.Errorf("Same instant should pass even with different calendar dates: %s", mockT.message)

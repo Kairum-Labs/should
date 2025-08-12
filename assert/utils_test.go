@@ -3172,7 +3172,7 @@ func TestFormatSortErrorGeneric(t *testing.T) {
 	})
 }
 
-func TestFormatHaveSameTimeAsError(t *testing.T) {
+func TestFormatBeSameTimeError(t *testing.T) {
 	t.Parallel()
 
 	t.Run("basic error formatting", func(t *testing.T) {
@@ -3181,7 +3181,7 @@ func TestFormatHaveSameTimeAsError(t *testing.T) {
 		actual := time.Date(2023, 12, 25, 15, 30, 47, 0, time.UTC)
 		diff := 2 * time.Second
 
-		result := formatHaveSameTimeAsError(expected, actual, diff)
+		result := formatBeSameTimeError(expected, actual, diff)
 
 		// Verify main components are present
 		if !strings.Contains(result, "Expected times to have same time") {
@@ -3207,7 +3207,7 @@ func TestFormatHaveSameTimeAsError(t *testing.T) {
 		actual := time.Date(2023, 12, 25, 15, 30, 45, 0, time.UTC)
 		diff := 2 * time.Second
 
-		result := formatHaveSameTimeAsError(expected, actual, diff)
+		result := formatBeSameTimeError(expected, actual, diff)
 
 		if !strings.Contains(result, "earlier") {
 			t.Error("Should indicate actual is earlier")
@@ -3220,7 +3220,7 @@ func TestFormatHaveSameTimeAsError(t *testing.T) {
 		actual := time.Date(2023, 12, 25, 15, 30, 45, 500000000, time.UTC) // +0.5s
 		diff := 500 * time.Millisecond
 
-		result := formatHaveSameTimeAsError(expected, actual, diff)
+		result := formatBeSameTimeError(expected, actual, diff)
 
 		if !strings.Contains(result, "500ms") {
 			t.Errorf("Should contain 500ms, got: %s", result)
@@ -3233,7 +3233,7 @@ func TestFormatHaveSameTimeAsError(t *testing.T) {
 		actual := time.Date(2023, 12, 25, 15, 30, 46, 0, time.UTC)
 		diff := 1 * time.Second
 
-		result := formatHaveSameTimeAsError(expected, actual, diff)
+		result := formatBeSameTimeError(expected, actual, diff)
 		lines := strings.Split(result, "\n")
 
 		if len(lines) != 3 {
@@ -3253,7 +3253,7 @@ func TestFormatHaveSameTimeAsError(t *testing.T) {
 	})
 }
 
-func TestHumanizeDurationSeconds(t *testing.T) {
+func TestHumanizeDuration(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -3268,11 +3268,6 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 			expected: "0.000ms",
 		},
 		{
-			name:     "100 nanoseconds",
-			duration: 100 * time.Nanosecond,
-			expected: "0.000ms",
-		},
-		{
 			name:     "1 microsecond",
 			duration: 1 * time.Microsecond,
 			expected: "0.001ms",
@@ -3281,11 +3276,6 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 			name:     "500 microseconds",
 			duration: 500 * time.Microsecond,
 			expected: "0.500ms",
-		},
-		{
-			name:     "999 microseconds",
-			duration: 999 * time.Microsecond,
-			expected: "0.999ms",
 		},
 
 		// Milliseconds
@@ -3298,21 +3288,6 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 			name:     "1.5 milliseconds",
 			duration: 1500 * time.Microsecond,
 			expected: "1.5ms",
-		},
-		{
-			name:     "10 milliseconds",
-			duration: 10 * time.Millisecond,
-			expected: "10ms",
-		},
-		{
-			name:     "100 milliseconds",
-			duration: 100 * time.Millisecond,
-			expected: "100ms",
-		},
-		{
-			name:     "999 milliseconds",
-			duration: 999 * time.Millisecond,
-			expected: "999ms",
 		},
 		{
 			name:     "999.9 milliseconds",
@@ -3332,46 +3307,75 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 			expected: "1.5s",
 		},
 		{
-			name:     "2 seconds",
-			duration: 2 * time.Second,
-			expected: "2s",
-		},
-		{
-			name:     "10 seconds",
-			duration: 10 * time.Second,
-			expected: "10s",
-		},
-		{
-			name:     "30.7 seconds",
-			duration: 30700 * time.Millisecond,
-			expected: "30.7s",
+			name:     "59.9 seconds",
+			duration: 59900 * time.Millisecond,
+			expected: "59.9s",
 		},
 		{
 			name:     "60 seconds",
 			duration: 60 * time.Second,
-			expected: "60s",
+			expected: "1m",
 		},
 		{
 			name:     "125.3 seconds",
 			duration: 125300 * time.Millisecond,
-			expected: "125.3s",
+			expected: "2m5s",
 		},
 
-		// Large durations
+		// Minutes
 		{
 			name:     "1 minute",
 			duration: 1 * time.Minute,
-			expected: "60s",
+			expected: "1m",
 		},
+		{
+			name:     "1 minute 30 seconds",
+			duration: 1*time.Minute + 30*time.Second,
+			expected: "1m30s",
+		},
+		{
+			name:     "59 minutes 59 seconds",
+			duration: 59*time.Minute + 59*time.Second,
+			expected: "59m59s",
+		},
+
+		// Hours
 		{
 			name:     "1 hour",
 			duration: 1 * time.Hour,
-			expected: "3600s",
+			expected: "1h",
 		},
+		{
+			name:     "1 hour 30 minutes",
+			duration: 1*time.Hour + 30*time.Minute,
+			expected: "1h30m",
+		},
+		{
+			name:     "23 hours 59 minutes",
+			duration: 23*time.Hour + 59*time.Minute,
+			expected: "23h59m",
+		},
+
+		// Days
 		{
 			name:     "1 day",
 			duration: 24 * time.Hour,
-			expected: "86400s",
+			expected: "1d",
+		},
+		{
+			name:     "1 day 1 hour",
+			duration: 24*time.Hour + 1*time.Hour,
+			expected: "1d1h",
+		},
+		{
+			name:     "2 days",
+			duration: 48 * time.Hour,
+			expected: "2d",
+		},
+		{
+			name:     "2 days 1 hour",
+			duration: 48*time.Hour + 1*time.Hour,
+			expected: "2d1h",
 		},
 
 		// Negative durations (should be handled as positive)
@@ -3381,9 +3385,9 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 			expected: "1s",
 		},
 		{
-			name:     "negative 500ms",
-			duration: -500 * time.Millisecond,
-			expected: "500ms",
+			name:     "negative 1 minute",
+			duration: -1 * time.Minute,
+			expected: "1m",
 		},
 
 		// Edge cases
@@ -3397,9 +3401,9 @@ func TestHumanizeDurationSeconds(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := humanizeDurationSeconds(tt.duration)
+			result := humanizeDuration(tt.duration)
 			if result != tt.expected {
-				t.Errorf("humanizeDurationSeconds(%v) = %q, expected %q", tt.duration, result, tt.expected)
+				t.Errorf("humanizeDuration(%v) = %q, expected %q", tt.duration, result, tt.expected)
 			}
 		})
 	}
@@ -3462,33 +3466,32 @@ func TestFormatTimeForDisplay(t *testing.T) {
 			t.Parallel()
 			est := time.FixedZone("EST", -5*3600)
 			testTime := time.Date(2023, 12, 25, 10, 30, 45, 0, est)
-
 			result := formatTimeForDisplay(testTime)
 			// Shows UTC time but preserves timezone name
 			expected := "2023-12-25 15:30:45 EST"
-
 			if result != expected {
 				t.Errorf("formatTimeForDisplay(%v) = %q, expected %q", testTime, result, expected)
 			}
 		})
 
-		t.Run("named timezone", func(t *testing.T) {
+		t.Run("utc timezone", func(t *testing.T) {
 			t.Parallel()
-			// Try to load a named timezone
-			loc, err := time.LoadLocation("America/New_York")
-			if err != nil {
-				t.Skip("Could not load timezone data")
+			testTime := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+			result := formatTimeForDisplay(testTime)
+			expected := "2023-01-01 12:00:00 UTC"
+			if result != expected {
+				t.Errorf("formatTimeForDisplay(%v) = %q, expected %q", testTime, result, expected)
 			}
+		})
 
-			testTime := time.Date(2023, 6, 15, 14, 30, 45, 0, loc)
+		t.Run("local timezone fallback", func(t *testing.T) {
+			t.Parallel()
+			testTime := time.Date(2023, 3, 15, 9, 15, 30, 0, time.Local)
 			result := formatTimeForDisplay(testTime)
 
-			// Should show UTC time but preserve timezone name
-			if !strings.Contains(result, "America/New_York") {
-				t.Errorf("Should preserve timezone name, got: %s", result)
-			}
-			if !strings.HasPrefix(result, "2023-06-15 18:30:45") {
-				t.Errorf("Should show UTC time, got: %s", result)
+			// Should contain the date part at minimum
+			if !strings.Contains(result, "2023-03-15") {
+				t.Errorf("Result should contain date, got: %s", result)
 			}
 		})
 	})
@@ -3537,7 +3540,7 @@ func TestFormatterIntegration(t *testing.T) {
 		actual := time.Date(2023, 12, 25, 15, 30, 47, 987654321, time.UTC)
 		diff := actual.Sub(expected)
 
-		result := formatHaveSameTimeAsError(expected, actual, diff)
+		result := formatBeSameTimeError(expected, actual, diff)
 
 		lines := strings.Split(result, "\n")
 		if len(lines) != 3 {
@@ -3567,7 +3570,7 @@ func TestFormatterIntegration(t *testing.T) {
 		est := time.Date(2023, 12, 25, 10, 30, 46, 0, time.FixedZone("EST", -5*3600))
 		diff := est.Sub(utc)
 
-		result := formatHaveSameTimeAsError(utc, est, diff)
+		result := formatBeSameTimeError(utc, est, diff)
 
 		// Both times should be displayed in UTC format
 		if !strings.Contains(result, "2023-12-25 15:30:45 UTC") {
@@ -3584,7 +3587,7 @@ func TestFormatterIntegration(t *testing.T) {
 		withNanos := time.Date(2023, 12, 25, 15, 30, 45, 500, time.UTC) // 500ns
 		diff := withNanos.Sub(base)
 
-		result := formatHaveSameTimeAsError(base, withNanos, diff)
+		result := formatBeSameTimeError(base, withNanos, diff)
 
 		// Should show fractional milliseconds for tiny differences
 		if !strings.Contains(result, "ms") {

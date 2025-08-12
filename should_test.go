@@ -331,6 +331,25 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("BeSameTime passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeSameTime(mockT, time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC), time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC))
+		if mockT.failed {
+			t.Error("BeSameTime should pass")
+		}
+	})
+
+	t.Run("BeSameTime with options passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		t1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+		t2 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+		BeSameTime(mockT, t1, t2, WithIgnoreTimezone(), WithTruncate(time.Second))
+		if mockT.failed {
+			t.Error("BeSameTimeAs with options should pass")
+		}
+	})
 	// Contain
 	t.Run("Contain passes", func(t *testing.T) {
 		t.Parallel()
@@ -456,15 +475,6 @@ func TestWrappers(t *testing.T) {
 		HaveLength(mockT, []int{1, 2, 3}, 4)
 		if !mockT.failed {
 			t.Error("HaveLength should fail")
-		}
-	})
-
-	t.Run("HaveSameTimeAs passes", func(t *testing.T) {
-		t.Parallel()
-		mockT := &mockTB{}
-		HaveSameTimeAs(mockT, time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC), time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC))
-		if mockT.failed {
-			t.Error("HaveSameTimeAs should pass")
 		}
 	})
 

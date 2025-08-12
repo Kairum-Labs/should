@@ -492,6 +492,56 @@ func BeSorted[T Sortable](t testing.TB, actual []T, opts ...Option) {
 	fail(t, errorMsg)
 }
 
+// BeSameTime reports a test failure if two `time.Time` values do not represent the same time.
+//
+// By default, the comparison is timezone-sensitive and nanosecond-precise. You can customize
+// the behavior with functional options:
+//
+// - should.WithIgnoreTimezone(): compares the instants regardless of the timezone/location
+//
+// - should.WithTruncate(unit): truncates both times to the specified precision before comparison
+//
+// Example:
+//
+//	should.BeSameTime(t, time1, time2)
+//
+//	should.BeSameTime(
+//	    t,
+//	    actual,
+//	    expected,
+//	    should.WithIgnoreTimezone(),
+//	    should.WithTruncate(time.Second),
+//	)
+func BeSameTime(t testing.TB, actual, expected time.Time, opts ...Option) {
+	t.Helper()
+	cfg := processOptions(opts...)
+
+	if cfg.Time.IgnoreTimezone {
+		actual = actual.UTC()
+		expected = expected.UTC()
+	}
+
+	if cfg.Time.TruncateUnit > 0 {
+		actual = actual.Truncate(cfg.Time.TruncateUnit)
+		expected = expected.Truncate(cfg.Time.TruncateUnit)
+	}
+
+	if actual.Equal(expected) {
+		return
+	}
+
+	diff := actual.Sub(expected)
+
+	msg := formatBeSameTimeError(expected, actual, diff)
+
+	if cfg.Message != "" {
+		fail(t, "%s\n%s", cfg.Message, msg)
+		return
+	}
+
+	fail(t, msg)
+}
+
 // BeEqual reports a test failure if the two values are not deeply equal.
 //
 // This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
@@ -1253,59 +1303,6 @@ func NotPanic(t testing.TB, fn func(), opts ...Option) {
 
 		fail(t, panicErrorMsg)
 	}
-}
-
-// HaveSameTimeAs reports a test failure if two `time.Time` values do not represent the same time.
-//
-// By default, the comparison is timezone-sensitive and nanosecond-precise. You can customize
-// the behavior with functional options:
-//
-// - should.WithIgnoreTimezone(): compares the instants regardless of the timezone/location
-//
-// - should.WithIgnoreNanoseconds(): ignores sub-second differences
-//
-// Example:
-//
-//	should.HaveSameTimeAs(t, time1, time2)
-//
-//	should.HaveSameTimeAs(
-//	    t,
-//	    actual,
-//	    expected,
-//	    should.WithIgnoreTimezone(),
-//	    should.WithIgnoreNanoseconds(),
-//	)
-func HaveSameTimeAs(t testing.TB, actual, expected time.Time, opts ...Option) {
-	t.Helper()
-	cfg := processOptions(opts...)
-
-	if cfg.IgnoreTimezone {
-		actual = actual.UTC()
-		expected = expected.UTC()
-	}
-
-	if cfg.IgnoreNanoseconds {
-		actual = actual.Truncate(time.Second)
-		expected = expected.Truncate(time.Second)
-	}
-
-	if actual.Equal(expected) {
-		return
-	}
-
-	diff := actual.Sub(expected)
-	if diff < 0 {
-		diff = -diff
-	}
-
-	msg := formatHaveSameTimeAsError(expected, actual, diff)
-
-	if cfg.Message != "" {
-		fail(t, "%s\n%s", cfg.Message, msg)
-		return
-	}
-
-	fail(t, msg)
 }
 
 // didPanic executes a function and reports whether it panicked, returning the recovered value.

@@ -60,24 +60,29 @@ func WithStackTrace() Option {
 
 // WithIgnoreTimezone returns an option that makes time comparisons ignore timezone/location differences.
 //
-// Currently, this option is only supported by HaveSameTimeAs.
+// Currently, this option is only supported by BeSameTime.
 //
 // Example:
 //
-//	should.HaveSameTimeAs(t, actual, expected, should.WithIgnoreTimezone())
+//	should.BeSameTime(t, actual, expected, should.WithIgnoreTimezone())
 func WithIgnoreTimezone() Option {
 	return assert.WithIgnoreTimezone()
 }
 
-// WithIgnoreNanoseconds returns an option that makes time comparisons ignore sub-second differences.
+// WithTruncate truncates the actual and expected times to the specified unit before comparing them for equality.
 //
-// Currently, this option is only supported by HaveSameTimeAs.
+// This is useful for asserting that two times are the same up to a certain level of precision,
+// ignoring differences in smaller units.
 //
 // Example:
 //
-//	should.HaveSameTimeAs(t, actual, expected, should.WithIgnoreNanoseconds())
-func WithIgnoreNanoseconds() Option {
-	return assert.WithIgnoreNanoseconds()
+//	time1 := time.Date(2024, 8, 10, 15, 30, 0, 1_000_000, time.UTC)
+//	time2 := time.Date(2024, 8, 10, 15, 30, 0, 999_999_999, time.UTC)
+//
+//	// This assertion will pass because both times truncate to 15:30:00.
+//	should.BeSameTime(t, time1, time2, should.WithTruncate(time.Second))
+func WithTruncate(unit time.Duration) Option {
+	return assert.WithTruncate(unit)
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -515,29 +520,29 @@ func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	assert.HaveLength(t, actual, expected, opts...)
 }
 
-// HaveSameTimeAs reports a test failure if two `time.Time` values do not represent the same time.
+// BeSameTime reports a test failure if two `time.Time` values do not represent the same time.
 //
 // By default, the comparison is timezone-sensitive and nanosecond-precise. You can customize
 // the behavior with functional options:
 //
 // - should.WithIgnoreTimezone(): compares the instants regardless of the timezone/location
 //
-// - should.WithIgnoreNanoseconds(): ignores sub-second differences
+// - should.WithTruncate(unit): truncates both times to the specified precision before comparison
 //
 // Example:
 //
-//	should.HaveSameTimeAs(t, time1, time2)
+//	should.BeSameTime(t, time1, time2)
 //
-//	should.HaveSameTimeAs(
+//	should.BeSameTime(
 //	    t,
 //	    actual,
 //	    expected,
 //	    should.WithIgnoreTimezone(),
-//	    should.WithIgnoreNanoseconds(),
+//	    should.WithTruncate(time.Second),
 //	)
-func HaveSameTimeAs(t testing.TB, actual time.Time, expected time.Time, opts ...Option) {
+func BeSameTime(t testing.TB, actual time.Time, expected time.Time, opts ...Option) {
 	t.Helper()
-	assert.HaveSameTimeAs(t, actual, expected, opts...)
+	assert.BeSameTime(t, actual, expected, opts...)
 }
 
 // BeOfType reports a test failure if the value is not of the expected type.
