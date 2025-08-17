@@ -3184,7 +3184,7 @@ func TestFormatBeSameTimeError(t *testing.T) {
 		result := formatBeSameTimeError(expected, actual, diff)
 
 		// Verify main components are present
-		if !strings.Contains(result, "Expected times to have same time") {
+		if !strings.Contains(result, "Expected times to be the same") {
 			t.Error("Should contain main error message")
 		}
 		if !strings.Contains(result, "2s") {
@@ -3241,7 +3241,7 @@ func TestFormatBeSameTimeError(t *testing.T) {
 		}
 
 		// Check line structure
-		if !strings.HasPrefix(lines[0], "Expected times to have same time") {
+		if !strings.HasPrefix(lines[0], "Expected times to be the same") {
 			t.Errorf("First line should start with main message, got: %s", lines[0])
 		}
 		if !strings.HasPrefix(lines[1], "Expected:") {

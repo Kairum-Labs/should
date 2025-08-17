@@ -2305,7 +2305,7 @@ func formatBeSameTimeError(expected time.Time, actual time.Time, diff time.Durat
 		relation = "earlier"
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected times to have same time, but difference is %s\n", human))
+	msg.WriteString(fmt.Sprintf("Expected times to be the same, but difference is %s\n", human))
 	msg.WriteString(fmt.Sprintf("Expected: %s\n", formatTimeForDisplay(expected)))
 	msg.WriteString(fmt.Sprintf("Actual  : %s (%s %s)", formatTimeForDisplay(actual), human, relation))
 	return msg.String()
