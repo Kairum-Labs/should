@@ -450,12 +450,12 @@ time1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
 time2 := time.Date(2024, 1, 15, 14, 30, 2, 500000000, time.UTC)
 
 should.BeSameTime(t, time1, time2)
-// Expected times to have same time, but difference is 2.5s
+// Expected times to be the same, but difference is 2.5s
 // Expected: 2024-01-15 14:30:00.000000000 UTC
 // Actual  : 2024-01-15 14:30:02.500000000 UTC (2.5s later)
 
 should.BeSameTime(t, time2, time1)
-// Expected times to have same time, but difference is 2.5s
+// Expected times to be the same, but difference is 2.5s
 // Expected: 2024-01-15 14:30:02.500000000 UTC
 // Actual  : 2024-01-15 14:30:00.000000000 UTC (2.5s earlier)
 

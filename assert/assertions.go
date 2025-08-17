@@ -557,7 +557,7 @@ func BeSameTime(t testing.TB, actual, expected time.Time, opts ...Option) {
 //	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
+func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
 
 	if reflect.DeepEqual(actual, expected) {
@@ -604,7 +604,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 //	should.NotBeEqual(t, 42, 43)
 //
 //	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
-func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
+func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
 	if reflect.DeepEqual(actual, expected) {
 		cfg := processOptions(opts...)
