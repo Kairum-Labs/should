@@ -13,8 +13,8 @@ type fieldDiff struct {
 	Actual   interface{} // The actual value at this path
 }
 
-// SimilarItem represents a similar item found
-type SimilarItem struct {
+// similarItem represents a similar item found
+type similarItem struct {
 	Value      interface{}
 	Index      int
 	Similarity float64
@@ -22,11 +22,11 @@ type SimilarItem struct {
 	Details    string // description of the difference
 }
 
-// ContainResult result of the contains search
-type ContainResult struct {
+// containResult result of the contains search
+type containResult struct {
 	Found   bool
 	Exact   bool
-	Similar []SimilarItem
+	Similar []similarItem
 	Context []interface{}
 	MaxShow int
 	Total   int
@@ -72,19 +72,19 @@ type Sortable interface {
 	cmp.Ordered
 }
 
-// MapContainResult represents the result of checking if a map contains a key or value
-type MapContainResult struct {
+// mapContainResult represents the result of checking if a map contains a key or value
+type mapContainResult struct {
 	Found        bool
 	Exact        bool
 	MaxShow      int
 	Total        int
 	Context      []interface{}
-	Similar      []SimilarItem
-	CloseMatches []CloseMatch
+	Similar      []similarItem
+	CloseMatches []closeMatch
 }
 
-// CloseMatch holds information about a value that is partially similar to the target.
-type CloseMatch struct {
+// closeMatch holds information about a value that is partially similar to the target.
+type closeMatch struct {
 	Value       interface{}
 	Differences []string
 }

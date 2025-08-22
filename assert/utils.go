@@ -377,8 +377,8 @@ func formatMultilineString(s string) string {
 //  === THIS SECTION IS TO FIND SIMILAR STRINGS IN A SLICE ===
 
 // findSimilarStrings finds similar strings in a slice
-func findSimilarStrings(target string, collection []string, maxResults int) []SimilarItem {
-	var results []SimilarItem
+func findSimilarStrings(target string, collection []string, maxResults int) []similarItem {
+	var results []similarItem
 
 	for i, item := range collection {
 		if item == target {
@@ -410,8 +410,8 @@ func findSimilarStrings(target string, collection []string, maxResults int) []Si
 }
 
 // calculateStringSimilarity calcula similaridade entre duas strings
-func calculateStringSimilarity(target, candidate string) SimilarItem {
-	item := SimilarItem{
+func calculateStringSimilarity(target, candidate string) similarItem {
+	item := similarItem{
 		Value: candidate,
 	}
 
@@ -555,11 +555,11 @@ func generateTypoDetails(target, candidate string, distance int) string {
 }
 
 // auxiliary function for contains of string slices
-func containsString(target string, collection []string) ContainResult {
+func containsString(target string, collection []string) containResult {
 	const maxShow = 5
 	const maxSimilar = 3
 
-	result := ContainResult{
+	result := containResult{
 		MaxShow: maxShow,
 		Total:   len(collection),
 	}
@@ -617,7 +617,7 @@ func max(a, b int) int {
 	return b
 }
 
-func formatContainsError(target interface{}, result ContainResult) string {
+func formatContainsError(target interface{}, result containResult) string {
 	var msg strings.Builder
 
 	msg.WriteString("Expected collection to contain element:\n")
@@ -1336,12 +1336,12 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 
 // findSimilarSubstrings finds substrings in text that are similar to the target substring
 // using a sliding window approach with Levenshtein distance. Limited to substrings <= 20 chars for performance.
-func findSimilarSubstrings(text string, substring string, maxResults int) []SimilarItem {
+func findSimilarSubstrings(text string, substring string, maxResults int) []similarItem {
 	if len(substring) == 0 || len(substring) > 20 || len(text) == 0 {
 		return nil
 	}
 
-	var results []SimilarItem
+	var results []similarItem
 	needleLen := len(substring)
 
 	// Use sliding window to extract all possible substrings of substring length
@@ -1401,12 +1401,12 @@ func findSimilarSubstrings(text string, substring string, maxResults int) []Simi
 }
 
 // removeDuplicateSimilarItems removes duplicate similar items based on position and value
-func removeDuplicateSimilarItems(items []SimilarItem) []SimilarItem {
+func removeDuplicateSimilarItems(items []similarItem) []similarItem {
 	if len(items) <= 1 {
 		return items
 	}
 
-	var unique []SimilarItem
+	var unique []similarItem
 	seen := make(map[string]bool)
 
 	for _, item := range items {
@@ -1467,11 +1467,11 @@ func formatMapValuesList(values []interface{}) string {
 }
 
 // containsMapKey checks if a map contains a specific key with similarity detection
-func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResult {
+func containsMapKey(mapValue interface{}, targetKey interface{}) mapContainResult {
 	const maxShow = 5
 	const maxSimilar = 3
 
-	result := MapContainResult{
+	result := mapContainResult{
 		MaxShow: maxShow,
 	}
 
@@ -1526,7 +1526,7 @@ func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResul
 			targetStr := targetKey.(string)
 			similarItems := findSimilarStrings(targetStr, stringKeys, maxSimilar)
 			for _, item := range similarItems {
-				result.Similar = append(result.Similar, SimilarItem{
+				result.Similar = append(result.Similar, similarItem{
 					Value:      item.Value,
 					Index:      item.Index,
 					Similarity: item.Similarity,
@@ -1544,12 +1544,12 @@ func containsMapKey(mapValue interface{}, targetKey interface{}) MapContainResul
 }
 
 // containsMapValue checks if a map contains a specific value with similarity detection
-func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainResult {
+func containsMapValue(mapValue interface{}, targetValue interface{}) mapContainResult {
 	const maxShow = 5
 	const maxSimilar = 3
 	const maxCloseMatches = 2
 
-	result := MapContainResult{
+	result := mapContainResult{
 		MaxShow: maxShow,
 	}
 
@@ -1595,7 +1595,7 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainR
 	if isComplex {
 		// Find close matches for structs
 		var closeMatches []struct {
-			match CloseMatch
+			match closeMatch
 			diffs int
 		}
 
@@ -1615,10 +1615,10 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainR
 					)
 				}
 				closeMatches = append(closeMatches, struct {
-					match CloseMatch
+					match closeMatch
 					diffs int
 				}{
-					match: CloseMatch{Value: val, Differences: diffStrings},
+					match: closeMatch{Value: val, Differences: diffStrings},
 					diffs: len(diffs),
 				})
 			}
@@ -1649,7 +1649,7 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) MapContainR
 			targetStr := targetValue.(string)
 			similarItems := findSimilarStrings(targetStr, stringValues, maxSimilar)
 			for _, item := range similarItems {
-				result.Similar = append(result.Similar, SimilarItem{
+				result.Similar = append(result.Similar, similarItem{
 					Value:      item.Value,
 					Index:      item.Index,
 					Similarity: item.Similarity,
@@ -1680,8 +1680,8 @@ func isNumericValue(v interface{}) bool {
 }
 
 // findSimilarNumericKeys finds numeric keys/values that are similar to the target
-func findSimilarNumericKeys(items []interface{}, target interface{}, maxResults int) []SimilarItem {
-	var results []SimilarItem
+func findSimilarNumericKeys(items []interface{}, target interface{}, maxResults int) []similarItem {
+	var results []similarItem
 
 	targetVal := reflect.ValueOf(target)
 	targetFloat, targetOk := toFloat64(targetVal)
@@ -1740,7 +1740,7 @@ func findSimilarNumericKeys(items []interface{}, target interface{}, maxResults 
 		}
 
 		if similarity >= 0.6 {
-			results = append(results, SimilarItem{
+			results = append(results, similarItem{
 				Value:      item,
 				Index:      i,
 				Similarity: similarity,
@@ -1768,7 +1768,7 @@ func findSimilarNumericKeys(items []interface{}, target interface{}, maxResults 
 }
 
 // formatMapContainKeyError formats error message for ContainKey assertion
-func formatMapContainKeyError(target interface{}, result MapContainResult) string {
+func formatMapContainKeyError(target interface{}, result mapContainResult) string {
 	var msg strings.Builder
 
 	// Format target with single quotes for strings to match test expectations
@@ -1822,7 +1822,7 @@ func formatMapContainKeyError(target interface{}, result MapContainResult) strin
 }
 
 // formatMapContainValueError formats error message for ContainValue assertion
-func formatMapContainValueError(target interface{}, result MapContainResult) string {
+func formatMapContainValueError(target interface{}, result mapContainResult) string {
 	var msg strings.Builder
 
 	targetV := reflect.ValueOf(target)
