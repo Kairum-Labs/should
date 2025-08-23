@@ -3677,8 +3677,7 @@ func TestBeOfType(t *testing.T) {
 		if !strings.Contains(mockT.message, "Expected value to be of specific type:") ||
 			!strings.Contains(mockT.message, "Expected Type: *assert.Dog") ||
 			!strings.Contains(mockT.message, "Actual Type  : *assert.Cat") ||
-			!strings.Contains(mockT.message, "Difference   : Different concrete types") ||
-			!strings.Contains(mockT.message, `Value        : {Name: "Whiskers"}`) {
+			!strings.Contains(mockT.message, "Difference   : Different concrete types") {
 			t.Errorf("Error message format is incorrect.\nGot:\n%s", mockT.message)
 		}
 	})

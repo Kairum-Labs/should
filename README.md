@@ -273,7 +273,6 @@ should.BeOfType(t, Cat{Name: "Whiskers"}, d)
 // Expected Type: should_test.Dog
 // Actual Type  : should_test.Cat
 // Difference   : Different concrete types
-// Value        : {Name: "Whiskers"}
 ```
 
 ### String Similarity Detection
