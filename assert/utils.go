@@ -973,19 +973,12 @@ func formatLengthError(actual any, expected, actualLen int) string {
 }
 
 // formatTypeError formats a detailed error message for BeOfType assertions.
-func formatTypeError(actual any, expectedType, actualType reflect.Type) string {
+func formatTypeError(expectedType, actualType reflect.Type) string {
 	var msg strings.Builder
 	msg.WriteString("Expected value to be of specific type:\n")
 	msg.WriteString(fmt.Sprintf("Expected Type: %v\n", expectedType))
 	msg.WriteString(fmt.Sprintf("Actual Type  : %v\n", actualType))
 	msg.WriteString("Difference   : Different concrete types\n")
-
-	// Truncate long values for readability
-	formattedValue := formatComparisonValue(actual)
-	if len(formattedValue) > 80 {
-		formattedValue = formattedValue[:77] + "..."
-	}
-	msg.WriteString(fmt.Sprintf("Value        : %s\n", formattedValue))
 
 	return msg.String()
 }

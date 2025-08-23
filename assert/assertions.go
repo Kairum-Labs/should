@@ -1194,7 +1194,7 @@ func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 
 	if actualType != expectedType {
 		cfg := processOptions(opts...)
-		errorMsg := formatTypeError(actual, expectedType, actualType)
+		errorMsg := formatTypeError(expectedType, actualType)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 			return
