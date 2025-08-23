@@ -6,6 +6,10 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Kairum-Labs/should)](https://goreportcard.com/report/github.com/Kairum-Labs/should)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<div align="center">
+  <img src="assets/should.png" alt="should project logo, a Go assertions library">
+</div>
+
 `Should` is a lightweight and intuitive assertion library for Go, designed to make your tests more readable and expressive. It provides **exceptionally detailed error messages** to help you debug failures faster and understand exactly what went wrong.
 
 > **⚠️ Version Notice**: This is v0.1.0 - the library is fully usable and functional, but the API may still undergo changes as we gather feedback and improve the design.

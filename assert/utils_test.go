@@ -728,10 +728,10 @@ func TestFormatContainsError(t *testing.T) {
 	t.Parallel()
 	t.Run("With_One_Similar_Item", func(t *testing.T) {
 		t.Parallel()
-		result := ContainResult{
+		result := containResult{
 			Context: []interface{}{"apple", "banana"},
 			Total:   2,
-			Similar: []SimilarItem{
+			Similar: []similarItem{
 				{Value: "apple", Index: 0, Details: "1 char diff"},
 			},
 		}
@@ -747,10 +747,10 @@ func TestFormatContainsError(t *testing.T) {
 
 	t.Run("With_Multiple_Similar_Items", func(t *testing.T) {
 		t.Parallel()
-		result := ContainResult{
+		result := containResult{
 			Context: []interface{}{"testing", "tests"},
 			Total:   2,
-			Similar: []SimilarItem{
+			Similar: []similarItem{
 				{Value: "testing", Index: 0, Details: "extra 'ing'"},
 				{Value: "tests", Index: 1, Details: "extra 's'"},
 			},
@@ -1695,7 +1695,7 @@ func TestFormatMapContainKeyError(t *testing.T) {
 
 	t.Run("Basic formatting", func(t *testing.T) {
 		t.Parallel()
-		result := MapContainResult{
+		result := mapContainResult{
 			Context: []interface{}{"key1", "key2"},
 			Total:   2,
 		}
@@ -1726,10 +1726,10 @@ func TestFormatMapContainKeyError(t *testing.T) {
 		t.Parallel()
 		t.Run("should show one similar key", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
+			result := mapContainResult{
 				Context: []interface{}{"email_address"},
 				Total:   1,
-				Similar: []SimilarItem{{Value: "email_address", Details: "some detail"}},
+				Similar: []similarItem{{Value: "email_address", Details: "some detail"}},
 			}
 			msg := formatMapContainKeyError("email", result)
 			expected := "Similar key found:"
@@ -1744,8 +1744,8 @@ func TestFormatMapContainKeyError(t *testing.T) {
 
 		t.Run("should show multiple similar keys", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
-				Similar: []SimilarItem{
+			result := mapContainResult{
+				Similar: []similarItem{
 					{Value: "mail", Details: "detail1"},
 					{Value: "e-mail", Details: "detail2"},
 				},
@@ -1770,7 +1770,7 @@ func TestFormatMapContainKeyError(t *testing.T) {
 		t.Parallel()
 		t.Run("should truncate long key list", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
+			result := mapContainResult{
 				Context: []interface{}{"a", "b", "c", "d", "e"},
 				Total:   10,
 			}
@@ -1783,7 +1783,7 @@ func TestFormatMapContainKeyError(t *testing.T) {
 
 		t.Run("should handle non-string keys", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
+			result := mapContainResult{
 				Context: []interface{}{1, 2, 3},
 				Total:   3,
 			}
@@ -1807,7 +1807,7 @@ func TestFormatMapContainValueError(t *testing.T) {
 
 	t.Run("Basic formatting", func(t *testing.T) {
 		t.Parallel()
-		result := MapContainResult{
+		result := mapContainResult{
 			Context: []interface{}{"val1", "val2"},
 			Total:   2,
 		}
@@ -1834,8 +1834,8 @@ func TestFormatMapContainValueError(t *testing.T) {
 		t.Parallel()
 		t.Run("should show one similar value", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
-				Similar: []SimilarItem{{Value: "admin", Details: "some detail"}},
+			result := mapContainResult{
+				Similar: []similarItem{{Value: "admin", Details: "some detail"}},
 			}
 			msg := formatMapContainValueError("administrator", result)
 			expected := "Similar value found:"
@@ -1850,8 +1850,8 @@ func TestFormatMapContainValueError(t *testing.T) {
 
 		t.Run("should show multiple similar values", func(t *testing.T) {
 			t.Parallel()
-			result := MapContainResult{
-				Similar: []SimilarItem{
+			result := mapContainResult{
+				Similar: []similarItem{
 					{Value: "user", Details: "detail1"},
 					{Value: "guest", Details: "detail2"},
 				},
@@ -2149,11 +2149,11 @@ func TestFormatMapContainValueError_ComplexTypes(t *testing.T) {
 		Age  int
 	}
 
-	result := MapContainResult{
+	result := mapContainResult{
 		Found:   false,
 		Total:   2,
 		Context: []interface{}{TestStruct{Name: "Alice", Age: 30}},
-		CloseMatches: []CloseMatch{
+		CloseMatches: []closeMatch{
 			{
 				Value:       TestStruct{Name: "Alice", Age: 30},
 				Differences: []string{"Age (31 ≠ 30)"},
@@ -2179,7 +2179,7 @@ func TestFormatMapContainValueError_ComplexTypes(t *testing.T) {
 
 func TestFormatMapContainValueError_SimpleTypes(t *testing.T) {
 	t.Parallel()
-	result := MapContainResult{
+	result := mapContainResult{
 		Found:   false,
 		Total:   2,
 		Context: []interface{}{"value1", "value2"},
@@ -2614,7 +2614,7 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 
 	t.Run("Remove duplicates by value and position", func(t *testing.T) {
 		t.Parallel()
-		items := []SimilarItem{
+		items := []similarItem{
 			{Value: "test", Index: 0, Similarity: 0.8, Details: "detail1"},
 			{Value: "test", Index: 0, Similarity: 0.9, Details: "detail2"}, // duplicate
 			{Value: "test", Index: 5, Similarity: 0.7, Details: "detail3"}, // different position
@@ -2650,7 +2650,7 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 
 	t.Run("Empty slice", func(t *testing.T) {
 		t.Parallel()
-		results := removeDuplicateSimilarItems([]SimilarItem{})
+		results := removeDuplicateSimilarItems([]similarItem{})
 
 		if len(results) != 0 {
 			t.Errorf("Expected empty result for empty input, got %d items", len(results))
@@ -2659,7 +2659,7 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 
 	t.Run("Single item", func(t *testing.T) {
 		t.Parallel()
-		items := []SimilarItem{
+		items := []similarItem{
 			{Value: "test", Index: 0, Similarity: 0.8, Details: "detail"},
 		}
 
@@ -2676,7 +2676,7 @@ func TestRemoveDuplicateSimilarItems(t *testing.T) {
 
 	t.Run("No duplicates", func(t *testing.T) {
 		t.Parallel()
-		items := []SimilarItem{
+		items := []similarItem{
 			{Value: "test1", Index: 0, Similarity: 0.8, Details: "detail1"},
 			{Value: "test2", Index: 1, Similarity: 0.7, Details: "detail2"},
 			{Value: "test3", Index: 2, Similarity: 0.6, Details: "detail3"},
