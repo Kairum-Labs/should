@@ -5,6 +5,7 @@
 package assert
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"runtime/debug"
@@ -283,6 +284,47 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 		}
 
 		fail(t, "Expected not nil, but was nil")
+	}
+}
+
+func BeError(t *testing.T, err error, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if err == nil {
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, "Expected an error, but got nil")
+			return
+		}
+
+		fail(t, "Expected an error, but got nil")
+	}
+}
+
+func BeErrorAs(t *testing.T, err error, target interface{}, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if err == nil {
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected error to be %T, but got nil", cfg.Message, target)
+			return
+		}
+
+		fail(t, "Expected error to be %T, but got nil", target)
+		return
+	}
+
+	if !errors.As(err, target) {
+		errorMsg := formatBeErrorAsError(err, target)
+
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+			return
+		}
+		fail(t, errorMsg)
 	}
 }
 

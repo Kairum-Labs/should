@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -2394,4 +2395,21 @@ func formatTimeForDisplay(t time.Time) string {
 	}
 
 	return fmt.Sprintf("%s%s %s", formattedBase, fractionalPart, timeZoneName)
+}
+
+func formatBeErrorAsError(err error, target interface{}) string {
+	var msg strings.Builder
+	errMsg := err.Error()
+
+	var types []string
+	unwrappedErr := err
+	for unwrappedErr != nil {
+		types = append(types, reflect.TypeOf(unwrappedErr).String())
+		unwrappedErr = errors.Unwrap(unwrappedErr)
+	}
+
+	msg.WriteString(fmt.Sprintf("Expected error to be %T, but type not found in error chain\n", target))
+	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", errMsg))
+	msg.WriteString(fmt.Sprintf("Types  : [%s]", strings.Join(types, ", ")))
+	return msg.String()
 }

@@ -193,6 +193,11 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 	assert.NotBeNil(t, actual, opts...)
 }
 
+func BeErrorAs(t *testing.T, err error, target interface{}, opts ...Option) {
+	t.Helper()
+	assert.BeErrorAs(t, err, target)
+}
+
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
 // This assertion works with all numeric types and provides detailed
