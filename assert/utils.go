@@ -2397,9 +2397,8 @@ func formatTimeForDisplay(t time.Time) string {
 	return fmt.Sprintf("%s%s %s", formattedBase, fractionalPart, timeZoneName)
 }
 
-func formatBeErrorAsError(err error, target interface{}) string {
+func formatBeErrorMessage(action string, err error, target interface{}) string {
 	var msg strings.Builder
-	errMsg := err.Error()
 
 	var types []string
 	unwrappedErr := err
@@ -2408,8 +2407,17 @@ func formatBeErrorAsError(err error, target interface{}) string {
 		unwrappedErr = errors.Unwrap(unwrappedErr)
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected error to be %T, but type not found in error chain\n", target))
-	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", errMsg))
+	switch action {
+	case "as":
+		msg.WriteString(fmt.Sprintf("Expected error to be %T, but type not found in error chain\n", target))
+	case "is":
+		msg.WriteString(fmt.Sprintf("Expected error to be \"%s\", but not found in error chain\n", target))
+	default:
+		msg.WriteString("Assertion failed with an unknown type of error.\n")
+	}
+
+	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", err.Error()))
 	msg.WriteString(fmt.Sprintf("Types  : [%s]", strings.Join(types, ", ")))
+
 	return msg.String()
 }

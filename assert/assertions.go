@@ -287,7 +287,18 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 	}
 }
 
-func BeError(t *testing.T, err error, opts ...Option) {
+// BeError reports a test failure if the provided error is nil.
+//
+// This assertion is useful to ensure that a function call actually
+// produced an error when one is expected. It provides clear failure
+// messages showing when an error was expected but not returned.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeError(t, err)
+//	should.BeError(t, err, should.WithMessage("Expected a validation error"))
+func BeError(t testing.TB, err error, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
@@ -302,7 +313,19 @@ func BeError(t *testing.T, err error, opts ...Option) {
 	}
 }
 
-func BeErrorAs(t *testing.T, err error, target interface{}, opts ...Option) {
+// BeErrorAs reports a test failure if the provided error does not match
+// the target type using errors.As.
+//
+// This assertion is useful when you need to verify that an error
+// can be unwrapped into a specific type, such as a custom error struct.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	var pathErr *os.PathError
+//	should.BeErrorAs(t, err, &pathErr)
+//	should.BeErrorAs(t, err, &MyCustomError{}, should.WithMessage("Expected custom error type"))
+func BeErrorAs(t testing.TB, err error, target interface{}, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
@@ -317,8 +340,50 @@ func BeErrorAs(t *testing.T, err error, target interface{}, opts ...Option) {
 		return
 	}
 
+	if target == nil {
+		fail(t, "target cannot be nil")
+		return
+	}
+
 	if !errors.As(err, target) {
-		errorMsg := formatBeErrorAsError(err, target)
+		errorMsg := formatBeErrorMessage("as", err, target)
+
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+			return
+		}
+		fail(t, errorMsg)
+	}
+}
+
+// BeErrorIs reports a test failure if the provided error is not equal to
+// the target error using errors.Is.
+//
+// This assertion is useful to check if an error matches a specific sentinel
+// value, such as io.EOF or custom exported error variables.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeErrorIs(t, err, io.EOF)
+//	should.BeErrorIs(t, err, ErrUnauthorized, should.WithMessage("Expected unauthorized error"))
+func BeErrorIs(t testing.TB, err error, target error, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if err == nil {
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected error to be \"%s\", but got nil", cfg.Message, target)
+			return
+		}
+
+		fail(t, "Expected error to be \"%s\", but got nil", target)
+		return
+	}
+
+	if !errors.Is(err, target) {
+		errorMsg := formatBeErrorMessage("is", err, target)
 
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)

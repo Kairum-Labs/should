@@ -432,6 +432,45 @@ should.NotContainDuplicates(t, []int{1, 2, 2, 3, 3, 3})
 // └─ 3 appears 3 times at indexes [3, 4, 5]
 ```
 
+### Error Assertions
+
+Handle error check with clear, informative messages:
+
+```go
+// Basic usage
+should.BeError(t, err)
+
+// Check specific error types
+var pathErr *os.PathError
+should.BeErrorAs(t, err, &pathErr)
+
+// Check specific error values
+should.BeErrorIs(t, err, io.EOF)
+
+// With custom messages
+should.BeError(t, err, should.WithMessage("Expected operation to fail"))
+should.BeErrorAs(t, err, &pathErr, should.WithMessage("Expected path error"))
+should.BeErrorIs(t, err, context.Canceled, should.WithMessage("Expected cancellation"))
+
+// Outputs
+// BeError - when no error expected one
+should.BeError(t, err)
+// Expected an error, but got nil
+
+// BeErrorAs - type not found
+var pathErr *os.PathError
+should.BeErrorAs(t, err, &pathErr)
+// Expected error to be *os.PathError, but type not found in error chain
+// Error: "invalid character 'i' looking for beginning of value"
+// Types: [*json.SyntaxError]
+
+// BeErrorIs - value not found
+should.BeErrorIs(t, err, io.EOF)
+// Expected error to be "EOF", but value not found in error chain
+// Error: "connection refused"
+// Types: [*net.OpError, syscall.Errno]
+```
+
 ### Time Assertions
 
 Compare times with flexible options:
@@ -755,3 +794,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+
+```

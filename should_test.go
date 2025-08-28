@@ -1,7 +1,10 @@
 package should
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -266,6 +269,25 @@ func TestWrappers(t *testing.T) {
 		if mockT.failed {
 			t.Error("NotBeEqual should pass")
 		}
+	})
+
+	t.Run("BeError passes", func(t *testing.T) {
+		t.Parallel()
+		err := errors.New("something went wrong")
+		BeError(t, err)
+	})
+
+	t.Run("BeErrorAs passes", func(t *testing.T) {
+		t.Parallel()
+		var target *os.PathError
+		err := &os.PathError{Op: "open", Path: "file.txt", Err: errors.New("not found")}
+		BeErrorAs(t, err, &target)
+	})
+
+	t.Run("BeErrorIs passes", func(t *testing.T) {
+		t.Parallel()
+		err := fmt.Errorf("wrapped: %w", io.EOF)
+		BeErrorIs(t, err, io.EOF)
 	})
 
 	// BeGreaterThan

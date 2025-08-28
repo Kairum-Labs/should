@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -16,6 +17,19 @@ type CustomStringer struct {
 func (c CustomStringer) String() string {
 	return "CustomStringer(" + c.Value + ")"
 }
+
+// Custom error types for testing
+type simpleError struct{ msg string }
+
+func (e simpleError) Error() string { return e.msg }
+
+type wrapperError struct {
+	msg     string
+	wrapped error
+}
+
+func (e wrapperError) Error() string { return e.msg }
+func (e wrapperError) Unwrap() error { return e.wrapped }
 
 func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	t.Parallel()
@@ -3592,6 +3606,94 @@ func TestFormatterIntegration(t *testing.T) {
 		// Should show fractional milliseconds for tiny differences
 		if !strings.Contains(result, "ms") {
 			t.Error("Very small differences should be shown in milliseconds")
+		}
+	})
+}
+
+func TestFormatBeErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name     string
+			action   string
+			err      error
+			target   interface{}
+			contains []string
+		}{
+			{
+				name:   "Action 'as'",
+				action: "as",
+				err:    simpleError{msg: "test error"},
+				target: &simpleError{},
+				contains: []string{
+					"Expected error to be *assert.simpleError",
+					"but type not found in error chain",
+					"Error: \"test error\"",
+					"Types  : [assert.simpleError]",
+				},
+			},
+			{
+				name:   "Action 'is'",
+				action: "is",
+				err:    simpleError{msg: "test error"},
+				target: errors.New("target"),
+				contains: []string{
+					"Expected error to be \"target\"",
+					"but not found in error chain",
+					"Error: \"test error\"",
+					"Types  : [assert.simpleError]",
+				},
+			},
+			{
+				name:   "Unknown action",
+				action: "unknown",
+				err:    simpleError{msg: "test error"},
+				target: nil,
+				contains: []string{
+					"Assertion failed with an unknown type of error",
+					"Error: \"test error\"",
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeErrorMessage(tt.action, tt.err, tt.target)
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("Expected %q in result:\n%s", expected, result)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("Error chain", func(t *testing.T) {
+		t.Parallel()
+		innerErr := simpleError{msg: "inner"}
+		outerErr := wrapperError{msg: "outer", wrapped: innerErr}
+
+		result := formatBeErrorMessage("as", outerErr, &simpleError{})
+
+		if !strings.Contains(result, "Types  : [assert.wrapperError, assert.simpleError]") {
+			t.Errorf("Expected error chain types, got:\n%s", result)
+		}
+	})
+
+	t.Run("Multiple wrapped errors", func(t *testing.T) {
+		t.Parallel()
+		innerErr := simpleError{msg: "inner"}
+		middleErr := wrapperError{msg: "middle", wrapped: innerErr}
+		outerErr := wrapperError{msg: "outer", wrapped: middleErr}
+
+		result := formatBeErrorMessage("is", outerErr, errors.New("target"))
+
+		expected := "Types  : [assert.wrapperError, assert.wrapperError, assert.simpleError]"
+		if !strings.Contains(result, expected) {
+			t.Errorf("Expected multiple wrapped error types, got:\n%s", result)
 		}
 	})
 }
