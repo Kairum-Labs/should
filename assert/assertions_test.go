@@ -1,10 +1,30 @@
 package assert
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 )
+
+// customError and other error types are used for testing BeErrorAs and BeErrorIs.
+// They provide distinct types and values to verify the assertion logic.
+type customError struct{ msg string }
+
+func (e customError) Error() string { return e.msg }
+
+type anotherError struct{ msg string }
+
+func (e anotherError) Error() string { return e.msg }
+
+type testError struct{ msg string }
+
+func (e testError) Error() string { return e.msg }
+
+type edgeError struct{ msg string }
+
+func (e edgeError) Error() string { return e.msg }
 
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
 	t.Parallel()
@@ -1829,6 +1849,347 @@ func TestNotBeNil_Fails_WithNilPointer(t *testing.T) {
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
 	}
+}
+
+func TestBeError(t *testing.T) {
+	t.Parallel()
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			err        error
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Error present - should pass",
+				err:        errors.New("test error"),
+				shouldFail: false,
+			},
+			{
+				name:       "Nil error - should fail",
+				err:        nil,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected an error, but got nil") {
+						t.Errorf("Expected nil error message, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Nil error with custom message",
+				err:        nil,
+				opts:       []Option{WithMessage("Custom error message")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Expected custom message, got: %s", message)
+					}
+					if !strings.Contains(message, "Expected an error, but got nil") {
+						t.Errorf("Expected default message, got: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeError(mockT, tt.err, tt.opts...)
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+}
+
+func TestBeErrorAs(t *testing.T) {
+	t.Parallel()
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name       string
+			err        error
+			target     interface{}
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Error matches target type",
+				err:        customError{msg: "test error"},
+				target:     &customError{},
+				shouldFail: false,
+			},
+			{
+				name:       "Error doesn't match target type",
+				err:        customError{msg: "test error"},
+				target:     &anotherError{},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "customError") || !strings.Contains(message, "anotherError") {
+						t.Errorf("Error message should contain both error types: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Nil error with target type",
+				err:        nil,
+				target:     &customError{},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected error to be") || !strings.Contains(message, "but got nil") {
+						t.Errorf("Error message should indicate nil error: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Wrapped error matches target type",
+				err:        fmt.Errorf("wrapped: %w", customError{msg: "inner error"}),
+				target:     &customError{},
+				shouldFail: false,
+			},
+			{
+				name:       "Error with custom message",
+				err:        anotherError{msg: "test"},
+				target:     &customError{},
+				opts:       []Option{WithMessage("Custom error message")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Error message should contain custom message: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeErrorAs(mockT, tt.err, tt.target, tt.opts...)
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Options handling", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("WithMessage option", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			BeErrorAs(mockT, nil, &testError{}, WithMessage("Custom message for nil error"))
+			if !mockT.failed {
+				t.Fatal("Expected test to fail")
+			}
+			if !strings.Contains(mockT.message, "Custom message for nil error") {
+				t.Errorf("Expected custom message in error output: %s", mockT.message)
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("Multiple wrapped errors", func(t *testing.T) {
+			t.Parallel()
+			innerErr := edgeError{msg: "inner"}
+			middleErr := fmt.Errorf("middle: %w", innerErr)
+			outerErr := fmt.Errorf("outer: %w", middleErr)
+
+			mockT := &mockT{}
+			BeErrorAs(mockT, outerErr, &edgeError{})
+			if mockT.failed {
+				t.Errorf("Expected test to pass with multiple wrapped errors: %s", mockT.message)
+			}
+		})
+
+		t.Run("Nil target should not panic", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			BeErrorAs(mockT, errors.New("test"), nil)
+			if !mockT.failed {
+				t.Error("Expected test to fail when target is nil")
+			}
+			if !strings.Contains(mockT.message, "target cannot be nil") {
+				t.Errorf("Expected specific error message about nil target: %s", mockT.message)
+			}
+		})
+	})
+}
+
+func TestBeErrorIs(t *testing.T) {
+	t.Parallel()
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			ErrNotFound = errors.New("not found")
+			ErrInvalid  = errors.New("invalid")
+		)
+
+		tests := []struct {
+			name       string
+			err        error
+			target     error
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Error matches target",
+				err:        ErrNotFound,
+				target:     ErrNotFound,
+				shouldFail: false,
+			},
+			{
+				name:       "Error doesn't match target",
+				err:        ErrNotFound,
+				target:     ErrInvalid,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "not found") || !strings.Contains(message, "invalid") {
+						t.Errorf("Error message should contain both error messages: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Nil error with target",
+				err:        nil,
+				target:     ErrNotFound,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected error to be") || !strings.Contains(message, "but got nil") {
+						t.Errorf("Error message should indicate nil error: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Wrapped error matches target",
+				err:        fmt.Errorf("wrapped: %w", ErrNotFound),
+				target:     ErrNotFound,
+				shouldFail: false,
+			},
+			{
+				name:       "Error with custom message",
+				err:        ErrInvalid,
+				target:     ErrNotFound,
+				opts:       []Option{WithMessage("Custom error message")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Error message should contain custom message: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeErrorIs(mockT, tt.err, tt.target, tt.opts...)
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Options handling", func(t *testing.T) {
+		t.Parallel()
+
+		ErrTest := errors.New("test error")
+
+		t.Run("WithMessage option", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			BeErrorIs(mockT, nil, ErrTest, WithMessage("Custom message for nil error"))
+			if !mockT.failed {
+				t.Fatal("Expected test to fail")
+			}
+			if !strings.Contains(mockT.message, "Custom message for nil error") {
+				t.Errorf("Expected custom message in error output: %s", mockT.message)
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		ErrBase := errors.New("base error")
+
+		t.Run("Multiple levels of wrapping", func(t *testing.T) {
+			t.Parallel()
+			level1 := fmt.Errorf("level1: %w", ErrBase)
+			level2 := fmt.Errorf("level2: %w", level1)
+			level3 := fmt.Errorf("level3: %w", level2)
+
+			mockT := &mockT{}
+			BeErrorIs(mockT, level3, ErrBase)
+			if mockT.failed {
+				t.Errorf("Expected test to pass with multiple wrapped levels: %s", mockT.message)
+			}
+		})
+
+		t.Run("Nil target error", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			BeErrorIs(mockT, errors.New("test"), nil)
+			if !mockT.failed {
+				t.Error("Expected test to fail when target is nil")
+			}
+		})
+
+		t.Run("Both errors nil", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			BeErrorIs(mockT, nil, nil)
+			if !mockT.failed {
+				t.Error("Expected test to fail when both errors are nil")
+			}
+			if !strings.Contains(mockT.message, "but got nil") {
+				t.Errorf("Expected nil error message: %s", mockT.message)
+			}
+		})
+
+		t.Run("String comparison in different error instances", func(t *testing.T) {
+			t.Parallel()
+			err1 := errors.New("same message")
+			err2 := errors.New("same message")
+
+			mockT := &mockT{}
+			BeErrorIs(mockT, err1, err2)
+			if !mockT.failed {
+				t.Error("Expected test to fail for different error instances with same message")
+			}
+		})
+	})
 }
 
 // === Tests for error handling in boolean assertions ===

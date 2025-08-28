@@ -193,6 +193,55 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 	assert.NotBeNil(t, actual, opts...)
 }
 
+// BeError reports a test failure if the provided error is nil.
+//
+// This assertion is useful to ensure that a function call actually
+// produced an error when one is expected. It provides clear failure
+// messages showing when an error was expected but not returned.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeError(t, err)
+//	should.BeError(t, err, should.WithMessage("Expected a validation error"))
+func BeError(t testing.TB, err error, opts ...Option) {
+	t.Helper()
+	assert.BeError(t, err)
+}
+
+// BeErrorAs reports a test failure if the provided error does not match
+// the target type using errors.As.
+//
+// This assertion is useful when you need to verify that an error
+// can be unwrapped into a specific type, such as a custom error struct.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	var pathErr *os.PathError
+//	should.BeErrorAs(t, err, &pathErr)
+//	should.BeErrorAs(t, err, &MyCustomError{}, should.WithMessage("Expected custom error type"))
+func BeErrorAs(t *testing.T, err error, target interface{}, opts ...Option) {
+	t.Helper()
+	assert.BeErrorAs(t, err, target)
+}
+
+// BeErrorIs reports a test failure if the provided error is not equal to
+// the target error using errors.Is.
+//
+// This assertion is useful to check if an error matches a specific sentinel
+// value, such as io.EOF or custom exported error variables.
+// It supports optional custom error messages through Option.
+//
+// Example:
+//
+//	should.BeErrorIs(t, err, io.EOF)
+//	should.BeErrorIs(t, err, ErrUnauthorized, should.WithMessage("Expected unauthorized error"))
+func BeErrorIs(t *testing.T, err error, target error, opts ...Option) {
+	t.Helper()
+	assert.BeErrorIs(t, err, target)
+}
+
 // BeGreaterThan reports a test failure if the value is not greater than the expected threshold.
 //
 // This assertion works with all numeric types and provides detailed
