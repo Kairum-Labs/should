@@ -439,6 +439,7 @@ Handle error check with clear, informative messages:
 ```go
 // Basic usage
 should.BeError(t, err)
+should.NotBeError(t, err)
 
 // Check specific error types
 var pathErr *os.PathError
@@ -449,13 +450,18 @@ should.BeErrorIs(t, err, io.EOF)
 
 // With custom messages
 should.BeError(t, err, should.WithMessage("Expected operation to fail"))
+should.NotBeError(t, err, should.WithMessage("Expected operation to pass"))
 should.BeErrorAs(t, err, &pathErr, should.WithMessage("Expected path error"))
 should.BeErrorIs(t, err, context.Canceled, should.WithMessage("Expected cancellation"))
 
 // Outputs
-// BeError - when no error expected one
+// BeError - error required
 should.BeError(t, err)
 // Expected an error, but got nil
+
+// NotBeError - no error
+should.NotBeError(t, err)
+// Expected nil, but got an error
 
 // BeErrorAs - type not found
 var pathErr *os.PathError

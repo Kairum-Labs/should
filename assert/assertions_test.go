@@ -1912,6 +1912,67 @@ func TestBeError(t *testing.T) {
 	})
 }
 
+func TestNotBeError(t *testing.T) {
+	t.Parallel()
+	t.Run("Basic fuctionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			err        error
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Nil error - should pass",
+				err:        nil,
+				shouldFail: false,
+			},
+			{
+				name:       "Error present - should fail",
+				err:        errors.New("test error"),
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected no error, but got an error") {
+						t.Errorf("Expected an error message, got %s", message)
+					}
+				},
+			},
+			{
+				name:       "An error with a custom error message",
+				err:        errors.New("test an error with a custom error message"),
+				shouldFail: true,
+				opts:       []Option{WithMessage("Custom error message")},
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Expected custom message, got %s", message)
+					}
+					if !strings.Contains(message, "Expected no error, but got an error") {
+						t.Errorf("Expected default message, got %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				NotBeError(mockT, tt.err, tt.opts...)
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+}
+
 func TestBeErrorAs(t *testing.T) {
 	t.Parallel()
 	t.Run("Basic functionality", func(t *testing.T) {
