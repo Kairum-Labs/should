@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1031,38 +1032,30 @@ func NotContainValue[K comparable, V any](t testing.TB, actual map[K]V, expected
 	}
 }
 
-// ContainFunc reports a test failure if no element in the slice or array matches the predicate function.
+// AnyMatch reports a test failure if no element in the slice matches the predicate function.
 //
-// This assertion allows for custom matching logic by providing a predicate function
-// that will be called for each element in the collection. The test passes if any element
+// This assertion allows custom matching logic by providing a predicate function
+// that will be called for each element in the slice. The test passes if any element
 // makes the predicate return true.
 //
 // Example:
 //
-//	should.ContainFunc(t, users, func(item any) bool {
-//		user := item.(User)
+//	type User struct { Age int }
+//
+//	users := []User{{Age: 16}, {Age: 21}}
+//	should.AnyMatch(t, users, func(user User) bool {
 //		return user.Age > 18
 //	})
 //
-//	should.ContainFunc(t, numbers, func(item any) bool {
-//		return item.(int) % 2 == 0
+//	numbers := []int{1, 3, 5, 8}
+//	should.AnyMatch(t, numbers, func(n int) bool {
+//		return n%2 == 0
 //	}, should.WithMessage("No even numbers found"))
-//
-// If the input is not a slice or array, the test fails immediately.
-func ContainFunc[T any](t testing.TB, actual T, expected func(TItem any) bool, opts ...Option) {
+func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...Option) {
 	t.Helper()
-	if !isSliceOrArray(actual) {
-		fail(t, "expected a slice or array, but got %T", actual)
+
+	if slices.ContainsFunc(actual, predicate) {
 		return
-	}
-
-	actualValue := reflect.ValueOf(actual)
-
-	for i := range actualValue.Len() {
-		item := actualValue.Index(i).Interface()
-		if expected(item) {
-			return
-		}
 	}
 
 	cfg := processOptions(opts...)
