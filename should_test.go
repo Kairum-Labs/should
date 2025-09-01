@@ -455,21 +455,21 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	// ContainFunc
-	t.Run("ContainFunc passes", func(t *testing.T) {
+	// AnyMatch
+	t.Run("AnyMatch passes", func(t *testing.T) {
 		t.Parallel()
 		mockT := &mockTB{}
-		ContainFunc(mockT, []int{1, 2, 3}, func(item any) bool { return item.(int) == 2 })
+		AnyMatch(mockT, []int{1, 2, 3}, func(item int) bool { return item == 2 })
 		if mockT.failed {
-			t.Error("ContainFunc should pass")
+			t.Error("AnyMatch should pass")
 		}
 	})
-	t.Run("ContainFunc fails", func(t *testing.T) {
+	t.Run("AnyMatch fails", func(t *testing.T) {
 		t.Parallel()
 		mockT := &mockTB{}
-		ContainFunc(mockT, []int{1, 2, 3}, func(item any) bool { return item.(int) == 4 })
+		AnyMatch(mockT, []int{1, 2, 3}, func(item int) bool { return item == 4 })
 		if !mockT.failed {
-			t.Error("ContainFunc should fail")
+			t.Error("AnyMatch should fail")
 		}
 	})
 

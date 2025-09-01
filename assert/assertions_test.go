@@ -475,12 +475,8 @@ func TestContain_WithCustomMessage(t *testing.T) {
 func TestContainFunc_Succeeds_WhenPredicateMatches(t *testing.T) {
 	t.Parallel()
 
-	ContainFunc(t, []int{1, 2, 3}, func(item any) bool {
-		i, ok := item.(int)
-		if !ok {
-			return false
-		}
-		return i == 2
+	AnyMatch(t, []int{1, 2, 3}, func(item int) bool {
+		return item == 2
 	})
 }
 
@@ -488,7 +484,7 @@ func TestContainFunc_Fails_WhenPredicateDoesNotMatch(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		ContainFunc(t, []int{1, 2, 3}, func(item any) bool {
+		AnyMatch(t, []int{1, 2, 3}, func(item int) bool {
 			return item == 4
 		})
 	})
@@ -510,14 +506,14 @@ func TestContainFunc_WithCustomMessage(t *testing.T) {
 	customMessage := "No matching element found"
 
 	numbers := []int{1, 3, 5, 7}
-	predicate := func(item any) bool {
-		return item.(int)%2 == 0 // Looking for even numbers
+	predicate := func(item int) bool {
+		return item%2 == 0 // Looking for even numbers
 	}
 
-	ContainFunc(mockT, numbers, predicate, WithMessage(customMessage))
+	AnyMatch(mockT, numbers, predicate, WithMessage(customMessage))
 
 	if !mockT.Failed() {
-		t.Fatal("Expected ContainFunc to fail, but it passed")
+		t.Fatal("Expected AnyMatch to fail, but it passed")
 	}
 
 	if !strings.Contains(mockT.message, customMessage) {
@@ -2228,26 +2224,7 @@ func TestBeFalse_Fails_WithTrueValue(t *testing.T) {
 	}
 }
 
-// === Tests for ContainFunc edge cases ===
-
-func TestContainFunc_Fails_WithNonSliceType(t *testing.T) {
-	t.Parallel()
-
-	failed, message := assertFails(t, func(t testing.TB) {
-		ContainFunc(t, "not a slice", func(item any) bool {
-			return true
-		})
-	})
-
-	if !failed {
-		t.Fatal("Expected test to fail, but it passed")
-	}
-
-	expected := "expected a slice or array, but got string"
-	if !strings.Contains(message, expected) {
-		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
-	}
-}
+// === Tests for AnyMatch edge cases ===
 
 func TestContainFunc_WithComplexPredicate(t *testing.T) {
 	t.Parallel()
@@ -2264,15 +2241,13 @@ func TestContainFunc_WithComplexPredicate(t *testing.T) {
 	}
 
 	// Should succeed - finding adult user
-	ContainFunc(t, users, func(item any) bool {
-		user := item.(User)
+	AnyMatch(t, users, func(user User) bool {
 		return user.Age >= 18
 	})
 
 	// Should fail - no elderly users
 	failed, message := assertFails(t, func(t testing.TB) {
-		ContainFunc(t, users, func(item any) bool {
-			user := item.(User)
+		AnyMatch(t, users, func(user User) bool {
 			return user.Age >= 65
 		})
 	})
