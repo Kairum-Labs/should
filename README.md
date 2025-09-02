@@ -680,7 +680,7 @@ should.NotContainValue(t, userRoles, 3)
 - `Contain(t, collection, element)` - Check if slice/array contains an element
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
 - `NotContainDuplicates(t, collection)` - Check if slice/array contains no duplicate values
-- `ContainFunc(t, collection, predicate)` - Check if any element matches a custom predicate
+- `AnyMatch(t, collection, predicate)` - Check if any element matches a custom predicate
 - `BeSorted(t, slice)` - Check if slice is sorted in ascending order (supports numeric types and strings)
 
 ### Map Operations
@@ -775,20 +775,12 @@ people := []Person{
 }
 
 // Find people over 30
-should.ContainFunc(t, people, func(item any) bool {
-    person, ok := item.(Person)
-    if !ok {
-        return false
-    }
+should.AnyMatch(t, people, func(item Person) bool {
     return person.Age > 30
 })
 
 // With custom error message
-should.ContainFunc(t, people, func(item any) bool {
-	person, ok := item.(Person)
-	if !ok {
-		return false
-	}
+should.AnyMatch(t, people, func(item Person) bool {
 	return person.Age >= 65
 }, should.WithMessage("No elderly users found"))
 ```
