@@ -1921,7 +1921,7 @@ func TestNotBeError(t *testing.T) {
 			err        error
 			opts       []Option
 			shouldFail bool
-			errorCheck func(t *testing.T, message string)
+			errorCheck func(t *testing.T, err error, message string)
 		}{
 			{
 				name:       "Nil error - should pass",
@@ -1932,8 +1932,9 @@ func TestNotBeError(t *testing.T) {
 				name:       "Error present - should fail",
 				err:        errors.New("test error"),
 				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Expected no error, but got an error") {
+				errorCheck: func(t *testing.T, err error, message string) {
+					expected_err_msg := fmt.Sprintf("Expected nil, but got %T", err)
+					if !strings.Contains(message, expected_err_msg) {
 						t.Errorf("Expected an error message, got %s", message)
 					}
 				},
@@ -1943,11 +1944,12 @@ func TestNotBeError(t *testing.T) {
 				err:        errors.New("test an error with a custom error message"),
 				shouldFail: true,
 				opts:       []Option{WithMessage("Custom error message")},
-				errorCheck: func(t *testing.T, message string) {
+				errorCheck: func(t *testing.T, err error, message string) {
 					if !strings.Contains(message, "Custom error message") {
 						t.Errorf("Expected custom message, got %s", message)
 					}
-					if !strings.Contains(message, "Expected no error, but got an error") {
+					expected_err_msg := fmt.Sprintf("Expected nil, but got %T", err)
+					if !strings.Contains(message, expected_err_msg) {
 						t.Errorf("Expected default message, got %s", message)
 					}
 				},
@@ -1966,7 +1968,7 @@ func TestNotBeError(t *testing.T) {
 					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
 				}
 				if tt.errorCheck != nil && mockT.failed {
-					tt.errorCheck(t, mockT.message)
+					tt.errorCheck(t, tt.err, mockT.message)
 				}
 			})
 		}
