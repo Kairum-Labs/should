@@ -314,6 +314,32 @@ func BeError(t testing.TB, err error, opts ...Option) {
 	}
 }
 
+// NotBeError - no error required
+//
+// Verifies that err is nil, ensuring successful operation.
+// Supports optional custom error messages via Option.
+//
+// Example:
+//
+// should.NotBeError(t, err)
+//
+// _, err = os.Open("/nonexistent/file.txt")
+// should.NotBeError(t, err, should.WithMessage("File should exist and be readable"))
+func NotBeError(t testing.TB, err error, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if err != nil {
+		if cfg.Message != "" {
+			fail(t, "%s\nExpected nil, but got %T", cfg.Message, err)
+			return
+		}
+
+		fail(t, "Expected nil, but got %T", err)
+	}
+}
+
 // BeErrorAs reports a test failure if the provided error does not match
 // the target type using errors.As.
 //
