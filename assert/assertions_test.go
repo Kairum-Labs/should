@@ -1862,6 +1862,176 @@ func TestBeLessOrEqualTo(t *testing.T) {
 	})
 }
 
+func TestBeWithin(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float64
+			expected   float64
+			tolerance  float64
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Pass when within tolerance",
+				actual:     3.14159,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Pass when exactly on the edge of tolerance",
+				actual:     3.1416,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail when outside tolerance",
+				actual:     3.142,
+				expected:   3.14,
+				tolerance:  0.001,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Difference: 0.0020") {
+						t.Errorf("Expected a specific error message about the difference, but got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail with zero tolerance and different values",
+				actual:     1.00001,
+				expected:   1.0,
+				tolerance:  0.0,
+				shouldFail: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Float32 functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float32
+			expected   float32
+			tolerance  float32
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Pass with float32 when within tolerance",
+				actual:     3.14159,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail with float32 when outside tolerance",
+				actual:     3.142,
+				expected:   3.14,
+				tolerance:  0.001,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Difference: 0.0020") {
+						t.Errorf("Expected a specific error message about the difference, but got: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float64
+			expected   float64
+			tolerance  float64
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Negative values",
+				actual:     -10.5,
+				expected:   -10.6,
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Zero values",
+				actual:     0.0,
+				expected:   0.0,
+				tolerance:  0.0,
+				shouldFail: false,
+			},
+			{
+				name:       "Large values",
+				actual:     1000000.0,
+				expected:   1000000.1,
+				tolerance:  0.2,
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+}
+
 // === Tests for edge cases ===
 
 func TestBeNil_Succeeds_WithNilPointer(t *testing.T) {

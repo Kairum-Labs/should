@@ -959,6 +959,19 @@ func formatNumericComparisonError(actual, expected interface{}, operation string
 	return msg.String()
 }
 
+func formatBeWithinError[T Float](actual T, expected T, tolerance T) string {
+	diff := math.Abs(float64(actual) - float64(expected))
+
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("Expected value to be close to %.4f (±%.4f), but it was not:\n", expected, tolerance))
+	msg.WriteString(fmt.Sprintf("Actual: %.4f\n", actual))
+	msg.WriteString(fmt.Sprintf("Expected: %.4f\n", expected))
+	msg.WriteString(fmt.Sprintf("Difference: %.4f\n", diff))
+	msg.WriteString(fmt.Sprintf("Tolerance: %.4f", tolerance))
+
+	return msg.String()
+}
+
 // formatLengthError formats a detailed error message for HaveLength assertions.
 func formatLengthError(actual any, expected, actualLen int) string {
 	var msg strings.Builder
