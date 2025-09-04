@@ -3697,3 +3697,117 @@ func TestFormatBeErrorMessage(t *testing.T) {
 		}
 	})
 }
+
+func TestFormatBeWithinError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		actual    float64
+		expected  float64
+		tolerance float64
+		contains  []string
+	}{
+		{
+			name:      "basic case",
+			actual:    10.5,
+			expected:  10.0,
+			tolerance: 0.1,
+			contains: []string{
+				"Expected value to be close to 10.0000 (±0.1000), but it was not:",
+				"Actual: 10.5000",
+				"Difference: 0.5000",
+			},
+		},
+		{
+			name:      "negative numbers",
+			actual:    -5.3,
+			expected:  -5.0,
+			tolerance: 0.2,
+			contains: []string{
+				"Actual: -5.3000",
+				"Expected: -5.0000",
+				"Difference: 0.3000",
+			},
+		},
+		{
+			name:      "zero values",
+			actual:    0.0,
+			expected:  0.0,
+			tolerance: 0.001,
+			contains: []string{
+				"Difference: 0.0000",
+				"Tolerance: 0.0010",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+			for _, expected := range tt.contains {
+				if !strings.Contains(result, expected) {
+					t.Errorf("Expected %q in result:\n%s", expected, result)
+				}
+			}
+		})
+	}
+
+	t.Run("generic constraints", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("float32", func(t *testing.T) {
+			t.Parallel()
+			result := formatBeWithinError(float32(3.14159), float32(3.14), float32(0.01))
+			expectedStrings := []string{
+				"Expected value to be close to 3.1400 (±0.0100), but it was not:",
+				"Actual: 3.1416",
+				"Difference: 0.0016",
+			}
+			for _, expected := range expectedStrings {
+				if !strings.Contains(result, expected) {
+					t.Errorf("Expected %q in result:\n%s", expected, result)
+				}
+			}
+		})
+
+		t.Run("float64", func(t *testing.T) {
+			t.Parallel()
+			result := formatBeWithinError(2.71828, 2.71800, 0.0001)
+			if !strings.Contains(result, "Difference: 0.0003") {
+				t.Errorf("Float64 precision issue: %s", result)
+			}
+		})
+	})
+
+	t.Run("edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		edgeCases := []struct {
+			name      string
+			actual    float64
+			expected  float64
+			tolerance float64
+		}{
+			{"infinity", math.Inf(1), 10.0, 1.0},
+			{"negative infinity", math.Inf(-1), -10.0, 1.0},
+			{"NaN", math.NaN(), 10.0, 1.0},
+			{"very large tolerance", 1.0, 2.0, 1000.0},
+		}
+
+		for _, tt := range edgeCases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+				if result == "" {
+					t.Error("Should not return empty string")
+				}
+				if !strings.Contains(result, "Expected value to be close to") {
+					t.Errorf("Missing main message in: %s", result)
+				}
+			})
+		}
+	})
+}
