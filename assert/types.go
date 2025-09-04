@@ -72,6 +72,11 @@ type Sortable interface {
 	cmp.Ordered
 }
 
+// Float is a constraint that permits either float32 or float64 types.
+type Float interface {
+	~float32 | ~float64
+}
+
 // mapContainResult represents the result of checking if a map contains a key or value
 type mapContainResult struct {
 	Found        bool
