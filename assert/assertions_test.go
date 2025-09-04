@@ -1873,6 +1873,7 @@ func TestBeWithin(t *testing.T) {
 			expected   float64
 			tolerance  float64
 			shouldFail bool
+			opts       []Option
 			errorCheck func(t *testing.T, message string)
 		}{
 			{
@@ -1908,13 +1909,26 @@ func TestBeWithin(t *testing.T) {
 				tolerance:  0.0,
 				shouldFail: true,
 			},
+			{
+				name:       "Fail with zero tolerance and different values with custom message",
+				actual:     1.00001,
+				expected:   1.0,
+				tolerance:  0.0,
+				opts:       []Option{WithMessage("Custom error message")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Expected custom message, got: %s", message)
+					}
+				},
+			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance, tt.opts...)
 
 				if tt.shouldFail && !mockT.failed {
 					t.Fatal("Expected test to fail, but it passed")
