@@ -2214,7 +2214,7 @@ func TestBeTrue_Fails_WithFalseValue(t *testing.T) {
 	}
 }
 
-func TestBeTrue_WithMessageArgs(t *testing.T) {
+func TestBeTrue_WithMessagef(t *testing.T) {
 	t.Parallel()
 	failed, message := assertFails(t, func(t testing.TB) {
 		BeTrue(t, false, WithMessagef("custom: %d %s", 42, "error"))

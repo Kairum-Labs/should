@@ -74,6 +74,8 @@ func (u truncateDuration) Apply(c *Config) {
 // Example usage:
 //
 //	should.BeGreaterThan(t, userAge, 18, should.WithMessage("User must be adult"))
+//
+// See also: WithMessagef for messages that include formatting placeholders.
 func WithMessage(msg string) Option {
 	return message(msg)
 }
