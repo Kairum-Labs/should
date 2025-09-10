@@ -235,6 +235,13 @@ func TestNotBeEqual(t *testing.T) {
 				shouldFail: false,
 			},
 			{
+				name:       "should pass with formatted custom message",
+				actual:     42,
+				expected:   100,
+				opts:       []Option{WithMessagef("Expected value %d, got %d", 100, 42)},
+				shouldFail: false,
+			},
+			{
 				name:       "should show custom error message on failure",
 				actual:     "same",
 				expected:   "same",
@@ -2204,6 +2211,20 @@ func TestBeTrue_Fails_WithFalseValue(t *testing.T) {
 	expected := "Expected true, got false"
 	if !strings.Contains(message, expected) {
 		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
+func TestBeTrue_WithMessageArgs(t *testing.T) {
+	t.Parallel()
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeTrue(t, false, WithMessagef("custom: %d %s", 42, "error"))
+	})
+	if !failed {
+		t.Error("Expected assertion to fail")
+	}
+	expected := "custom: 42 error"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain %q, got %q", expected, message)
 	}
 }
 

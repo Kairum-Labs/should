@@ -27,11 +27,27 @@ type Option = assert.Option
 
 // WithMessage creates an option for setting a custom error message.
 //
-// Example:
+// The message is treated as a plain string literal. Use this when you
+// want to display a fixed message without formatting or placeholders.
 //
-//	should.BeEqual(t, value, expected, should.WithMessage("Custom message"))
+// Example usage:
+//
+//	should.BeGreaterThan(t, userAge, 18, should.WithMessage("User must be adult"))
 func WithMessage(message string) Option {
 	return assert.WithMessage(message)
+}
+
+// WithMessagef creates an option for setting a custom error message with formatting.
+//
+// The message supports placeholders, similar to fmt.Sprintf, and takes
+// optional arguments to replace them. Use this when you need dynamic
+// content in the message.
+//
+// Example usage:
+//
+//	should.BeLessOrEqualTo(t, score, 100, should.WithMessagef("Score cannot exceed %d", 100))
+func WithMessagef(message string, args ...any) Option {
+	return assert.WithMessagef(message, args...)
 }
 
 // WithIgnoreCase returns an option that makes string comparisons case-insensitive.
