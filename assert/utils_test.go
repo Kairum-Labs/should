@@ -31,6 +31,51 @@ type wrapperError struct {
 func (e wrapperError) Error() string { return e.msg }
 func (e wrapperError) Unwrap() error { return e.wrapped }
 
+func TestIsPrimitive(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		kind     reflect.Kind
+		expected bool
+	}{
+		// Primitive types
+		{"string", reflect.String, true},
+		{"int", reflect.Int, true},
+		{"int8", reflect.Int8, true},
+		{"int16", reflect.Int16, true},
+		{"int32", reflect.Int32, true},
+		{"int64", reflect.Int64, true},
+		{"uint", reflect.Uint, true},
+		{"uint8", reflect.Uint8, true},
+		{"uint16", reflect.Uint16, true},
+		{"uint32", reflect.Uint32, true},
+		{"uint64", reflect.Uint64, true},
+		{"float32", reflect.Float32, true},
+		{"float64", reflect.Float64, true},
+		{"bool", reflect.Bool, true},
+
+		// Non-primitive types
+		{"slice", reflect.Slice, false},
+		{"map", reflect.Map, false},
+		{"struct", reflect.Struct, false},
+		{"array", reflect.Array, false},
+		{"ptr", reflect.Ptr, false},
+		{"interface", reflect.Interface, false},
+		{"func", reflect.Func, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := isPrimitive(tt.kind)
+			if got != tt.expected {
+				t.Errorf("isPrimitive(%v) = %v; want %v", tt.kind, got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	t.Parallel()
 

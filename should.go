@@ -378,9 +378,9 @@ func BeSorted[T assert.Sortable](t testing.TB, actual []T, opts ...Option) {
 
 // BeEqual reports a test failure if the two values are not deeply equal.
 //
-// This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
-// error messages showing exactly what differs between the values. For complex objects,
-// it shows field-by-field differences to help identify the specific mismatches.
+// Uses reflect.DeepEqual for comparison. For primitive types (string, int, float, bool, etc.),
+// it shows a simple message. For complex objects (structs, slices, maps), it shows
+// field-by-field differences.
 //
 // Example:
 //
