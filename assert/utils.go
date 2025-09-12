@@ -21,6 +21,18 @@ func isSliceOrArray(v interface{}) bool {
 	return kind == reflect.Slice || kind == reflect.Array
 }
 
+// isPrimitive checks if the provided reflect.Kind represents a primitive type.
+func isPrimitive(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.String, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64, reflect.Bool:
+		return true
+	default:
+		return false
+	}
+}
+
 // formatSlice formats a slice or an array into a human-readable string.
 // e.g., [1, 2, 3] or ["apple", "banana", "orange"].
 func formatSlice(slice interface{}) string {
@@ -62,7 +74,7 @@ func formatValueComparison(v reflect.Value) string {
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64,
+		reflect.Uintptr, reflect.Float32, reflect.Float64,
 		reflect.Bool:
 		return fmt.Sprint(v.Interface())
 
@@ -202,7 +214,7 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 			})
 		}
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		if expectedValue.Uint() != actualValue.Uint() {
 			diffs = append(diffs, fieldDiff{
 				Path:     path,

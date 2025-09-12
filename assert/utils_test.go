@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 type CustomStringer struct {
@@ -31,8 +32,57 @@ type wrapperError struct {
 func (e wrapperError) Error() string { return e.msg }
 func (e wrapperError) Unwrap() error { return e.wrapped }
 
+func TestIsPrimitive(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		kind     reflect.Kind
+		expected bool
+	}{
+		// Primitive types
+		{"string", reflect.String, true},
+		{"int", reflect.Int, true},
+		{"int8", reflect.Int8, true},
+		{"int16", reflect.Int16, true},
+		{"int32", reflect.Int32, true},
+		{"int64", reflect.Int64, true},
+		{"uint", reflect.Uint, true},
+		{"uint8", reflect.Uint8, true},
+		{"uint16", reflect.Uint16, true},
+		{"uint32", reflect.Uint32, true},
+		{"uint64", reflect.Uint64, true},
+		{"uintptr", reflect.Uintptr, true},
+		{"float32", reflect.Float32, true},
+		{"float64", reflect.Float64, true},
+		{"bool", reflect.Bool, true},
+
+		// Non-primitive types
+		{"slice", reflect.Slice, false},
+		{"map", reflect.Map, false},
+		{"struct", reflect.Struct, false},
+		{"array", reflect.Array, false},
+		{"ptr", reflect.Ptr, false},
+		{"interface", reflect.Interface, false},
+		{"func", reflect.Func, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := isPrimitive(tt.kind)
+			if got != tt.expected {
+				t.Errorf("isPrimitive(%v) = %v; want %v", tt.kind, got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	t.Parallel()
+
+	var x int
+	uptr := uintptr(unsafe.Pointer(&x))
 
 	tests := []struct {
 		name     string
@@ -53,6 +103,11 @@ func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 			name:     "Uint",
 			input:    uint(42),
 			expected: "42",
+		},
+		{
+			name:     "Uintptr",
+			input:    uptr,
+			expected: fmt.Sprint(uptr),
 		},
 		{
 			name:     "Float",
@@ -77,7 +132,6 @@ func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			var result string
@@ -291,10 +345,19 @@ func TestFormatComparisonValue_Collections(t *testing.T) {
 			input:    [][]int{{1, 2}, {3, 4}},
 			expected: "[[1, 2], [3, 4]]",
 		},
+		{
+			name:     "Rune slice",
+			input:    []rune{'☀', '🌙', '⭐'},
+			expected: "[9728, 127769, 11088]", // TODO: Improve to show emojis instead of numbers
+		},
+		{
+			name:     "Byte slice",
+			input:    []byte{1, 2, 3},
+			expected: "[1, 2, 3]",
+		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			result := formatComparisonValue(tt.input)

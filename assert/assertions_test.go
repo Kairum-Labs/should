@@ -142,6 +142,93 @@ func TestBeEqual_ForMaps_Fails_WhenNotEqual(t *testing.T) {
 	}
 }
 
+func TestBeEqual_PrimitiveFormatting(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		actual        interface{}
+		expected      interface{}
+		wantFail      bool
+		expectedParts []string
+	}{
+		{
+			name:     "different strings",
+			actual:   "hello",
+			expected: "world",
+			wantFail: true,
+			expectedParts: []string{
+				"Not equal:",
+				"expected: world",
+				"actual  : hello",
+			},
+		},
+		{
+			name:     "different integers",
+			actual:   42,
+			expected: 99,
+			wantFail: true,
+			expectedParts: []string{
+				"Not equal:",
+				"expected: 99",
+				"actual  : 42",
+			},
+		},
+		{
+			name:     "different booleans",
+			actual:   true,
+			expected: false,
+			wantFail: true,
+			expectedParts: []string{
+				"Not equal:",
+				"expected: false",
+				"actual  : true",
+			},
+		},
+		{
+			name:     "floats with different values",
+			actual:   3.14,
+			expected: 6.28,
+			wantFail: true,
+			expectedParts: []string{
+				"Not equal:",
+				"expected: 6.28",
+				"actual  : 3.14",
+			},
+		},
+		{
+			name:     "equal primitive values should pass",
+			actual:   "same",
+			expected: "same",
+			wantFail: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockT := &mockT{}
+			BeEqual(mockT, tt.actual, tt.expected)
+
+			if tt.wantFail && !mockT.Failed() {
+				t.Fatal("expected BeEqual to fail, but it passed")
+			}
+			if !tt.wantFail && mockT.Failed() {
+				t.Fatalf("expected BeEqual to pass, but it failed with message: %s", mockT.message)
+			}
+
+			if tt.wantFail {
+				for _, part := range tt.expectedParts {
+					if !strings.Contains(mockT.message, part) {
+						t.Errorf("expected error message to contain %q, got:\n%s", part, mockT.message)
+					}
+				}
+			}
+		})
+	}
+}
+
 // === Tests for NotBeEqual ===
 
 func TestNotBeEqual(t *testing.T) {
