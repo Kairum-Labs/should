@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 type CustomStringer struct {
@@ -51,6 +52,7 @@ func TestIsPrimitive(t *testing.T) {
 		{"uint16", reflect.Uint16, true},
 		{"uint32", reflect.Uint32, true},
 		{"uint64", reflect.Uint64, true},
+		{"uintptr", reflect.Uintptr, true},
 		{"float32", reflect.Float32, true},
 		{"float64", reflect.Float64, true},
 		{"bool", reflect.Bool, true},
@@ -79,6 +81,9 @@ func TestIsPrimitive(t *testing.T) {
 func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	t.Parallel()
 
+	var x int
+	uptr := uintptr(unsafe.Pointer(&x))
+
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -98,6 +103,11 @@ func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 			name:     "Uint",
 			input:    uint(42),
 			expected: "42",
+		},
+		{
+			name:     "Uintptr",
+			input:    uptr,
+			expected: fmt.Sprint(uptr),
 		},
 		{
 			name:     "Float",
@@ -122,7 +132,6 @@ func TestFormatComparisonValue_BasicTypes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			var result string
@@ -336,10 +345,19 @@ func TestFormatComparisonValue_Collections(t *testing.T) {
 			input:    [][]int{{1, 2}, {3, 4}},
 			expected: "[[1, 2], [3, 4]]",
 		},
+		{
+			name:     "Rune slice",
+			input:    []rune{'☀', '🌙', '⭐'},
+			expected: "[9728, 127769, 11088]", // TODO: Improve to show emojis instead of numbers
+		},
+		{
+			name:     "Byte slice",
+			input:    []byte{1, 2, 3},
+			expected: "[1, 2, 3]",
+		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			result := formatComparisonValue(tt.input)
