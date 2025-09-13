@@ -959,6 +959,63 @@ func formatNumericComparisonError(actual, expected interface{}, operation string
 	return msg.String()
 }
 
+// formatBeWithinError returns an error message when `actual` is outside `expected ± tolerance`.
+func formatBeWithinError[T Float](actual, expected, tolerance T) string {
+	diff := T(math.Abs(float64(actual - expected)))
+
+	actualF := float64(actual)
+	expectedF := float64(expected)
+	diffF := float64(diff)
+	toleranceF := float64(tolerance)
+
+	format := chooseFormat(actualF, expectedF, diffF, toleranceF)
+
+	var msg strings.Builder
+
+	msg.WriteString(fmt.Sprintf(
+		"Expected value to be within ±"+format+" of "+format+", but it was not:\n",
+		toleranceF, expectedF))
+	msg.WriteString(fmt.Sprintf("  Actual:    "+format+"\n", actualF))
+	msg.WriteString(fmt.Sprintf("  Expected:  "+format+"\n", expectedF))
+	msg.WriteString(fmt.Sprintf("  Tolerance: ±"+format+"\n", toleranceF))
+	msg.WriteString(fmt.Sprintf("  Difference: "+format, diffF))
+
+	if toleranceF > 0 {
+		excess := ((diffF - toleranceF) / toleranceF)
+		switch {
+		case excess > 2:
+			msg.WriteString(fmt.Sprintf(" (%.2f× greater than tolerance)", excess))
+		case excess > 0:
+			msg.WriteString(fmt.Sprintf(" (%.2f%% greater than tolerance)", 100*excess))
+		}
+	}
+
+	return msg.String()
+}
+
+// chooseFormat selects the best format based on the magnitude of the numbers
+func chooseFormat(values ...float64) string {
+	maxAbs := 0.0
+	minNonZero := math.Inf(1)
+
+	for _, v := range values {
+		abs := math.Abs(v)
+		if abs > maxAbs {
+			maxAbs = abs
+		}
+		if abs > 0 && abs < minNonZero {
+			minNonZero = abs
+		}
+	}
+
+	// Use scientific notation only for extremely large or small numbers
+	if maxAbs >= 1e6 || (minNonZero != math.Inf(1) && minNonZero < 1e-6) {
+		return "%.6e"
+	}
+
+	return "%.6f"
+}
+
 // formatLengthError formats a detailed error message for HaveLength assertions.
 func formatLengthError(actual any, expected, actualLen int) string {
 	var msg strings.Builder

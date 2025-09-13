@@ -3808,3 +3808,355 @@ func TestFormatNotBeErrorMessage(t *testing.T) {
 		}
 	})
 }
+
+func TestFormatBeWithinError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("basic formatting cases", func(t *testing.T) {
+		t.Parallel()
+		basicCases := []struct {
+			name        string
+			actual      float64
+			expected    float64
+			tolerance   float64
+			contains    []string
+			notContains []string
+		}{
+			{
+				name:      "normal decimal numbers",
+				actual:    10.5,
+				expected:  10.0,
+				tolerance: 0.1,
+				contains: []string{
+					"Expected value to be within ±0.100000 of 10.000000, but it was not:",
+					"Actual:    10.500000",
+					"Expected:  10.000000",
+					"Difference: 0.500000",
+					"(4.00× greater than tolerance)",
+				},
+			},
+			{
+				name:      "negative numbers",
+				actual:    -5.3,
+				expected:  -5.0,
+				tolerance: 0.2,
+				contains: []string{
+					"Actual:    -5.300000",
+					"Expected:  -5.000000",
+					"Difference: 0.300000",
+					"(50.00% greater than tolerance)",
+				},
+			},
+			{
+				name:      "zero expected with relative diff",
+				actual:    0.5,
+				expected:  0.0,
+				tolerance: 0.1,
+				contains: []string{
+					"Actual:    0.500000",
+					"Expected:  0.000000",
+					"Difference: 0.500000",
+					"(4.00× greater than tolerance)",
+				},
+			},
+			{
+				name:      "values that appear within tolerance",
+				actual:    10.05,
+				expected:  10.0,
+				tolerance: 0.1,
+				contains: []string{
+					"Actual:    10.050000",
+					"Expected:  10.000000",
+					"Difference: 0.050000",
+				},
+			},
+		}
+
+		for _, tt := range basicCases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				// Function should always return a non-empty error message
+				if result == "" {
+					t.Error("Expected non-empty result, got empty string")
+				}
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("Expected %q in result:\n%s", expected, result)
+					}
+				}
+
+				for _, notExpected := range tt.notContains {
+					if strings.Contains(result, notExpected) {
+						t.Errorf("Did not expect %q in result:\n%s", notExpected, result)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("zero and negative tolerance cases", func(t *testing.T) {
+		t.Parallel()
+
+		cases := []struct {
+			name      string
+			actual    float64
+			expected  float64
+			tolerance float64
+			contains  []string
+		}{
+			{
+				name:      "zero tolerance - different values",
+				actual:    10.0,
+				expected:  5.0,
+				tolerance: 0.0,
+				contains: []string{
+					"Expected value to be within ±0.000000 of 5.000000",
+					"Difference: 5.000000",
+				},
+			},
+			{
+				name:      "negative tolerance",
+				actual:    10.0,
+				expected:  5.0,
+				tolerance: -1.0,
+				contains: []string{
+					"Expected value to be within ±-1.000000 of 5.000000",
+					"Tolerance: ±-1.000000",
+				},
+			},
+		}
+
+		for _, tt := range cases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				if result == "" {
+					t.Error("Expected non-empty result, got empty string")
+				}
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("Expected %q in result:\n%s", expected, result)
+					}
+				}
+
+				// For zero tolerance, should not show percentage
+				if tt.tolerance == 0.0 && strings.Contains(result, "% greater than tolerance") {
+					t.Errorf("Should not show percentage for zero tolerance: %s", result)
+				}
+			})
+		}
+	})
+
+	t.Run("scientific notation cases", func(t *testing.T) {
+		t.Parallel()
+		scientificCases := []struct {
+			name      string
+			actual    float64
+			expected  float64
+			tolerance float64
+			contains  []string
+		}{
+			{
+				name:      "very large numbers",
+				actual:    1.5e30,
+				expected:  1.0e30,
+				tolerance: 1e28,
+				contains: []string{
+					"1.500000e+30",
+					"1.000000e+30",
+					"5.000000e+29",
+					"1.000000e+28",
+					"(49.00× greater than tolerance)",
+				},
+			},
+			{
+				name:      "very small numbers",
+				actual:    1.5e-6,
+				expected:  1.0e-6,
+				tolerance: 1e-8,
+				contains: []string{
+					"1.500000e-06",
+					"1.000000e-06",
+					"5.000000e-07",
+					"1.000000e-08",
+					"(49.00× greater than tolerance)",
+				},
+			},
+		}
+
+		for _, tt := range scientificCases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("Expected %q in result:\n%s", expected, result)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("special values edge cases", func(t *testing.T) {
+		t.Parallel()
+
+		edgeCases := []struct {
+			name      string
+			actual    float64
+			expected  float64
+			tolerance float64
+			contains  []string
+		}{
+			{
+				name:      "positive infinity actual",
+				actual:    math.Inf(1),
+				expected:  10.0,
+				tolerance: 1.0,
+				contains: []string{
+					"+Inf",
+					"1.000000e+01", // Scientific notation for 10.0
+					"Difference: +Inf",
+				},
+			},
+			{
+				name:      "negative infinity actual",
+				actual:    math.Inf(-1),
+				expected:  -10.0,
+				tolerance: 1.0,
+				contains: []string{
+					"-Inf",
+					"-1.000000e+01", // Scientific notation for -10.0
+					"Difference: +Inf",
+				},
+			},
+			{
+				name:      "NaN actual",
+				actual:    math.NaN(),
+				expected:  10.0,
+				tolerance: 1.0,
+				contains: []string{
+					"NaN",
+					"10.000000",
+					"Difference: NaN",
+				},
+			},
+		}
+
+		for _, tt := range edgeCases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				// Should always return a non-empty result
+				if result == "" {
+					t.Error("Expected non-empty result for special values")
+				}
+
+				for _, expected := range tt.contains {
+					if !strings.Contains(result, expected) {
+						t.Errorf("Expected %q in result:\n%s", expected, result)
+					}
+				}
+
+				// Basic structure should still be present
+				requiredFields := []string{"Actual:", "Expected:", "Tolerance:", "Difference:"}
+				for _, field := range requiredFields {
+					if !strings.Contains(result, field) {
+						t.Errorf("Missing required field %q in: %s", field, result)
+					}
+				}
+			})
+		}
+	})
+
+	t.Run("format selection accuracy", func(t *testing.T) {
+		t.Parallel()
+
+		formatTests := []struct {
+			name                string
+			actual              float64
+			expected            float64
+			tolerance           float64
+			shouldUseScientific bool
+		}{
+			{"small decimals use decimal", 1.234567, 1.234560, 1e-6, false},
+			{"large numbers use scientific", 1e7, 1e7 + 1000, 100, true},
+			{"medium numbers use decimal", 123.456, 123.450, 0.001, false},
+			{"boundary case large - uses scientific", 999999, 1000000, 1, true}, // 1e6 threshold
+			{"boundary case small", 0.0001, 0.00011, 1e-6, false},
+		}
+
+		for _, tt := range formatTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				hasScientific := strings.Contains(result, "e+") || strings.Contains(result, "e-")
+				if tt.shouldUseScientific && !hasScientific {
+					t.Errorf("Expected scientific notation for %s, got: %s", tt.name, result)
+				} else if !tt.shouldUseScientific && hasScientific {
+					t.Errorf("Expected decimal notation for %s, got: %s", tt.name, result)
+				}
+			})
+		}
+	})
+
+	t.Run("relative percentage accuracy", func(t *testing.T) {
+		t.Parallel()
+
+		relativeTests := []struct {
+			name             string
+			actual           float64
+			expected         float64
+			tolerance        float64
+			expectedRelative string
+		}{
+			// Corrected calculations: ((diff - tolerance) / tolerance) * 100
+			{"900% over tolerance", 11.0, 10.0, 0.1, "(9.00× greater than tolerance)"},
+			{"400% over tolerance", 15.0, 10.0, 1.0, "(4.00× greater than tolerance)"},
+			{"just below multiplier boundary", 14.0, 10.0, 1.0, "(3.00× greater than tolerance)"},
+			{"exactly multiplier boundary", 16.0, 10.0, 1.0, "(5.00× greater than tolerance)"},
+			{"above multiplier boundary", 20.0, 10.0, 1.0, "(9.00× greater than tolerance)"},
+			{"negative expected", -11.0, -10.0, 0.1, "(9.00× greater than tolerance)"},
+			{"slightly over tolerance", 10.15, 10.0, 0.1, "(50.00% greater than tolerance)"},
+		}
+
+		for _, tt := range relativeTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
+
+				if !strings.Contains(result, tt.expectedRelative) {
+					t.Errorf("Expected %q in result for %s, got: %s",
+						tt.expectedRelative, tt.name, result)
+				}
+			})
+		}
+	})
+
+	t.Run("generic type constraints", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("float32", func(t *testing.T) {
+			t.Parallel()
+			result := formatBeWithinError(float32(3.14159), float32(3.14), float32(0.001))
+			expectedStrings := []string{
+				"3.141590",
+				"3.140000",
+				"0.001590",
+				"0.001000",
+			}
+			for _, expected := range expectedStrings {
+				if !strings.Contains(result, expected) {
+					t.Errorf("Expected %q in result:\n%s", expected, result)
+				}
+			}
+		})
+	})
+}

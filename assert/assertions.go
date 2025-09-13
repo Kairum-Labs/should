@@ -7,6 +7,7 @@ package assert
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"runtime/debug"
 	"slices"
@@ -550,6 +551,58 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 	if result > 0 {
 		cfg := processOptions(opts...)
 		errorMsg := formatNumericComparisonError(actual, expected, "lessOrEqual")
+		if cfg.Message != "" {
+			fail(t, "%s\n%s", cfg.Message, errorMsg)
+			return
+		}
+
+		fail(t, errorMsg)
+	}
+}
+
+// BeWithin reports a test failure if the actual value is not within the given tolerance of the expected value.
+//
+// This assertion works with both float32 and float64 types and provides detailed
+// error messages when the assertion fails. It is especially useful for testing
+// floating-point numbers where exact equality is unreliable due to precision issues.
+//
+// An optional custom error message can be provided using WithMessage.
+//
+// Example:
+//
+//	should.BeWithin(t, 3.14159, 3.14, 0.002)
+//
+//	should.BeWithin(t, 3.142, 3.14, 0.001, should.WithMessage("Pi approximation is outside the allowed range"))
+func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...Option) {
+	t.Helper()
+
+	if tolerance < 0 {
+		fail(t, "Tolerance must be non-negative, got %v", tolerance)
+		return
+	}
+
+	actualF := float64(actual)
+	expectedF := float64(expected)
+	tolF := float64(tolerance)
+
+	if math.IsNaN(actualF) || math.IsNaN(expectedF) || math.IsNaN(tolF) {
+		fail(t, "Invalid input: actual=%v, expected=%v, tolerance=%v (NaN detected)", actual, expected, tolerance)
+		return
+	}
+
+	if math.IsInf(actualF, 0) || math.IsInf(expectedF, 0) {
+		if math.IsInf(actualF, 0) && math.IsInf(expectedF, 0) && math.Signbit(actualF) == math.Signbit(expectedF) {
+			return
+		}
+		fail(t, "Invalid input: actual=%v, expected=%v (Inf mismatch)", actual, expected)
+		return
+	}
+
+	diff := math.Abs(actualF - expectedF)
+
+	if diff > tolF {
+		errorMsg := formatBeWithinError(actual, expected, tolerance)
+		cfg := processOptions(opts...)
 		if cfg.Message != "" {
 			fail(t, "%s\n%s", cfg.Message, errorMsg)
 			return

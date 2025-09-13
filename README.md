@@ -193,6 +193,14 @@ should.BeLessOrEqualTo(t, 15, 10)
 //         Difference: +5 (value is 5 greater)
 //         Hint      : Value should be smaller than or equal to threshold
 
+// Fails because 3.142 is not within ±0.001 of 3.140.
+should.BeWithin(t, 3.142, 3.14, 0.001)
+//Expected value to be within ±0.001000 of 3.140000, but it was not:
+//    Actual    : 3.142000
+//    Expected  : 3.140000
+//    Difference: ±0.001000
+//    Tolerance : 0.002000 (100.00% greater than tolerance)
+
 // Range validation (fails when value is below or above the range)
 should.BeInRange(t, 16, 18, 65)
 // Output:
@@ -670,6 +678,7 @@ should.NotContainValue(t, userRoles, 3)
 - `BeGreaterOrEqualTo(t, actual, threshold)` - Numeric greater-than-or-equal comparison
 - `BeLessOrEqualTo(t, actual, threshold)` - Numeric less-than-or-equal comparison
 - `BeInRange(t, actual, minValue, maxValue)` - Check if value is within inclusive range [minValue, maxValue]
+- `BeWithin(t, actual, expected, tolerance)` - Check if numeric value is within the given tolerance of the expected value
 
 ### String Operations
 

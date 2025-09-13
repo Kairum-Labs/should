@@ -367,6 +367,15 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("BeWithin passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeWithin(t, 3.14159, 3.14, 0.002)
+		if mockT.failed {
+			t.Error("BeWithin should pass")
+		}
+	})
+
 	t.Run("BeSameTime passes", func(t *testing.T) {
 		t.Parallel()
 		mockT := &mockTB{}

@@ -3,6 +3,7 @@ package assert
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -1856,6 +1857,288 @@ func TestBeLessOrEqualTo(t *testing.T) {
 					}
 				} else {
 					tt.testFunc()
+				}
+			})
+		}
+	})
+}
+
+func TestBeWithin(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float64
+			expected   float64
+			tolerance  float64
+			shouldFail bool
+			opts       []Option
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Pass when within tolerance",
+				actual:     3.14159,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Pass when exactly on the edge of tolerance",
+				actual:     3.1416,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail when outside tolerance",
+				actual:     3.142,
+				expected:   3.14,
+				tolerance:  0.001,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Difference: 0.0020") {
+						t.Errorf("Expected a specific error message about the difference, but got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail with zero tolerance and different values",
+				actual:     1.00001,
+				expected:   1.0,
+				tolerance:  0.0,
+				shouldFail: true,
+			},
+			{
+				name:       "Fail with zero tolerance and different values with custom message",
+				actual:     1.00001,
+				expected:   1.0,
+				tolerance:  0.0,
+				opts:       []Option{WithMessage("Custom error message")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Custom error message") {
+						t.Errorf("Expected custom message, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when tolerance is negative",
+				actual:     1.0,
+				expected:   1.0,
+				tolerance:  -0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Tolerance must be non-negative") {
+						t.Errorf("Expected negative tolerance error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when actual is NaN",
+				actual:     math.NaN(),
+				expected:   1.0,
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when expected is NaN",
+				actual:     1.0,
+				expected:   math.NaN(),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when tolerance is NaN",
+				actual:     1.0,
+				expected:   1.0,
+				tolerance:  math.NaN(),
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Pass when both are +Inf",
+				actual:     math.Inf(1),
+				expected:   math.Inf(1),
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Pass when both are -Inf",
+				actual:     math.Inf(-1),
+				expected:   math.Inf(-1),
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail when one is +Inf and other is -Inf",
+				actual:     math.Inf(1),
+				expected:   math.Inf(-1),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when actual is Inf and expected is finite",
+				actual:     math.Inf(1),
+				expected:   42.0,
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when expected is Inf and actual is finite",
+				actual:     42.0,
+				expected:   math.Inf(1),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Float32 functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float32
+			expected   float32
+			tolerance  float32
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Pass with float32 when within tolerance",
+				actual:     3.14159,
+				expected:   3.1415,
+				tolerance:  0.0001,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail with float32 when outside tolerance",
+				actual:     3.142,
+				expected:   3.14,
+				tolerance:  0.001,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Difference: 0.0020") {
+						t.Errorf("Expected a specific error message about the difference, but got: %s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     float64
+			expected   float64
+			tolerance  float64
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Negative values",
+				actual:     -10.5,
+				expected:   -10.6,
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Zero values",
+				actual:     0.0,
+				expected:   0.0,
+				tolerance:  0.0,
+				shouldFail: false,
+			},
+			{
+				name:       "Large values",
+				actual:     1000000.0,
+				expected:   1000000.1,
+				tolerance:  0.2,
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				BeWithin(mockT, tt.actual, tt.expected, tt.tolerance)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected test to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected test to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
 				}
 			})
 		}
