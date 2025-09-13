@@ -2433,3 +2433,18 @@ func formatBeErrorMessage(action string, err error, target interface{}) string {
 
 	return msg.String()
 }
+
+func formatNotBeErrorMessage(customMsg string, err error) string {
+	var msg strings.Builder
+
+	if customMsg != "" {
+		msg.WriteString(customMsg)
+		msg.WriteString("\n")
+	}
+
+	msg.WriteString("Expected no error, but got an error\n")
+	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", err.Error()))
+	msg.WriteString(fmt.Sprintf("Type: %T", err))
+
+	return msg.String()
+}

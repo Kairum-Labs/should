@@ -331,12 +331,9 @@ func NotBeError(t testing.TB, err error, opts ...Option) {
 	cfg := processOptions(opts...)
 
 	if err != nil {
-		if cfg.Message != "" {
-			fail(t, "%s\nExpected nil, but got %T", cfg.Message, err)
-			return
-		}
+		errorMsg := formatNotBeErrorMessage(cfg.Message, err)
 
-		fail(t, "Expected nil, but got %T", err)
+		fail(t, errorMsg)
 	}
 }
 
