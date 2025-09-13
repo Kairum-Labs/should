@@ -131,6 +131,15 @@ func TestNotPanic(t *testing.T) {
 			shouldFail:  true,
 			expectedMsg: "custom message\nExpected for the function to not panic, but it panicked with: some panic",
 		},
+		{
+			name: "should fail with formatted custom message when function panics",
+			fn:   func() { panic("some panic") },
+			opts: []Option{
+				WithMessagef("custom message: %s", "additional info"),
+			},
+			shouldFail:  true,
+			expectedMsg: "custom message: additional info\nExpected for the function to not panic, but it panicked with: some panic",
+		},
 	}
 
 	for _, tc := range testCases {

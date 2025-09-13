@@ -678,9 +678,9 @@ func BeSameTime(t testing.TB, actual, expected time.Time, opts ...Option) {
 
 // BeEqual reports a test failure if the two values are not deeply equal.
 //
-// This assertion uses Go's reflect.DeepEqual for comparison and provides detailed
-// error messages showing exactly what differs between the values. For complex objects,
-// it shows field-by-field differences to help identify the specific mismatches.
+// Uses reflect.DeepEqual for comparison. For primitive types (string, int, float, bool, etc.),
+// it shows a simple message. For complex objects (structs, slices, maps), it shows
+// field-by-field differences.
 //
 // Example:
 //
@@ -694,7 +694,25 @@ func BeSameTime(t testing.TB, actual, expected time.Time, opts ...Option) {
 func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	t.Helper()
 
+	cfg := processOptions(opts...)
+	customMsg := cfg.Message
+	if customMsg != "" {
+		customMsg += "\n"
+	}
+
 	if reflect.DeepEqual(actual, expected) {
+		return
+	}
+
+	// for primitive types, show a simple not equal message
+	if isPrimitive(reflect.ValueOf(actual).Kind()) {
+		message := fmt.Sprintf(
+			"%sNot equal:\nexpected: %v\nactual  : %v",
+			customMsg,
+			expected,
+			actual,
+		)
+		fail(t, message)
 		return
 	}
 
@@ -704,12 +722,6 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 	differencesOutput := "Field differences:\n"
 	for _, diff := range diffs {
 		differencesOutput += fmt.Sprintf("  └─ %s: %s ≠ %s\n", diff.Path, formatDiffValue(diff.Expected), formatDiffValue(diff.Actual))
-	}
-
-	cfg := processOptions(opts...)
-	customMsg := cfg.Message
-	if customMsg != "" {
-		customMsg += "\n"
 	}
 
 	message := fmt.Sprintf(

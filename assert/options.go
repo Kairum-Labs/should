@@ -1,6 +1,9 @@
 package assert
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Option is a functional option for configuring assertions.
 type Option interface {
@@ -64,8 +67,30 @@ func (u truncateDuration) Apply(c *Config) {
 }
 
 // WithMessage creates an option for setting a custom error message.
+//
+// The message is treated as a plain string literal. Use this when you
+// want to display a fixed message without formatting or placeholders.
+//
+// Example usage:
+//
+//	should.BeGreaterThan(t, userAge, 18, should.WithMessage("User must be adult"))
+//
+// See also: WithMessagef for messages that include formatting placeholders.
 func WithMessage(msg string) Option {
 	return message(msg)
+}
+
+// WithMessagef creates an option for setting a custom error message with formatting.
+//
+// The message supports placeholders, similar to fmt.Sprintf, and takes
+// optional arguments to replace them. Use this when you need dynamic
+// content in the message.
+//
+// Example usage:
+//
+//	should.BeLessOrEqualTo(t, score, 100, should.WithMessagef("Score cannot exceed %d", 100))
+func WithMessagef(msg string, args ...any) Option {
+	return message(fmt.Sprintf(msg, args...))
 }
 
 // WithIgnoreCase creates an option for ignoring case in comparisons.

@@ -5,12 +5,16 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"unsafe"
 )
 
 //  === THIS TESTS ARE IN A SEPARATE FILE BECAUSE THEY ARE TOO LONG ===
 
 func TestFindDifferences_BasicTypes(t *testing.T) {
 	t.Parallel()
+
+	var x int
+	uptr := uintptr(unsafe.Pointer(&x))
 
 	tests := []struct {
 		name     string
@@ -48,6 +52,22 @@ func TestFindDifferences_BasicTypes(t *testing.T) {
 				Path:     "",
 				Expected: 42,
 				Actual:   24,
+			}},
+		},
+		{
+			name:     "Equal uintptr",
+			expected: uptr,
+			actual:   uptr,
+			want:     []fieldDiff{},
+		},
+		{
+			name:     "Different uintptr",
+			expected: uptr,
+			actual:   uptr + 1,
+			want: []fieldDiff{{
+				Path:     "",
+				Expected: uptr,
+				Actual:   uptr + 1,
 			}},
 		},
 		{

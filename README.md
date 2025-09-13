@@ -730,6 +730,11 @@ should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be at least 
 
 // Another example
 should.BeGreaterOrEqualTo(t, account.Balance, 0, should.WithMessage("Account balance cannot be negative"))
+
+// Message with placeholders
+should.BeGreaterOrEqualTo(t, account.Balance, 0, should.WithMessagef(
+    "Account balance cannot be negative: current balance is %.2f", account.Balance,
+))
 ```
 
 #### Stack Traces with `WithStackTrace`
@@ -792,7 +797,3 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-
-```
