@@ -286,6 +286,11 @@ func TestWrappers(t *testing.T) {
 		BeError(t, err)
 	})
 
+	t.Run("NotBeError passes", func(t *testing.T) {
+		t.Parallel()
+		NotBeError(t, nil)
+	})
+
 	t.Run("BeErrorAs passes", func(t *testing.T) {
 		t.Parallel()
 		var target *os.PathError

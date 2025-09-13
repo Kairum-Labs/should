@@ -225,6 +225,22 @@ func BeError(t testing.TB, err error, opts ...Option) {
 	assert.BeError(t, err)
 }
 
+// NotBeError - no error required
+//
+// Verifies that err is nil, ensuring successful operation.
+// Supports optional custom error messages via Option.
+//
+// Example:
+//
+// should.NotBeError(t, err)
+//
+// _, err = os.Open("/nonexistent/file.txt")
+// should.NotBeError(t, err, should.WithMessage("File should exist and be readable"))
+func NotBeError(t testing.TB, err error, opts ...Option) {
+	t.Helper()
+	assert.NotBeError(t, err)
+}
+
 // BeErrorAs reports a test failure if the provided error does not match
 // the target type using errors.As.
 //
