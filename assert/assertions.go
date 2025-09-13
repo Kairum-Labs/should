@@ -323,7 +323,7 @@ func BeError(t testing.TB, err error, opts ...Option) {
 //
 //	should.NotBeError(t, err)
 //
-// 	_, err = os.Open("/nonexistent/file.txt")
+//	_, err = os.Open("/nonexistent/file.txt")
 //	should.NotBeError(t, err, should.WithMessage("File should exist and be readable"))
 func NotBeError(t testing.TB, err error, opts ...Option) {
 	t.Helper()
