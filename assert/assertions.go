@@ -576,10 +576,31 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...Option) {
 	t.Helper()
 
-	diff := math.Abs(float64(actual) - float64(expected))
-	tol := float64(tolerance)
+	if tolerance < 0 {
+		fail(t, "Tolerance must be non-negative, got %v", tolerance)
+		return
+	}
 
-	if diff > tol {
+	actualF := float64(actual)
+	expectedF := float64(expected)
+	tolF := float64(tolerance)
+
+	if math.IsNaN(actualF) || math.IsNaN(expectedF) || math.IsNaN(tolF) {
+		fail(t, "Invalid input: actual=%v, expected=%v, tolerance=%v (NaN detected)", actual, expected, tolerance)
+		return
+	}
+
+	if math.IsInf(actualF, 0) || math.IsInf(expectedF, 0) {
+		if math.IsInf(actualF, 0) && math.IsInf(expectedF, 0) && math.Signbit(actualF) == math.Signbit(expectedF) {
+			return
+		}
+		fail(t, "Invalid input: actual=%v, expected=%v (Inf mismatch)", actual, expected)
+		return
+	}
+
+	diff := math.Abs(actualF - expectedF)
+
+	if diff > tolF {
 		errorMsg := formatBeWithinError(actual, expected, tolerance)
 		cfg := processOptions(opts...)
 		if cfg.Message != "" {

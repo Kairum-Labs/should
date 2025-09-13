@@ -3,6 +3,7 @@ package assert
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -1919,6 +1920,104 @@ func TestBeWithin(t *testing.T) {
 				errorCheck: func(t *testing.T, message string) {
 					if !strings.Contains(message, "Custom error message") {
 						t.Errorf("Expected custom message, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when tolerance is negative",
+				actual:     1.0,
+				expected:   1.0,
+				tolerance:  -0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Tolerance must be non-negative") {
+						t.Errorf("Expected negative tolerance error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when actual is NaN",
+				actual:     math.NaN(),
+				expected:   1.0,
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when expected is NaN",
+				actual:     1.0,
+				expected:   math.NaN(),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when tolerance is NaN",
+				actual:     1.0,
+				expected:   1.0,
+				tolerance:  math.NaN(),
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NaN detected") {
+						t.Errorf("Expected NaN detection error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Pass when both are +Inf",
+				actual:     math.Inf(1),
+				expected:   math.Inf(1),
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Pass when both are -Inf",
+				actual:     math.Inf(-1),
+				expected:   math.Inf(-1),
+				tolerance:  0.1,
+				shouldFail: false,
+			},
+			{
+				name:       "Fail when one is +Inf and other is -Inf",
+				actual:     math.Inf(1),
+				expected:   math.Inf(-1),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when actual is Inf and expected is finite",
+				actual:     math.Inf(1),
+				expected:   42.0,
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Fail when expected is Inf and actual is finite",
+				actual:     42.0,
+				expected:   math.Inf(1),
+				tolerance:  0.1,
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Inf mismatch") {
+						t.Errorf("Expected Inf mismatch error, got: %s", message)
 					}
 				},
 			},
