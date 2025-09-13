@@ -3766,16 +3766,16 @@ func TestFormatNotBeErrorMessage(t *testing.T) {
 
 	t.Run("Basic functionality", func(t *testing.T) {
 		t.Parallel()
-		tests := []struct{
-			name string
+		tests := []struct {
+			name      string
 			customMsg string
-			err error
-			contains []string
+			err       error
+			contains  []string
 		}{
 			{
-				name: "with customMsg",
+				name:      "with customMsg",
 				customMsg: "File doesn't exist",
-				err: errors.New("test error"),
+				err:       errors.New("test error"),
 				contains: []string{
 					"File doesn't exist",
 					"Expected no error, but got an error",
@@ -3784,9 +3784,9 @@ func TestFormatNotBeErrorMessage(t *testing.T) {
 				},
 			},
 			{
-				name: "empty customMsg",
+				name:      "empty customMsg",
 				customMsg: "",
-				err: errors.New("test error"),
+				err:       errors.New("test error"),
 				contains: []string{
 					"Expected no error, but got an error",
 					"Error: \"test error\"",

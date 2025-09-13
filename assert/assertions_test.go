@@ -2023,9 +2023,15 @@ func TestNotBeError(t *testing.T) {
 				err:        errors.New("test error"),
 				shouldFail: true,
 				errorCheck: func(t *testing.T, err error, message string) {
-					expected_err_msg := fmt.Sprintf("Expected nil, but got %T", err)
-					if !strings.Contains(message, expected_err_msg) {
-						t.Errorf("Expected an error message, got %s", message)
+					contains := []string{
+						"Expected no error, but got an error",
+						"Error: \"test error\"",
+						"Type: *errors.errorString",
+					}
+					for _, expected := range contains {
+						if !strings.Contains(message, expected) {
+							t.Errorf("Expected an error message, got %s", message)
+						}
 					}
 				},
 			},
@@ -2038,9 +2044,16 @@ func TestNotBeError(t *testing.T) {
 					if !strings.Contains(message, "Custom error message") {
 						t.Errorf("Expected custom message, got %s", message)
 					}
-					expected_err_msg := fmt.Sprintf("Expected nil, but got %T", err)
-					if !strings.Contains(message, expected_err_msg) {
-						t.Errorf("Expected default message, got %s", message)
+					contains := []string{
+						"Custom error message",
+						"Expected no error, but got an error",
+						"Error: \"test an error with a custom error message\"",
+						"Type: *errors.errorString",
+					}
+					for _, expected := range contains {
+						if !strings.Contains(message, expected) {
+							t.Errorf("Expected: %s, got: %s", expected, message)
+						}
 					}
 				},
 			},

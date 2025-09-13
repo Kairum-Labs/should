@@ -2438,13 +2438,12 @@ func formatNotBeErrorMessage(customMsg string, err error) string {
 	var msg strings.Builder
 
 	if customMsg != "" {
-		msg.WriteString(customMsg)
-		msg.WriteString("\n")
+		fmt.Fprintf(&msg, "%s\n", customMsg)
 	}
 
-	msg.WriteString("Expected no error, but got an error\n")
-	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", err.Error()))
-	msg.WriteString(fmt.Sprintf("Type: %T", err))
+	fmt.Fprintf(&msg, "Expected no error, but got an error\n")
+	fmt.Fprintf(&msg, "Error: \"%s\"\n", err.Error())
+	fmt.Fprintf(&msg, "Type: %T", err)
 
 	return msg.String()
 }

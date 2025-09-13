@@ -288,8 +288,7 @@ func TestWrappers(t *testing.T) {
 
 	t.Run("NotBeError passes", func(t *testing.T) {
 		t.Parallel()
-		var err error = nil
-		NotBeError(t, err)
+		NotBeError(t, nil)
 	})
 
 	t.Run("BeErrorAs passes", func(t *testing.T) {
