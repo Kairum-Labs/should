@@ -352,6 +352,24 @@ func BeLessOrEqualTo[T assert.Ordered](t testing.TB, actual T, expected T, opts 
 	assert.BeLessOrEqualTo(t, actual, expected, opts...)
 }
 
+// BeWithin reports a test failure if the actual value is not within the given tolerance of the expected value.
+//
+// This assertion works with both float32 and float64 types and provides detailed
+// error messages when the assertion fails. It is especially useful for testing
+// floating-point numbers where exact equality is unreliable due to precision issues.
+//
+// An optional custom error message can be provided using WithMessage.
+//
+// Example:
+//
+//	should.BeWithin(t, 3.14159, 3.14, 0.002)
+//
+//	should.BeWithin(t, 3.142, 3.14, 0.001, should.WithMessage("Pi approximation is outside the allowed range"))
+func BeWithin[T assert.Float](t testing.TB, actual T, expected T, tolerance T, opts ...Option) {
+	t.Helper()
+	assert.BeWithin(t, actual, expected, tolerance, opts...)
+}
+
 // BeInRange reports a test failure if the value is not within the specified range (inclusive).
 //
 // This assertion works with all numeric types and provides detailed
