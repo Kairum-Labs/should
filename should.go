@@ -34,7 +34,7 @@ type Option = assert.Option
 //
 //	should.BeGreaterThan(t, userAge, 18, should.WithMessage("User must be adult"))
 //
-// See also: WithMessagef for messages that include formatting placeholders.
+// See also: [WithMessagef] for messages that include formatting placeholders.
 func WithMessage(message string) Option {
 	return assert.WithMessage(message)
 }
