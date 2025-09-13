@@ -10,6 +10,7 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - dupword
     - staticcheck
     - unused
     - paralleltest
