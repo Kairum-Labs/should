@@ -461,7 +461,10 @@ should.BeError(t, err)
 
 // NotBeError - no error
 should.NotBeError(t, err)
-// Expected nil, but got an error
+// Expected no error, but got an error
+// Error: "something went wrong"
+// Type: *errors.errorString
+
 
 // BeErrorAs - type not found
 var pathErr *os.PathError
