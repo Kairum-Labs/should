@@ -230,6 +230,132 @@ func TestBeEqual_PrimitiveFormatting(t *testing.T) {
 	}
 }
 
+func TestBeEqual_TypeDifferences(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		actual          interface{}
+		expected        interface{}
+		wantTypeInfo    bool
+		expectedContent []string
+	}{
+		{
+			name:         "int32 vs int64 with same value",
+			actual:       int32(42),
+			expected:     int64(42),
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"expected: 42",
+				"actual  : 42",
+				"Field differences:",
+				"└─ : int64 ≠ int32",
+			},
+		},
+		{
+			name:         "float32 vs float64 with same value",
+			actual:       float32(3.14),
+			expected:     float64(3.14),
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"expected: 3.14",
+				"actual  : 3.14",
+				"Field differences:",
+				"└─ : float64 ≠ float32",
+			},
+		},
+		{
+			name:         "int vs int32 with same value",
+			actual:       int(100),
+			expected:     int32(100),
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"expected: 100",
+				"actual  : 100",
+				"Field differences:",
+				"└─ : int32 ≠ int",
+			},
+		},
+		{
+			name:         "uint vs int with same value",
+			actual:       uint(50),
+			expected:     int(50),
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"expected: 50",
+				"actual  : 50",
+				"Field differences:",
+				"└─ : int ≠ uint",
+			},
+		},
+		{
+			name:         "same type and value should pass",
+			actual:       int64(42),
+			expected:     int64(42),
+			wantTypeInfo: false,
+		},
+		{
+			name:         "uintptr vs uint64 with same value",
+			actual:       uintptr(0x1000),
+			expected:     uint64(0x1000),
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"expected: 4096",
+				"actual  : 4096",
+				"Field differences:",
+				"└─ : uint64 ≠ uintptr",
+			},
+		},
+		{
+			name:         "rune vs int32 (should be same type)",
+			actual:       rune('A'),
+			expected:     int32(65),
+			wantTypeInfo: false,
+		},
+		{
+			name:         "int pointer vs int value",
+			actual:       func() *int { i := 42; return &i }(),
+			expected:     42,
+			wantTypeInfo: true,
+			expectedContent: []string{
+				"Not equal:",
+				"Field differences:",
+				"└─ : int ≠ ptr",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockT := &mockT{}
+			BeEqual(mockT, tt.actual, tt.expected)
+
+			if tt.wantTypeInfo {
+				if !mockT.Failed() {
+					t.Fatal("expected BeEqual to fail due to type difference, but it passed")
+				}
+
+				for _, expectedPart := range tt.expectedContent {
+					if !strings.Contains(mockT.message, expectedPart) {
+						t.Errorf("expected error message to contain %q, got:\n%s", expectedPart, mockT.message)
+					}
+				}
+			} else {
+				if mockT.Failed() {
+					t.Fatalf("expected BeEqual to pass with same type and value, but it failed with: %s", mockT.message)
+				}
+			}
+		})
+	}
+}
+
 // === Tests for NotBeEqual ===
 
 func TestNotBeEqual(t *testing.T) {

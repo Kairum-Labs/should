@@ -427,7 +427,7 @@ func BeSorted[T assert.Sortable](t testing.TB, actual []T, opts ...Option) {
 //	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.BeEqual(t, actual, expected, opts...)
 }
@@ -445,7 +445,7 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 //	should.NotBeEqual(t, 42, 43)
 //
 //	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
-func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	assert.NotBeEqual(t, actual, expected, opts...)
 }
