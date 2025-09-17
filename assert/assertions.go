@@ -741,7 +741,7 @@ func BeSameTime(t testing.TB, actual, expected time.Time, opts ...Option) {
 //	should.BeEqual(t, user, expectedUser, should.WithMessage("User objects should match"))
 //
 // Works with any comparable types. Uses deep comparison for complex objects.
-func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
@@ -754,14 +754,26 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 		return
 	}
 
-	// for primitive types, show a simple not equal message
-	if isPrimitive(reflect.ValueOf(actual).Kind()) {
+	actualValue := reflect.ValueOf(actual)
+	expectedValue := reflect.ValueOf(expected)
+
+	actualType := actualValue.Type()
+	expectedType := expectedValue.Type()
+	typesAreDifferent := actualType != expectedType
+
+	// For primitive types, handle type differences specially
+	if isPrimitive(actualValue.Kind()) && isPrimitive(expectedValue.Kind()) {
 		message := fmt.Sprintf(
 			"%sNot equal:\nexpected: %v\nactual  : %v",
 			customMsg,
 			expected,
 			actual,
 		)
+
+		if typesAreDifferent {
+			message += fmt.Sprintf("\nField differences:\n  └─ : %s ≠ %s", expectedType, actualType)
+		}
+
 		fail(t, message)
 		return
 	}
@@ -800,7 +812,7 @@ func BeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
 //	should.NotBeEqual(t, 42, 43)
 //
 //	should.NotBeEqual(t, user, expectedUser, should.WithMessage("User objects should not match"))
-func NotBeEqual[T any](t testing.TB, actual, expected T, opts ...Option) {
+func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 	if reflect.DeepEqual(actual, expected) {
 		cfg := processOptions(opts...)
