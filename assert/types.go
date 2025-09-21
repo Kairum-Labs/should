@@ -107,3 +107,10 @@ type sortCheckResult struct {
 	Violations []sortViolation
 	Total      int
 }
+
+// caseMismatchResult holds the result of searching for an exact case mismatch
+type caseMismatchResult struct {
+	Found     bool
+	Index     int
+	Substring string
+}

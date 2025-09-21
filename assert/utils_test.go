@@ -2410,9 +2410,9 @@ func TestFormatContainSubstringError(t *testing.T) {
 		result := formatContainSubstringError("Hello, World!", "planet", "")
 
 		expectedParts := []string{
-			"Expected string to contain 'planet', but it was not found",
-			"Substring   : 'planet'",
-			"Actual   : 'Hello, World!'",
+			`Expected string to contain "planet", but it was not found`,
+			`Substring   : "planet"`,
+			`Actual   : "Hello, World!"`,
 		}
 
 		for _, part := range expectedParts {
@@ -2427,8 +2427,8 @@ func TestFormatContainSubstringError(t *testing.T) {
 		result := formatContainSubstringError("Hello", "", "")
 
 		expectedParts := []string{
-			"Expected string to contain '<empty>', but it was not found",
-			"Substring   : '<empty>'",
+			`Expected string to contain "<empty>", but it was not found`,
+			`Substring   : "<empty>"`,
 		}
 
 		for _, part := range expectedParts {
@@ -2443,8 +2443,8 @@ func TestFormatContainSubstringError(t *testing.T) {
 		result := formatContainSubstringError("", "test", "")
 
 		expectedParts := []string{
-			"Expected string to contain 'test', but it was not found",
-			"Actual   : '<empty>'",
+			`Expected string to contain "test", but it was not found`,
+			`Actual   : "<empty>"`,
 		}
 
 		for _, part := range expectedParts {
@@ -2547,6 +2547,172 @@ func TestFormatContainSubstringError(t *testing.T) {
 			t.Errorf("Expected result to contain custom note message")
 		}
 	})
+}
+
+func TestFindExactCaseMismatch(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name     string
+		text     string
+		substr   string
+		exists   bool
+		position int
+		found    string
+	}{
+		{
+			name:     "Found exact case mismatch",
+			text:     "Hello, WORLD!",
+			substr:   "world",
+			exists:   true,
+			position: 7,
+			found:    "WORLD",
+		},
+		{
+			name:     "Found case mismatch at beginning",
+			text:     "HELLO world",
+			substr:   "hello",
+			exists:   true,
+			position: 0,
+			found:    "HELLO",
+		},
+		{
+			name:     "Found case mismatch with complex text",
+			text:     `Get "http://127.0.0.1:56748": context deadline exceeded (Client.Timeout exceeded while awaiting headers)`,
+			substr:   "timeout",
+			exists:   true,
+			position: 64,
+			found:    "Timeout",
+		},
+		{
+			name:     "No case mismatch - exact match",
+			text:     "Hello, world!",
+			substr:   "world",
+			exists:   false,
+			position: -1,
+			found:    "",
+		},
+		{
+			name:     "No case mismatch - substring not found",
+			text:     "Hello, world!",
+			substr:   "planet",
+			exists:   false,
+			position: -1,
+			found:    "",
+		},
+		{
+			name:     "Empty substring",
+			text:     "Hello, world!",
+			substr:   "",
+			exists:   false,
+			position: -1,
+			found:    "",
+		},
+		{
+			name:     "Simple emoji case mismatch",
+			text:     "Hello 🚀 World",
+			substr:   "HELLO 🚀",
+			exists:   true,
+			position: 0,
+			found:    "Hello 🚀",
+		},
+		{
+			name:     "Complex emoji - Astronaut (ZWJ sequence)",
+			text:     "The 🧑‍🚀 is ready",
+			substr:   "THE 🧑‍🚀",
+			exists:   true,
+			position: 0,
+			found:    "The 🧑‍🚀",
+		},
+		{
+			name:     "Complex emoji - Astronaut partial match",
+			text:     "The 🧑‍🚀 is ready",
+			substr:   "THE 🧑",
+			exists:   true,
+			position: 0,
+			found:    "The 🧑",
+		},
+		{
+			name:     "Mixed emoji and text",
+			text:     "I ❤️ Go programming 🎉",
+			substr:   "❤️ go PROGRAMMING",
+			exists:   true,
+			position: 2,
+			found:    "❤️ Go programming",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := findExactCaseMismatch(tc.text, tc.substr)
+			if result.Found != tc.exists {
+				t.Fatalf("Expected exists=%v, got %v", tc.exists, result.Found)
+			}
+			if result.Index != tc.position {
+				t.Errorf("Expected position %d, got %d", tc.position, result.Index)
+			}
+			if result.Substring != tc.found {
+				t.Errorf("Expected found=%q, got %q", tc.found, result.Substring)
+			}
+		})
+	}
+}
+
+func TestFormatSimpleCaseMismatchError(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name          string
+		substr        string
+		found         string
+		pos           int
+		expectedParts []string
+	}{
+		{
+			name:   "Basic case mismatch error",
+			substr: "world",
+			found:  "WORLD",
+			pos:    7,
+			expectedParts: []string{
+				`Expected string to contain "world", but found case difference`,
+				`Substring: "world"`,
+				`Found    : "WORLD" at position 7`,
+				"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+			},
+		},
+		{
+			name:   "Case mismatch at position 0",
+			substr: "hello",
+			found:  "HELLO",
+			pos:    0,
+			expectedParts: []string{
+				`Found    : "HELLO" at position 0`,
+			},
+		},
+		{
+			name:   "With timeout example from prompt",
+			substr: "timeout",
+			found:  "Timeout",
+			pos:    64,
+			expectedParts: []string{
+				`Expected string to contain "timeout", but found case difference`,
+				`Substring: "timeout"`,
+				`Found    : "Timeout" at position 64`,
+				"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := formatSimpleCaseMismatchError(tc.substr, tc.found, tc.pos)
+			for _, part := range tc.expectedParts {
+				if !strings.Contains(result, part) {
+					t.Errorf("Expected result to contain %q, but got:\n%s", part, result)
+				}
+			}
+		})
+	}
 }
 
 func TestFindSimilarSubstrings(t *testing.T) {
