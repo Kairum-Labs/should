@@ -6172,7 +6172,7 @@ func TestContainSubstring_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
 	failed, message := assertFails(t, func(t testing.TB) {
-		ContainSubstring(t, "Hello, world!", "planet", WithMessage("String should contain 'planet'"))
+		ContainSubstring(t, "Hello, world!", "planet", WithMessage(`String should contain "planet"`))
 	})
 
 	if !failed {
@@ -6180,8 +6180,34 @@ func TestContainSubstring_WithCustomMessage(t *testing.T) {
 	}
 
 	expectedParts := []string{
-		"String should contain 'planet'",
-		"Expected string to contain 'planet', but it was not found",
+		`String should contain "planet"`,
+		`Expected string to contain "planet", but it was not found`,
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestContainSubstring_CaseMismatchWithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainSubstring(t, "Hello, WORLD!", "world", WithMessage("Custom case mismatch error"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Custom case mismatch error",
+		`Expected string to contain "world", but found case difference`,
+		`Substring: "world"`,
+		`Found    : "WORLD" at position 7`,
+		"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
 	}
 
 	for _, part := range expectedParts {
@@ -6233,9 +6259,9 @@ func TestContainSubstring(t *testing.T) {
 				substring:  "planet",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Expected string to contain 'planet', but it was not found") ||
-						!strings.Contains(message, "Substring   : 'planet'") ||
-						!strings.Contains(message, "Actual   : 'Hello, world!'") {
+					if !strings.Contains(message, `Expected string to contain "planet", but it was not found`) ||
+						!strings.Contains(message, `Substring   : "planet"`) ||
+						!strings.Contains(message, `Actual   : "Hello, world!"`) {
 						t.Errorf("Incorrect error message:\n%s", message)
 					}
 				},
@@ -6245,6 +6271,23 @@ func TestContainSubstring(t *testing.T) {
 				actual:     "Hello, world!",
 				substring:  "",
 				shouldFail: false,
+			},
+			{
+				name:       "should use fall-back error with case mismatch note when exact pattern not found",
+				actual:     "Connection failed: TİMEOUT", // Turkish İ creates case folding edge case
+				substring:  "timeout",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					expectedParts := []string{
+						`Expected string to contain "timeout", but it was not found`,
+						"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+					}
+					for _, part := range expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain %q, but got:\n%s", part, message)
+						}
+					}
+				},
 			},
 		}
 
@@ -6297,8 +6340,54 @@ func TestContainSubstring(t *testing.T) {
 				substring:  "world",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Note: Case mismatch detected (use should.WithIgnoreCase() if intended)") {
-						t.Errorf("Expected message to contain note message, but got %q", message)
+					expectedParts := []string{
+						`Expected string to contain "world", but found case difference`,
+						`Substring: "world"`,
+						`Found    : "WORLD" at position 7`,
+						`Note: Case mismatch detected (use should.WithIgnoreCase() if intended)`,
+					}
+					for _, part := range expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain %q, but got:\n%s", part, message)
+						}
+					}
+				},
+			},
+			{
+				name:       "should show simplified case mismatch error for mixed case",
+				actual:     `Get "http://127.0.0.1:56748": context deadline exceeded (Client.Timeout exceeded while awaiting headers)`,
+				substring:  "timeout",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					expectedParts := []string{
+						`Expected string to contain "timeout", but found case difference`,
+						`Substring: "timeout"`,
+						`Found    : "Timeout" at position 64`,
+						"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+					}
+					for _, part := range expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain %q, but got:\n%s", part, message)
+						}
+					}
+				},
+			},
+			{
+				name:       "should show simplified case mismatch error at beginning",
+				actual:     "HELLO world",
+				substring:  "hello",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					expectedParts := []string{
+						`Expected string to contain "hello", but found case difference`,
+						`Substring: "hello"`,
+						`Found    : "HELLO" at position 0`,
+						"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+					}
+					for _, part := range expectedParts {
+						if !strings.Contains(message, part) {
+							t.Errorf("Expected message to contain %q, but got:\n%s", part, message)
+						}
 					}
 				},
 			},
@@ -6378,7 +6467,7 @@ func TestContainSubstring(t *testing.T) {
 				substring:  "test",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "Actual   : '<empty>'") {
+					if !strings.Contains(message, `Actual   : "<empty>"`) {
 						t.Errorf("Expected error message to show '<empty>' for empty actual, got:\n%s", message)
 					}
 				},
