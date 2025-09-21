@@ -45,3 +45,18 @@ jobs:
             exit 1
           fi
 
+      - name: Check for benchmark baseline
+        id: baseline-check
+        run: |
+          if [ -f "benchmark.baseline" ]; then
+            echo "baseline-exists=true" >> $GITHUB_OUTPUT
+            echo "Benchmark baseline found"
+          else
+            echo "baseline-exists=false" >> $GITHUB_OUTPUT
+            echo "No benchmark baseline found, skipping regression check"
+          fi
+
+      - name: Compare benchmarks for regressions
+        if: steps.baseline-check.outputs.baseline-exists == 'true'
+        run: |
+          make bench-compare

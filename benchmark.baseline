@@ -1,0 +1,29 @@
+PASS
+ok  	github.com/Kairum-Labs/should	0.678s
+goos: windows
+goarch: amd64
+pkg: github.com/Kairum-Labs/should/assert
+cpu: AMD Ryzen 3 2200U with Radeon Vega Mobile Gfx  
+BenchmarkBeEqual_Primitives_Int_Same-4              	 2636007	       410.3 ns/op	      48 B/op	       1 allocs/op
+BenchmarkBeEqual_Primitives_Int_Different-4         	 1645795	       731.8 ns/op	     176 B/op	       5 allocs/op
+BenchmarkBeEqual_Primitives_String_Same-4           	 2346787	       500.6 ns/op	      80 B/op	       3 allocs/op
+BenchmarkBeEqual_Primitives_String_Different-4      	 1685794	       711.5 ns/op	     240 B/op	       7 allocs/op
+BenchmarkBeEqual_ComplexStruct_Same-4               	  568078	      2433 ns/op	     320 B/op	      12 allocs/op
+BenchmarkBeEqual_Slice_Small-4                      	 1531788	       789.2 ns/op	      96 B/op	       3 allocs/op
+BenchmarkBeEqual_Slice_Large-4                      	   60777	     23215 ns/op	      96 B/op	       3 allocs/op
+BenchmarkBeEqual_Map_Small-4                        	 1000000	      1767 ns/op	     144 B/op	      10 allocs/op
+BenchmarkBeEqual_Map_Large-4                        	  176282	      6141 ns/op	     880 B/op	      79 allocs/op
+BenchmarkContainSubstring_Short_Found_Beginning-4   	 3162488	       373.8 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_Short_Found_Middle-4      	 3091700	       371.8 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_Short_Found_End-4         	 2776363	       502.8 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_Short_NotFound-4          	    2935	    450055 ns/op	  366243 B/op	    3444 allocs/op
+BenchmarkContainSubstring_Medium_Found-4            	 3193426	       391.2 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_Medium_NotFound-4         	     236	   6918878 ns/op	 4189473 B/op	   39238 allocs/op
+BenchmarkContainSubstring_Long_Found-4              	 2530428	       488.6 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_Long_NotFound-4           	      18	  85545717 ns/op	58967297 B/op	  552339 allocs/op
+BenchmarkContainSubstring_VeryLong_Found-4          	 3073276	       423.8 ns/op	      48 B/op	       1 allocs/op
+BenchmarkContainSubstring_VeryLong_NotFound-4       	       1	1035307400 ns/op	732286336 B/op	 6859354 allocs/op
+BenchmarkContainSubstring_CaseDifference-4          	    6610	    207139 ns/op	  129398 B/op	    2212 allocs/op
+BenchmarkContainSubstring_WithIgnoreCase-4          	 1480332	       756.3 ns/op	     120 B/op	       3 allocs/op
+PASS
+ok  	github.com/Kairum-Labs/should/assert	36.805s

@@ -2,8 +2,6 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 
-/assert/benchmark_test.go
-
 demo_test.go
 
 
