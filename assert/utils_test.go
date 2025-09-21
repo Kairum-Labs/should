@@ -2624,6 +2624,14 @@ func TestFindExactCaseMismatch(t *testing.T) {
 			found:    "The 🧑‍🚀",
 		},
 		{
+			name:     "Complex emoji - Astronaut partial match",
+			text:     "The 🧑‍🚀 is ready",
+			substr:   "THE 🧑",
+			exists:   true,
+			position: 0,
+			found:    "The 🧑",
+		},
+		{
 			name:     "Mixed emoji and text",
 			text:     "I ❤️ Go programming 🎉",
 			substr:   "❤️ go PROGRAMMING",
