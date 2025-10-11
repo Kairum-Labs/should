@@ -27,6 +27,127 @@ type edgeError struct{ msg string }
 
 func (e edgeError) Error() string { return e.msg }
 
+// === Tests for failWithOptions ===
+
+func TestFailWithOptions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		config           *Config
+		format           string
+		args             []any
+		expectedExact    string   // for exact match
+		expectedContains []string // for partial matches
+		verifyOrder      bool     // verify custom message appears before default message
+	}{
+		{
+			name:          "without custom message",
+			config:        &Config{},
+			format:        "Expected condition failed",
+			args:          nil,
+			expectedExact: "Expected condition failed",
+		},
+		{
+			name:   "with custom message",
+			config: &Config{Message: "Custom error message"},
+			format: "Expected condition failed",
+			args:   nil,
+			expectedContains: []string{
+				"Custom error message",
+				"Expected condition failed",
+			},
+			verifyOrder: true,
+		},
+		{
+			name:          "with format args",
+			config:        &Config{},
+			format:        "Expected %d to be greater than %d",
+			args:          []any{5, 10},
+			expectedExact: "Expected 5 to be greater than 10",
+		},
+		{
+			name:   "with custom message and format args",
+			config: &Config{Message: "Age validation failed"},
+			format: "Expected age %d to be at least %d",
+			args:   []any{16, 18},
+			expectedContains: []string{
+				"Age validation failed",
+				"Expected age 16 to be at least 18",
+			},
+		},
+		{
+			name:          "with nil config",
+			config:        nil,
+			format:        "Expected condition failed",
+			args:          nil,
+			expectedExact: "Expected condition failed",
+		},
+		{
+			name:          "with empty custom message",
+			config:        &Config{Message: ""},
+			format:        "Expected condition failed",
+			args:          nil,
+			expectedExact: "Expected condition failed",
+		},
+		{
+			name:   "with multiline messages",
+			config: &Config{Message: "Validation failed:\n- Age is too low\n- Missing required field"},
+			format: "Expected user to be valid\nDetails: Invalid age",
+			args:   nil,
+			expectedContains: []string{
+				"Validation failed:",
+				"- Age is too low",
+				"- Missing required field",
+				"Expected user to be valid",
+				"Details: Invalid age",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			failed, message := assertFails(t, func(t testing.TB) {
+				failWithOptions(t, tt.config, tt.format, tt.args...)
+			})
+
+			if !failed {
+				t.Fatal("Expected test to fail, but it passed")
+			}
+
+			// Check exact match if provided
+			if tt.expectedExact != "" {
+				if message != tt.expectedExact {
+					t.Errorf("Expected message: %q\nGot: %q", tt.expectedExact, message)
+				}
+			}
+
+			// Check partial matches if provided
+			for _, part := range tt.expectedContains {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+				}
+			}
+
+			// Verify order if requested
+			if tt.verifyOrder && len(tt.expectedContains) >= 2 {
+				customIndex := strings.Index(message, tt.expectedContains[0])
+				defaultIndex := strings.Index(message, tt.expectedContains[1])
+
+				if customIndex == -1 || defaultIndex == -1 {
+					t.Fatal("Both messages should be present")
+				}
+
+				if customIndex > defaultIndex {
+					t.Error("Custom message should appear before default message")
+				}
+			}
+		})
+	}
+}
+
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
 	t.Parallel()
 
@@ -1109,6 +1230,61 @@ func TestBeEmpty_WithNilInterface(t *testing.T) {
 
 	var nilInterface interface{}
 	BeEmpty(t, nilInterface)
+}
+
+func TestBeEmpty_Fails_WithNonNilPointer(t *testing.T) {
+	t.Parallel()
+
+	value := 42
+	ptr := &value
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEmpty(t, ptr)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected value to be empty, but it was not",
+		"Type",
+		"*int",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestBeEmpty_Fails_WithNonNilPointer_CustomMessage(t *testing.T) {
+	t.Parallel()
+
+	value := 42
+	ptr := &value
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEmpty(t, ptr, WithMessage("Pointer should be nil"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Pointer should be nil",
+		"Expected value to be empty, but it was not",
+		"Type",
+		"*int",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
 }
 
 // === Tests for NotBeEmpty ===
