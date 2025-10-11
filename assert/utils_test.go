@@ -3767,30 +3767,25 @@ func TestFormatNotBeErrorMessage(t *testing.T) {
 	t.Run("Basic functionality", func(t *testing.T) {
 		t.Parallel()
 		tests := []struct {
-			name      string
-			customMsg string
-			err       error
-			contains  []string
+			name     string
+			err      error
+			contains []string
 		}{
 			{
-				name:      "with customMsg",
-				customMsg: "File doesn't exist",
-				err:       errors.New("test error"),
+				name: "standard error",
+				err:  errors.New("test error"),
 				contains: []string{
-					"File doesn't exist",
 					"Expected no error, but got an error",
 					"Error: \"test error\"",
 					"Type: *errors.errorString",
 				},
 			},
 			{
-				name:      "empty customMsg",
-				customMsg: "",
-				err:       errors.New("test error"),
+				name: "different error type",
+				err:  fmt.Errorf("wrapped error: %w", errors.New("inner error")),
 				contains: []string{
 					"Expected no error, but got an error",
-					"Error: \"test error\"",
-					"Type: *errors.errorString",
+					"Error: \"wrapped error: inner error\"",
 				},
 			},
 		}
@@ -3798,7 +3793,7 @@ func TestFormatNotBeErrorMessage(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				result := formatNotBeErrorMessage(tt.customMsg, tt.err)
+				result := formatNotBeErrorMessage(tt.err)
 				for _, expected := range tt.contains {
 					if !strings.Contains(result, expected) {
 						t.Errorf("Expected %q in result: \n%s", expected, result)
