@@ -974,12 +974,9 @@ func formatBeWithinError[T Float](actual, expected, tolerance T) string {
 	var msg strings.Builder
 
 	msg.WriteString(fmt.Sprintf(
-		"Expected value to be within ±"+format+" of "+format+", but it was not:\n",
-		toleranceF, expectedF))
-	msg.WriteString(fmt.Sprintf("  Actual:    "+format+"\n", actualF))
-	msg.WriteString(fmt.Sprintf("  Expected:  "+format+"\n", expectedF))
-	msg.WriteString(fmt.Sprintf("  Tolerance: ±"+format+"\n", toleranceF))
-	msg.WriteString(fmt.Sprintf("  Difference: "+format, diffF))
+		"Expected "+format+" to be within ±"+format+" of "+format+"\n",
+		actualF, toleranceF, expectedF))
+	msg.WriteString(fmt.Sprintf("Difference: "+format, diffF))
 
 	if toleranceF > 0 {
 		excess := ((diffF - toleranceF) / toleranceF)

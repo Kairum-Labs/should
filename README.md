@@ -193,11 +193,8 @@ should.BeLessOrEqualTo(t, 15, 10)
 
 // Fails because 3.142 is not within ±0.001 of 3.140.
 should.BeWithin(t, 3.142, 3.14, 0.001)
-//Expected value to be within ±0.001000 of 3.140000, but it was not:
-//    Actual    : 3.142000
-//    Expected  : 3.140000
-//    Difference: ±0.001000
-//    Tolerance : 0.002000 (100.00% greater than tolerance)
+// Expected 3.142000 to be within ±0.001000 of 3.140000
+// Difference: 0.002000 (100.00% greater than tolerance)
 
 // Range validation (fails when value is below or above the range)
 should.BeInRange(t, 16, 18, 65)
