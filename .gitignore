@@ -2,8 +2,6 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 
-/assert/benchmark_test.go
-
 demo_test.go
 
 
@@ -23,7 +21,10 @@ coverage.*
 *.coverprofile
 profile.cov
 coverage.txt
-*.txt
+
+# Benchmark files (environment-specific, should not be committed)
+benchmark.baseline
+benchmark.current
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

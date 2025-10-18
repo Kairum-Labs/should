@@ -45,3 +45,115 @@ jobs:
             exit 1
           fi
 
+  benchmark:
+    name: Benchmark Regression Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Run base benchmarks
+        run: |
+          go mod download
+          go test -bench=. -benchmem -run=^$ -count=3 ./... 2>&1 | tee benchmark.baseline
+          echo "=== Base branch benchmark results ==="
+          cat benchmark.baseline
+
+      - name: Upload baseline benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline
+          path: benchmark.baseline
+          retention-days: 1
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Download baseline benchmark
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-baseline
+
+      - name: Run PR benchmarks
+        run: |
+          go mod download
+          go test -bench=. -benchmem -run=^$ -count=3 ./... 2>&1 | tee benchmark.current
+          echo "=== PR branch benchmark results ==="
+          cat benchmark.current
+
+      - name: Verify benchmark files
+        run: |
+          echo "Checking benchmark files..."
+          ls -lah benchmark.*
+          echo "=== Baseline file content check ==="
+          if grep -q "^Benchmark" benchmark.baseline; then
+            echo "✓ Baseline file contains benchmark results"
+          else
+            echo "✗ Baseline file does NOT contain benchmark results"
+            echo "File content:"
+            cat benchmark.baseline
+          fi
+          echo "=== Current file content check ==="
+          if grep -q "^Benchmark" benchmark.current; then
+            echo "✓ Current file contains benchmark results"
+          else
+            echo "✗ Current file does NOT contain benchmark results"
+            echo "File content:"
+            cat benchmark.current
+          fi
+
+      - name: Compare benchmarks
+        id: compare
+        continue-on-error: true
+        run: |
+          chmod +x ./scripts/compare-benchmarks.sh
+          if ./scripts/compare-benchmarks.sh benchmark.baseline benchmark.current 20 | tee comparison.txt; then
+            echo "regression=false" >> $GITHUB_OUTPUT
+          else
+            echo "regression=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: |
+            benchmark.baseline
+            benchmark.current
+            comparison.txt
+
+      - name: Show benchmark comparison results
+        if: always()
+        run: |
+          echo "## Benchmark Comparison Results"
+          if [ "${{ steps.compare.outputs.regression }}" = "true" ]; then
+            echo "Performance regressions detected!"
+          else
+            echo "No significant regressions detected."
+          fi
+          echo ""
+          echo "### Comparison Details"
+          if [ -f comparison.txt ]; then
+            cat comparison.txt
+          else
+            echo "Comparison file not found."
+          fi
+          echo ""
+
+      - name: Fail if regression detected
+        if: steps.compare.outputs.regression == 'true'
+        run: |
+          echo "Performance regression detected - failing build"
+          exit 1
