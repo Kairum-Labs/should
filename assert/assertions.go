@@ -1168,8 +1168,32 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 		return
 	}
 
+	// Check for exact case mismatch first (only when ignoreCase is false)
+	var actualLower, substringLower string
+	var hasInsensitiveMatch bool
+
+	if !cfg.IgnoreCase {
+		actualLower = strings.ToLower(actual)
+		substringLower = strings.ToLower(substring)
+		hasInsensitiveMatch = strings.Contains(actualLower, substringLower)
+
+		if hasInsensitiveMatch {
+			if result := findExactCaseMismatch(
+				actual, substring); result.Found {
+				errorMsg := formatSimpleCaseMismatchError(substring, result.Substring, result.Index)
+				if cfg.Message != "" {
+					fail(t, "%s\n%s", cfg.Message, errorMsg)
+					return
+				}
+				fail(t, errorMsg)
+				return
+			}
+		}
+	}
+
+	// Fall back to detailed error message for other types of mismatches
 	noteMsg := ""
-	if !cfg.IgnoreCase && strings.Contains(strings.ToLower(actual), strings.ToLower(substring)) {
+	if !cfg.IgnoreCase && hasInsensitiveMatch {
 		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 

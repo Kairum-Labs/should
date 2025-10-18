@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // isSliceOrArray checks if the provided value is a slice or an array.
@@ -1350,6 +1351,56 @@ func formatEndsWithError(actual string, expected string, actualEndSufix string, 
 	return ""
 }
 
+// findExactCaseMismatch finds the exact case mismatch for a substring within a string
+// Returns the position and the found substring if there's an exact case-only difference
+func findExactCaseMismatch(actual, substring string) caseMismatchResult {
+	if len(substring) == 0 {
+		return caseMismatchResult{Found: false, Index: -1, Substring: ""}
+	}
+
+	actualRunes := []rune(actual)
+	substringRunes := []rune(substring)
+
+	actualLower := strings.ToLower(actual)
+	substringLower := strings.ToLower(substring)
+
+	// Check if there's a case-insensitive match
+	byteIndex := strings.Index(actualLower, substringLower)
+	if byteIndex == -1 {
+		return caseMismatchResult{Found: false, Index: -1, Substring: ""}
+	}
+
+	// Convert byte index to rune index
+	runeIndex := utf8.RuneCountInString(actual[:byteIndex])
+
+	foundRunes := actualRunes[runeIndex : runeIndex+len(substringRunes)]
+	foundSubstring := string(foundRunes)
+
+	// Check if it's exactly the same except for case
+	if strings.EqualFold(foundSubstring, substring) && foundSubstring != substring {
+		return caseMismatchResult{Found: true, Index: runeIndex, Substring: foundSubstring}
+	}
+
+	return caseMismatchResult{Found: false, Index: -1, Substring: ""}
+}
+
+// formatSimpleCaseMismatchError formats a simplified error message for exact case mismatches
+func formatSimpleCaseMismatchError(substring, foundSubstring string, position int) string {
+	// Clean empty strings for display
+	displayNeedle := substring
+	displayFound := foundSubstring
+
+	var b strings.Builder
+	fmt.Fprintf(&b,
+		"Expected string to contain %q, but found case difference\n"+
+			"Substring: %q\n"+
+			"Found    : %q at position %d\n"+
+			"Note: Case mismatch detected (use should.WithIgnoreCase() if intended)",
+		displayNeedle, displayNeedle, displayFound, position,
+	)
+	return b.String()
+}
+
 // formatContainSubstringError formats a detailed error message for ContainSubstring assertions.
 func formatContainSubstringError(actual string, substring string, noteMsg string) string {
 	var msg strings.Builder
@@ -1366,15 +1417,15 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 		displayNeedle = "<empty>"
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected string to contain '%s', but it was not found", displayNeedle))
-	msg.WriteString(fmt.Sprintf("\nSubstring   : '%s'", displayNeedle))
+	msg.WriteString(fmt.Sprintf("Expected string to contain %q, but it was not found", displayNeedle))
+	msg.WriteString(fmt.Sprintf("\nSubstring   : %q", displayNeedle))
 
 	// Handle very long strings with multiline formatting
 	if len(actual) > 200 || strings.Contains(actual, "\n") {
 		msg.WriteString(fmt.Sprintf("\nActual   : (length: %d)", len(actual)))
 		msg.WriteString(fmt.Sprintf("\n%s", formatMultilineString(actual)))
 	} else {
-		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", displayActual))
+		msg.WriteString(fmt.Sprintf("\nActual   : %q", displayActual))
 	}
 
 	// Add context for large substrings

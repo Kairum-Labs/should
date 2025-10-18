@@ -373,9 +373,9 @@ should.ContainSubstring(t, "Hello, World!", "World")
 // Case-sensitive by default
 should.ContainSubstring(t, "Hello, World!", "world")
 // Output:
-// Expected string to contain 'world', but it was not found
-// Substring   : 'world'
-// Actual   : 'Hello, World!'
+// Expected string to contain "world", but found case difference
+// Substring: "world"
+// Found    : "World" at position 7
 // Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
 
 // Case-insensitive option
@@ -384,9 +384,9 @@ should.ContainSubstring(t, "Hello, World!", "world", should.WithIgnoreCase())
 // Typo detection for short substrings (≤20 characters)
 should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
 // Output:
-// Expected string to contain 'beatiful', but it was not found
-// Substring   : 'beatiful'
-// Actual   : 'Hello, beautiful world!'
+// Expected string to contain "beatiful", but it was not found
+// Substring   : "beatiful"
+// Actual   : "Hello, beautiful world!"
 //
 // Similar substring found:
 //   └─ 'beautiful' at position 7 - 1 char diff
@@ -394,9 +394,9 @@ should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
 // Multiple similar matches
 should.ContainSubstring(t, "test testing tester", "tets")
 // Output:
-// Expected string to contain 'tets', but it was not found
-// Substring   : 'tets'
-// Actual   : 'test testing tester'
+// Expected string to contain "tets", but it was not found
+// Substring   : "tets"
+// Actual   : "test testing tester"
 //
 // Similar substrings found:
 //   └─ 'test' at position 0 - 1 char diff
@@ -409,8 +409,8 @@ want to search for in our test assertions.`
 
 should.ContainSubstring(t, longText, "nonexistent")
 // Output:
-// Expected string to contain 'nonexistent', but it was not found
-// Substring   : 'nonexistent'
+// Expected string to contain "nonexistent", but it was not found
+// Substring   : "nonexistent"
 // Actual   : (length: 153)
 // 1. This is a very long text that spans multiple lines
 // 2. and contains various keywords and phrases that we might
