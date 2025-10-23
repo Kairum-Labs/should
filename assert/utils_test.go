@@ -3989,9 +3989,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  10.0,
 				tolerance: 0.1,
 				contains: []string{
-					"Expected value to be within ±0.100000 of 10.000000, but it was not:",
-					"Actual:    10.500000",
-					"Expected:  10.000000",
+					"Expected 10.500000 to be within ±0.100000 of 10.000000",
 					"Difference: 0.500000",
 					"(4.00× greater than tolerance)",
 				},
@@ -4002,8 +4000,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  -5.0,
 				tolerance: 0.2,
 				contains: []string{
-					"Actual:    -5.300000",
-					"Expected:  -5.000000",
+					"Expected -5.300000 to be within ±0.200000 of -5.000000",
 					"Difference: 0.300000",
 					"(50.00% greater than tolerance)",
 				},
@@ -4014,8 +4011,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  0.0,
 				tolerance: 0.1,
 				contains: []string{
-					"Actual:    0.500000",
-					"Expected:  0.000000",
+					"Expected 0.500000 to be within ±0.100000 of 0.000000",
 					"Difference: 0.500000",
 					"(4.00× greater than tolerance)",
 				},
@@ -4026,8 +4022,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  10.0,
 				tolerance: 0.1,
 				contains: []string{
-					"Actual:    10.050000",
-					"Expected:  10.000000",
+					"Expected 10.050000 to be within ±0.100000 of 10.000000",
 					"Difference: 0.050000",
 				},
 			},
@@ -4038,7 +4033,6 @@ func TestFormatBeWithinError(t *testing.T) {
 				t.Parallel()
 				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
 
-				// Function should always return a non-empty error message
 				if result == "" {
 					t.Error("Expected non-empty result, got empty string")
 				}
@@ -4074,7 +4068,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  5.0,
 				tolerance: 0.0,
 				contains: []string{
-					"Expected value to be within ±0.000000 of 5.000000",
+					"Expected 10.000000 to be within ±0.000000 of 5.000000",
 					"Difference: 5.000000",
 				},
 			},
@@ -4084,8 +4078,8 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  5.0,
 				tolerance: -1.0,
 				contains: []string{
-					"Expected value to be within ±-1.000000 of 5.000000",
-					"Tolerance: ±-1.000000",
+					"Expected 10.000000 to be within ±-1.000000 of 5.000000",
+					"Difference: 5.000000",
 				},
 			},
 		}
@@ -4105,7 +4099,6 @@ func TestFormatBeWithinError(t *testing.T) {
 					}
 				}
 
-				// For zero tolerance, should not show percentage
 				if tt.tolerance == 0.0 && strings.Contains(result, "% greater than tolerance") {
 					t.Errorf("Should not show percentage for zero tolerance: %s", result)
 				}
@@ -4128,10 +4121,8 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  1.0e30,
 				tolerance: 1e28,
 				contains: []string{
-					"1.500000e+30",
-					"1.000000e+30",
-					"5.000000e+29",
-					"1.000000e+28",
+					"Expected 1.500000e+30 to be within ±1.000000e+28 of 1.000000e+30",
+					"Difference: 5.000000e+29",
 					"(49.00× greater than tolerance)",
 				},
 			},
@@ -4141,10 +4132,8 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  1.0e-6,
 				tolerance: 1e-8,
 				contains: []string{
-					"1.500000e-06",
-					"1.000000e-06",
-					"5.000000e-07",
-					"1.000000e-08",
+					"Expected 1.500000e-06 to be within ±1.000000e-08 of 1.000000e-06",
+					"Difference: 5.000000e-07",
 					"(49.00× greater than tolerance)",
 				},
 			},
@@ -4180,8 +4169,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  10.0,
 				tolerance: 1.0,
 				contains: []string{
-					"+Inf",
-					"1.000000e+01", // Scientific notation for 10.0
+					"Expected +Inf to be within ±1.000000e+00 of 1.000000e+01",
 					"Difference: +Inf",
 				},
 			},
@@ -4191,8 +4179,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  -10.0,
 				tolerance: 1.0,
 				contains: []string{
-					"-Inf",
-					"-1.000000e+01", // Scientific notation for -10.0
+					"Expected -Inf to be within ±1.000000e+00 of -1.000000e+01",
 					"Difference: +Inf",
 				},
 			},
@@ -4202,8 +4189,7 @@ func TestFormatBeWithinError(t *testing.T) {
 				expected:  10.0,
 				tolerance: 1.0,
 				contains: []string{
-					"NaN",
-					"10.000000",
+					"Expected NaN to be within ±1.000000 of 10.000000",
 					"Difference: NaN",
 				},
 			},
@@ -4214,7 +4200,6 @@ func TestFormatBeWithinError(t *testing.T) {
 				t.Parallel()
 				result := formatBeWithinError(tt.actual, tt.expected, tt.tolerance)
 
-				// Should always return a non-empty result
 				if result == "" {
 					t.Error("Expected non-empty result for special values")
 				}
@@ -4222,14 +4207,6 @@ func TestFormatBeWithinError(t *testing.T) {
 				for _, expected := range tt.contains {
 					if !strings.Contains(result, expected) {
 						t.Errorf("Expected %q in result:\n%s", expected, result)
-					}
-				}
-
-				// Basic structure should still be present
-				requiredFields := []string{"Actual:", "Expected:", "Tolerance:", "Difference:"}
-				for _, field := range requiredFields {
-					if !strings.Contains(result, field) {
-						t.Errorf("Missing required field %q in: %s", field, result)
 					}
 				}
 			})
