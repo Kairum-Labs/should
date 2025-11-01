@@ -893,8 +893,8 @@ func TestShouldContain_ShowsSimilarElements_OnFailure(t *testing.T) {
 		"Collection: [user-one, user_two, UserThree, user-3, userThree]",
 		"Missing   : user3",
 		"Similar elements found:",
-		"└─ user-3 (at index 3) - 1 extra char",
-		"└─ user-003 (at index 5) - 3 char diff",
+		"└─ user-3 (at index 3) - 1 extra character",
+		"└─ user-003 (at index 5) - 3 characters differ",
 	}
 
 	for _, part := range expectedParts {

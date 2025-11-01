@@ -295,7 +295,7 @@ should.Contain(t, users, "user3")
 //         Missing   : user3
 //
 //           Similar elements found:
-//           └─ user-3 (at index 3) - 1 extra char
+//           └─ user-3 (at index 3) - 1 extra character
 ```
 
 ### Numeric Context Information
@@ -384,18 +384,17 @@ should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
 // Actual   : "Hello, beautiful world!"
 //
 // Similar substring found:
-//   └─ 'beautiful' at position 7 - 1 char diff
+//   └─ 'beautiful' at position 7 - 1 character differs
 
-// Multiple similar matches
+// Similar match with transposition
 should.ContainSubstring(t, "test testing tester", "tets")
 // Output:
 // Expected string to contain "tets", but it was not found
 // Substring   : "tets"
 // Actual   : "test testing tester"
 //
-// Similar substrings found:
-//   └─ 'test' at position 0 - 1 char diff
-//   └─ 'testi' at position 5 - 2 char diff
+// Similar substring found:
+//   └─ 'test' at position 0 - 1 character differs
 
 // Long strings with multiline formatting
 longText := `This is a very long text that spans multiple lines

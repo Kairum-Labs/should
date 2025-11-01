@@ -12,6 +12,16 @@ import (
 	"unicode/utf8"
 )
 
+// maxSimilarLen limits substring length for similarity checks.
+// Longer substrings are skipped to improve performance.
+// 20 was chosen as a practical balance between accuracy and speed.
+const maxSimilarLen = 20
+
+// similarityThreshold defines the minimum similarity difference to consider
+// when removing substring matches. Values within this threshold are treated
+// as effectively equal, preferring the more complete string.
+const similarityThreshold = 0.05
+
 // isSliceOrArray checks if the provided value is a slice or an array.
 // It handles nil values by returning false.
 func isSliceOrArray(v interface{}) bool {
@@ -495,6 +505,11 @@ func calculateStringSimilarity(target, candidate string) similarItem {
 	distance := damerauLevenshteinDistance(target, candidate)
 	maxLen := max(len(target), len(candidate))
 
+	// NOTE: maxLen == 0 is impossible here because:
+	// - If both empty: already returned in "exact match" (target == candidate)
+	// - Otherwise: at least one string is non-empty
+	// This guarantees no division by zero.
+
 	similarity := 1.0 - float64(distance)/float64(maxLen)
 
 	if similarity >= 0.6 {
@@ -595,7 +610,7 @@ func generateTypoDetails(target, candidate string, distance int) string {
 			for i := 0; i < len(target)-1; i++ {
 				if target[i] == candidate[i+1] && target[i+1] == candidate[i] {
 					// It's a transposition
-					return "1 char diff"
+					return "1 character differs"
 				}
 			}
 
@@ -606,13 +621,13 @@ func generateTypoDetails(target, candidate string, distance int) string {
 				}
 			}
 		} else if len(candidate) == len(target)+1 {
-			return "1 extra char"
+			return "1 extra character"
 		} else if len(target) == len(candidate)+1 {
-			return "1 missing char"
+			return "1 missing character"
 		}
 	}
 
-	return fmt.Sprintf("%d char diff", distance)
+	return fmt.Sprintf("%d characters differ", distance)
 }
 
 // auxiliary function for contains of string slices
@@ -1472,24 +1487,26 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 	}
 
 	// Find similar substrings if substring is reasonable size
-	if len(substring) > 0 && len(substring) <= 20 && len(actual) > 0 {
-		similarSubstrings := findSimilarSubstrings(actual, substring, 3)
-		if len(similarSubstrings) > 0 {
-			msg.WriteString("\n")
-			if len(similarSubstrings) == 1 {
-				sim := similarSubstrings[0]
-				msg.WriteString("\nSimilar substring found:")
-				msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
-			} else {
-				msg.WriteString("\nSimilar substrings found:")
-				for _, sim := range similarSubstrings {
-					msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
-				}
+	if len(substring) > 0 && len(substring) <= maxSimilarLen && len(actual) > 0 {
+		similarSubstrings := findSimilarSubstrings(actual, substring)
+
+		// Filter out suggestions with empty details (similarity < 0.6)
+		// These are too different to be helpful
+		var goodSuggestions []similarItem
+		for _, sim := range similarSubstrings {
+			if sim.Details != "" {
+				goodSuggestions = append(goodSuggestions, sim)
 			}
+		}
+
+		if len(goodSuggestions) > 0 {
+			sim := goodSuggestions[0]
+			msg.WriteString("\n\nSimilar substring found:")
+			msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
 		}
 	}
 
-	if len(substring) > 20 {
+	if len(substring) > maxSimilarLen {
 		msg.WriteString(fmt.Sprintf("\nNote: Substring is %d characters long (too large for similarity search)", len(substring)))
 	}
 
@@ -1504,14 +1521,14 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 // - No duplicates
 // - Not substrings of each other
 // - At least 85% of the target length
-func findSimilarSubstrings(text string, substring string, maxResults int) []similarItem {
-	if len(substring) == 0 || len(substring) > 20 || len(text) == 0 {
+func findSimilarSubstrings(text string, substring string) []similarItem {
+	if len(substring) == 0 || len(substring) > maxSimilarLen || len(text) == 0 {
 		return nil
 	}
 
 	var results []similarItem
 	needleLen := len(substring)
-	minLength := int(float64(needleLen) * 0.85) // 85% minimum size
+	minLength := 0.85 * float64(needleLen) // 85% minimum size
 
 	// Check if target has spaces - if not, filter out candidates with spaces
 	targetHasSpaces := strings.Contains(substring, " ")
@@ -1544,7 +1561,7 @@ func findSimilarSubstrings(text string, substring string, maxResults int) []simi
 		}
 
 		substringLen := needleLen + offset
-		if substringLen < minLength || substringLen > len(text) {
+		if float64(substringLen) < minLength || substringLen > len(text) {
 			continue // Skip if smaller than 85% of target size
 		}
 
@@ -1568,9 +1585,6 @@ func findSimilarSubstrings(text string, substring string, maxResults int) []simi
 	// Remove duplicates
 	results = removeDuplicateSimilarItems(results)
 
-	// Remove strings that are substrings of each other
-	results = removeSubstringMatches(results)
-
 	// Sort by similarity (highest first)
 	for i := 0; i < len(results)-1; i++ {
 		for j := i + 1; j < len(results); j++ {
@@ -1580,58 +1594,69 @@ func findSimilarSubstrings(text string, substring string, maxResults int) []simi
 		}
 	}
 
-	// Limit to maximum of 2 results
-	if len(results) > 2 {
-		results = results[:2]
+	// Keep only the best match (simplest and clearest for users)
+	if len(results) > 1 {
+		results = results[:1]
 	}
 
 	return results
 }
 
 // removeSubstringMatches removes items that are substrings of other items in the list
-// Strategy: When one string contains another, keep the one with better similarity
-// If similarities are very close (within 0.05), prefer the shorter/cleaner match
+// Strategy: When one string is a substring of another, keep the longer one if it has
+// equal or better similarity. This removes redundant suggestions like "ROR" when "ERROR" exists.
 func removeSubstringMatches(items []similarItem) []similarItem {
 	if len(items) <= 1 {
 		return items
 	}
 
-	var filtered []similarItem
+	// Mark items to remove
+	toRemove := make(map[int]bool)
 
-	for i, item := range items {
-		itemStr := strings.TrimSpace(fmt.Sprintf("%v", item.Value))
-		shouldRemove := false
+	for i := range items {
+		itemStr := strings.TrimSpace(fmt.Sprint(items[i].Value))
 
-		for j, other := range items {
-			if i == j {
+		for j := range items {
+			if i == j || toRemove[j] {
 				continue
 			}
 
-			otherStr := strings.TrimSpace(fmt.Sprintf("%v", other.Value))
+			otherStr := strings.TrimSpace(fmt.Sprint(items[j].Value))
 
-			// Check if one is substring of the other
+			// Skip if they are the same string
+			if itemStr == otherStr {
+				continue
+			}
+
+			// Check if item is a substring of other
 			if strings.Contains(otherStr, itemStr) && len(itemStr) < len(otherStr) {
-				// item is substring of other
-				// Remove item (keep parent) if:
-				// - Parent has better similarity, OR
-				// - Similarities are very close (diff < 0.05) - prefer complete string
-				if other.Similarity >= item.Similarity ||
-					(item.Similarity-other.Similarity) < 0.05 {
-					shouldRemove = true
+				// item is shorter and contained in other (e.g., "ROR" vs "ERROR", or "test" vs "testing")
+				// Remove item if:
+				// 1. other has better or equal similarity, OR
+				// 2. similarities are very close (within similarityThreshold) - prefer complete string
+				if items[j].Similarity >= items[i].Similarity ||
+					math.Abs(items[j].Similarity-items[i].Similarity) < similarityThreshold {
+					toRemove[i] = true
 					break
 				}
-			} else if strings.Contains(itemStr, otherStr) && len(otherStr) < len(itemStr) {
-				// other is substring of item
-				// Remove item (keep substring) if substring has better or similar similarity
-				if other.Similarity >= item.Similarity ||
-					(item.Similarity-other.Similarity) < 0.05 {
-					shouldRemove = true
+			}
+
+			// Check if other is a substring of item
+			if strings.Contains(itemStr, otherStr) && len(otherStr) < len(itemStr) {
+				// other is shorter and contained in item (e.g., "test" (other) vs "testing" (item))
+				// Remove item if other has significantly better similarity (diff > similarityThreshold)
+				if items[j].Similarity-items[i].Similarity > similarityThreshold {
+					toRemove[i] = true
 					break
 				}
 			}
 		}
+	}
 
-		if !shouldRemove {
+	// Build filtered list
+	var filtered []similarItem
+	for i, item := range items {
+		if !toRemove[i] {
 			filtered = append(filtered, item)
 		}
 	}
@@ -1650,7 +1675,7 @@ func removeDuplicateSimilarItems(items []similarItem) []similarItem {
 	groups := make(map[string][]similarItem)
 
 	for _, item := range items {
-		trimmedValue := strings.TrimSpace(fmt.Sprintf("%v", item.Value))
+		trimmedValue := strings.TrimSpace(fmt.Sprint(item.Value))
 		groups[trimmedValue] = append(groups[trimmedValue], item)
 	}
 
@@ -1664,10 +1689,10 @@ func removeDuplicateSimilarItems(items []similarItem) []similarItem {
 
 		// Prefer item without spaces, then higher similarity, then earlier position
 		best := group[0]
-		bestStr := fmt.Sprintf("%v", best.Value)
+		bestStr := fmt.Sprint(best.Value)
 
 		for _, item := range group[1:] {
-			itemStr := fmt.Sprintf("%v", item.Value)
+			itemStr := fmt.Sprint(item.Value)
 
 			// Prefer strings without leading/trailing spaces
 			bestHasSpaces := strings.TrimSpace(bestStr) != bestStr
