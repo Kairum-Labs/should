@@ -20,7 +20,6 @@
 - **Time Comparisons**: Compare times with options to ignore timezone and/or nanoseconds with clear diffs.
 - **Empty/Non-Empty Checks**: Rich context about collection types, sizes, and content.
 - **String Similarity**: When a string assertion fails, `Should` suggests similar strings from your collection to help you spot typos.
-- **Numeric Context**: When a numeric assertion fails, `Should` shows nearby values in the collection to help you reason about missing or unexpected numbers.
 - **Type-Safe**: Uses Go generics for type safety while maintaining a clean API.
 
 ## Installation
@@ -296,8 +295,7 @@ should.Contain(t, users, "user3")
 //         Missing   : user3
 //
 //           Similar elements found:
-//           └─ user-3 (at index 3) - 1 extra char
-//           └─ userThree (at index 4) - case difference
+//           └─ user-3 (at index 3) - 1 extra character
 ```
 
 ### Numeric Context Information
@@ -386,18 +384,17 @@ should.ContainSubstring(t, "Hello, beautiful world!", "beatiful")
 // Actual   : "Hello, beautiful world!"
 //
 // Similar substring found:
-//   └─ 'beautiful' at position 7 - 1 char diff
+//   └─ 'beautiful' at position 7 - 1 character differs
 
-// Multiple similar matches
+// Similar match with transposition
 should.ContainSubstring(t, "test testing tester", "tets")
 // Output:
 // Expected string to contain "tets", but it was not found
 // Substring   : "tets"
 // Actual   : "test testing tester"
 //
-// Similar substrings found:
-//   └─ 'test' at position 0 - 1 char diff
-//   └─ 'test' at position 5 - 1 char diff
+// Similar substring found:
+//   └─ 'test' at position 0 - 1 character differs
 
 // Long strings with multiline formatting
 longText := `This is a very long text that spans multiple lines
@@ -699,8 +696,8 @@ should.NotContainValue(t, userRoles, 3)
 
 ### Panic Handling
 
-- `Panic(t, func, config...)` - Assert that a function panics
-- `NotPanic(t, func, config...)` - Assert that a function does not panic
+- `Panic(t, func, opts ...Option)` - Assert that a function panics
+- `NotPanic(t, func, opts ...Option)` - Assert that a function does not panic
 
 Examples with custom messages and stack traces:
 
