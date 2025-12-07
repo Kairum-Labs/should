@@ -105,7 +105,6 @@ func TestFindDifferences_BasicTypes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -170,7 +169,6 @@ func TestFindDifferences_SpecialValues(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -346,7 +344,6 @@ func TestFindDifferences_Structs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -431,7 +428,6 @@ func TestFindDifferences_PointersAndNil(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -466,18 +462,6 @@ func TestFindDifferences_SlicesAndArrays(t *testing.T) {
 					Path:     "[1]",
 					Expected: 2,
 					Actual:   4,
-				},
-			},
-		},
-		{
-			name:     "Different slice lengths",
-			expected: []int{1, 2, 3},
-			actual:   []int{1, 2},
-			want: []fieldDiff{
-				{
-					Path:     "",
-					Expected: []int{1, 2, 3},
-					Actual:   []int{1, 2},
 				},
 			},
 		},
@@ -523,10 +507,20 @@ func TestFindDifferences_SlicesAndArrays(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "Different slice lengths",
+			expected: []int{1, 2, 3},
+			actual:   []int{1, 2},
+			want: []fieldDiff{
+				{
+					Path:    "",
+					Message: "length mismatch (expected: 3, actual: 2)",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -723,7 +717,6 @@ func TestFindDifferences_Maps(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -830,7 +823,6 @@ func TestFindDifferences_ComplexNesting(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := findDifferences(tt.expected, tt.actual)
@@ -966,7 +958,6 @@ func TestCompareExpectedActual_ConsistentResultsDespiteMapKeyOrder(t *testing.T)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

@@ -273,8 +273,10 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 		if expectedValue.Len() != actualValue.Len() {
 			diffs = append(diffs, fieldDiff{
 				Path:     path,
-				Expected: expectedValue.Interface(),
-				Actual:   actualValue.Interface(),
+				Expected: nil,
+				Actual:   nil,
+				Message: fmt.Sprintf("length mismatch (expected: %d, actual: %d)",
+					expectedValue.Len(), actualValue.Len()),
 			})
 			return
 		}
