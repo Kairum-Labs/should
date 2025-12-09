@@ -686,7 +686,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	differencesOutput := "Field differences:\n"
 	for _, diff := range diffs {
 		if diff.Message != "" {
-			differencesOutput = fmt.Sprintf("  └─ %s: %s\n", diff.Path, diff.Message)
+			differencesOutput += fmt.Sprintf("  └─ %s: %s\n", diff.Path, diff.Message)
 			continue
 		}
 		differencesOutput += fmt.Sprintf("  └─ %s: %s ≠ %s\n", diff.Path, formatDiffValue(diff.Expected), formatDiffValue(diff.Actual))

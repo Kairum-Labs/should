@@ -11,7 +11,7 @@ type fieldDiff struct {
 	Path     string      // The path to the field, using dot notation for nested fields
 	Expected interface{} // The expected value at this path
 	Actual   interface{} // The actual value at this path
-	Message  string      // Optional message providing additional context about the difference
+	Message  string      // Message provides a custom description of the difference when Expected/Actual are insufficient
 }
 
 // similarItem represents a similar item found
