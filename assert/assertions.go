@@ -1185,11 +1185,7 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 			if result := findExactCaseMismatch(
 				actual, substring); result.Found {
 				errorMsg := formatSimpleCaseMismatchError(substring, result.Substring, result.Index)
-				if cfg.Message != "" {
-					fail(t, "%s\n%s", cfg.Message, errorMsg)
-					return
-				}
-				fail(t, errorMsg)
+				failWithOptions(t, cfg, errorMsg)
 				return
 			}
 		}
