@@ -2403,25 +2403,9 @@ func formatMapNotContainKeyError(target interface{}, mapValue interface{}) strin
 	msg.WriteString("Expected map to NOT contain key, but key was found:\n")
 	msg.WriteString(fmt.Sprintf("Map Type : %s\n", mapType))
 	msg.WriteString(fmt.Sprintf("Map Size : %d entries\n", mapSize))
-	msg.WriteString(fmt.Sprintf("Found Key: %s\n", targetStr))
+	msg.WriteString(fmt.Sprintf("Found Key: %s", targetStr))
 
-	// Find the key and show its associated value
-	keys := v.MapKeys()
-	for _, key := range keys {
-		if reflect.DeepEqual(key.Interface(), target) {
-			value := v.MapIndex(key)
-			var valueStr string
-			if str, ok := value.Interface().(string); ok {
-				valueStr = fmt.Sprintf(`"%s"`, str)
-			} else {
-				valueStr = formatComparisonValue(value.Interface())
-			}
-			msg.WriteString(fmt.Sprintf("Associated Value: %s\n", valueStr))
-			break
-		}
-	}
-
-	return strings.TrimSuffix(msg.String(), "\n")
+	return msg.String()
 }
 
 // formatMapNotContainValueError formats error message for NotContainValue assertion

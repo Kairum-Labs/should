@@ -110,6 +110,7 @@ should.BeEmpty(t, "Hello World!")
 longText := "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
 should.BeEmpty(t, longText)
 // Output:
+// Expected value to be empty, but it was not:
 // Length: 516 characters, 9 lines
 // 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 // 2.  Sed do eiusmod tempor incididunt ut labore et dolore ma
@@ -152,7 +153,7 @@ should.BeGreaterThan(t, 5, 10, should.WithMessage("Score validation failed"))
 //         Value     : 5
 //         Threshold : 10
 //         Difference: -5 (value is 5 smaller)
-//         Hint   : Value should be larger than threshold
+//         Hint      : Value should be larger than threshold
 
 // Equal values
 should.BeGreaterThan(t, 42, 42)
@@ -161,7 +162,7 @@ should.BeGreaterThan(t, 42, 42)
 //         Value     : 42
 //         Threshold : 42
 //         Difference: 0 (values are equal)
-//         Hint   : Value should be larger than threshold
+//         Hint      : Value should be larger than threshold
 
 // Float precision
 should.BeLessThan(t, 3.14, 2.71)
@@ -170,7 +171,7 @@ should.BeLessThan(t, 3.14, 2.71)
 //         Value     : 3.14
 //         Threshold : 2.71
 //         Difference: +0.43000000000000016 (value is 0.43000000000000016 greater)
-//         Hint   : Value should be smaller than threshold
+//         Hint      : Value should be smaller than threshold
 
 // Large numbers
 should.BeLessThan(t, 1000000, 999999)
@@ -179,7 +180,7 @@ should.BeLessThan(t, 1000000, 999999)
 //         Value     : 1000000
 //         Threshold : 999999
 //         Difference: +1 (value is 1 greater)
-//         Hint   : Value should be smaller than threshold
+//         Hint      : Value should be smaller than threshold
 
 // Less than or equal (fails when value is greater)
 should.BeLessOrEqualTo(t, 15, 10)
@@ -243,7 +244,6 @@ should.BeEqual(t, p1, p2)
 // Not equal:
 // expected: {Name: "Jane", Age: 25}
 // actual  : {Name: "John", Age: 30}
-//
 // Field differences:
 //   └─ Name: "Jane" ≠ "John"
 //   └─ Age: 25 ≠ 30
@@ -267,7 +267,7 @@ should.HaveLength(t, []string{"apple", "banana"}, 3)
 // Type          : []string
 // Expected Length: 3
 // Actual Length : 2
-// Difference    : -1 (1 element(s) missing)
+// Difference    : -1 (1 element missing)
 
 // Incorrect type
 type Dog struct{ Name string }
@@ -294,8 +294,7 @@ should.Contain(t, users, "user3")
 //         Collection: [user-one, user_two, UserThree, user-3, userThree]
 //         Missing   : user3
 //
-//           Similar elements found:
-//           └─ user-3 (at index 3) - 1 extra character
+//         Found similar: user-3 (at index 3) - 1 extra character
 ```
 
 ### Numeric Context Information
@@ -308,8 +307,8 @@ should.Contain(t, numbers, 55)
 
 // Output includes context information:
 // Expected collection to contain element:
-// Collection: [10, 80, 20, 70, 30, ..., 90, 120, 110] (showing first 5 and last 5 of 13 elements)
-// Missing   : 55
+// Collection: [10, 80, 20, 70, 30, ..., 0, 100, 90, 120, 110] (showing first 5 and last 5 of 13 elements)
+// Missing  : 55
 //
 // Element 55 would fit between 50 and 60 in sorted order
 // └─ Sorted view: [..., 40, 50, 60, 70, ...]
@@ -405,10 +404,10 @@ should.ContainSubstring(t, longText, "nonexistent")
 // Output:
 // Expected string to contain "nonexistent", but it was not found
 // Substring   : "nonexistent"
-// Actual   : (length: 153)
-// 1. This is a very long text that spans multiple lines
-// 2. and contains various keywords and phrases that we might
-// 3. want to search for in our test assertions.
+// Actual   : (length: 149)
+// This is a very long text that spans multiple lines
+// and contains various keywords and phrases that we might
+// want to search for in our test assertions.
 
 // With custom messages
 should.ContainSubstring(t, logContent, "ERROR", should.WithMessage("Log should contain error messages"))
@@ -471,13 +470,13 @@ var pathErr *os.PathError
 should.BeErrorAs(t, err, &pathErr)
 // Expected error to be *os.PathError, but type not found in error chain
 // Error: "invalid character 'i' looking for beginning of value"
-// Types: [*json.SyntaxError]
+// Types  : [*json.SyntaxError]
 
 // BeErrorIs - value not found
 should.BeErrorIs(t, err, io.EOF)
-// Expected error to be "EOF", but value not found in error chain
+// Expected error to be "EOF", but not found in error chain
 // Error: "connection refused"
-// Types: [*net.OpError, syscall.Errno]
+// Types  : [*net.OpError, syscall.Errno]
 ```
 
 ### Time Assertions
@@ -502,13 +501,13 @@ time2 := time.Date(2024, 1, 15, 14, 30, 2, 500000000, time.UTC)
 
 should.BeSameTime(t, time1, time2)
 // Expected times to be the same, but difference is 2.5s
-// Expected: 2024-01-15 14:30:00.000000000 UTC
-// Actual  : 2024-01-15 14:30:02.500000000 UTC (2.5s later)
+// Expected: 2024-01-15 14:30:00 UTC
+// Actual  : 2024-01-15 14:30:02.5 UTC (2.5s later)
 
 should.BeSameTime(t, time2, time1)
 // Expected times to be the same, but difference is 2.5s
-// Expected: 2024-01-15 14:30:02.500000000 UTC
-// Actual  : 2024-01-15 14:30:00.000000000 UTC (2.5s earlier)
+// Expected: 2024-01-15 14:30:02.5 UTC
+// Actual  : 2024-01-15 14:30:00 UTC (2.5s earlier)
 
 // Ignore timezone differences
 utc := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
@@ -630,11 +629,10 @@ should.NotContainValue(t, userMap, 999) // passes if value 999 is not found
 // When key is found in NotContainKey
 should.NotContainKey(t, userSettings, "admin_access")
 // Output when key is found:
-// Expected map to NOT contain key, but it was found:
+// Expected map to NOT contain key, but key was found:
 // Map Type : map[string]string
 // Map Size : 3 entries
 // Found Key: "admin_access"
-// Found Value: "true"
 
 // When value is found in NotContainValue
 should.NotContainValue(t, userRoles, 3)
@@ -785,12 +783,12 @@ people := []Person{
 
 // Find people over 30
 should.AnyMatch(t, people, func(item Person) bool {
-    return person.Age > 30
+    return item.Age > 30
 })
 
 // With custom error message
 should.AnyMatch(t, people, func(item Person) bool {
-	return person.Age >= 65
+	return item.Age >= 65
 }, should.WithMessage("No elderly users found"))
 ```
 

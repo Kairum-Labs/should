@@ -2287,8 +2287,7 @@ func TestFormatMapNotContainKeyError(t *testing.T) {
 			expected: `Expected map to NOT contain key, but key was found:
 Map Type : map[string]int
 Map Size : 3 entries
-Found Key: "age"
-Associated Value: 30`,
+Found Key: "age"`,
 		},
 		{
 			name:     "int key in int map",
@@ -2297,8 +2296,7 @@ Associated Value: 30`,
 			expected: `Expected map to NOT contain key, but key was found:
 Map Type : map[int]string
 Map Size : 3 entries
-Found Key: 42
-Associated Value: "forty-two"`,
+Found Key: 42`,
 		},
 	}
 

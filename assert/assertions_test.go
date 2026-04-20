@@ -5373,7 +5373,6 @@ func TestNotContainKey(t *testing.T) {
 							"Map Type : map[string]int",
 							"Map Size : 2 entries",
 							`Found Key: "age"`,
-							"Associated Value: 2",
 						}
 						for _, part := range expectedParts {
 							if !strings.Contains(message, part) {
@@ -5427,7 +5426,6 @@ func TestNotContainKey(t *testing.T) {
 							"Expected map to NOT contain key, but key was found:",
 							"Map Type : map[int]string",
 							"Found Key: 2",
-							`Associated Value: "two"`,
 						}
 						for _, part := range expectedParts {
 							if !strings.Contains(message, part) {
