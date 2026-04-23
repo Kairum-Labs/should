@@ -537,6 +537,26 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	assert.StartWith(t, actual, expected, opts...)
 }
 
+// NotStartWith reports a test failure if the string starts with the given prefix.
+//
+// This is the negative counterpart of StartWith. It checks that the actual string
+// does NOT start with the expected prefix, and provides a detailed error message
+// with a caret indicator highlighting the matching prefix.
+//
+// Example:
+//
+//	should.NotStartWith(t, filename, "temp_")
+//
+//	should.NotStartWith(t, filename, "TEMP", should.WithIgnoreCase())
+//
+//	should.NotStartWith(t, username, "admin_", should.WithMessage("Username cannot start with admin prefix"))
+//
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
+func NotStartWith(t testing.TB, actual string, prefix string, opts ...Option) {
+	t.Helper()
+	assert.NotStartWith(t, actual, prefix, opts...)
+}
+
 // EndWith reports a test failure if the string does not end with the expected substring.
 //
 // This assertion checks if the actual string ends with the expected substring.
