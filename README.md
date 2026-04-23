@@ -348,6 +348,32 @@ should.StartWith(t, "Hello, World!", "hello")
 // Case-insensitive option
 should.StartWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
 
+// Negative counterpart — assert string does NOT start with a prefix
+should.NotStartWith(t, "Hello, World!", "temp_")
+
+// Fails when the prefix matches:
+should.NotStartWith(t, "temp_user_data.txt", "temp_")
+// Output:
+// Expected string to NOT start with 'temp_', but it does:
+// Prefix   : 'temp_'
+// Actual   : 'temp_user_data.txt'
+//             ^^^^^
+//           (matching prefix)
+
+// With custom message
+should.NotStartWith(t, username, "admin_",
+	should.WithMessage("Username cannot start with admin prefix"))
+// Output:
+// Username cannot start with admin prefix
+// Expected string to NOT start with 'admin_', but it does:
+// Prefix   : 'admin_'
+// Actual   : 'admin_user123'
+//             ^^^^^^
+//           (matching prefix)
+
+// Case-insensitive negative check
+should.NotStartWith(t, "TEMP_file.txt", "temp_", should.WithIgnoreCase())
+
 // String suffix checking
 should.EndWith(t, "Hello, World!", "World!")
 
@@ -673,6 +699,7 @@ should.NotContainValue(t, userRoles, 3)
 ### String Operations
 
 - `StartWith(t, actual, expected)` - Check if string starts with expected substring
+- `NotStartWith(t, actual, prefix)` - Check if string does NOT start with given prefix
 - `EndWith(t, actual, expected)` - Check if string ends with expected substring
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 

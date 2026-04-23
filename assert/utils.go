@@ -1348,6 +1348,14 @@ func addPrefixHighlight(msg *strings.Builder, actual, expected string) {
 	}
 }
 
+func addMatchingPrefixHighlight(msg *strings.Builder, actual, prefix string) {
+	prefixLength := len(prefix)
+	if len(actual) >= prefixLength {
+		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLength))
+		msg.WriteString("\n          (matching prefix)")
+	}
+}
+
 func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
 	prefixLength := len(expected)
 	if len(actual) >= prefixLength {
@@ -1385,6 +1393,17 @@ func formatStartsWithError(actual string, expected string, startWith string, not
 	}
 
 	return ""
+}
+
+// formatNotStartsWithError formats the error message for NotStartWith assertions.
+func formatNotStartsWithError(actual string, prefix string, noteMsg string) string {
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("Expected string to NOT start with '%s', but it does:", prefix))
+	msg.WriteString(fmt.Sprintf("\nPrefix   : '%s'", prefix))
+	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	addMatchingPrefixHighlight(&msg, actual, prefix)
+	msg.WriteString(noteMsg)
+	return msg.String()
 }
 
 // formatEndsWithError formats a detailed error message for EndWith assertions.

@@ -1083,6 +1083,65 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 }
 
+// NotStartWith reports a test failure if the string starts with the given prefix.
+//
+// This is the negative counterpart of StartWith. It checks that the actual string
+// does NOT start with the expected prefix, and provides a detailed error message
+// with a caret indicator highlighting the matching prefix.
+//
+// Example:
+//
+//	should.NotStartWith(t, filename, "temp_")
+//
+//	should.NotStartWith(t, filename, "TEMP", should.WithIgnoreCase())
+//
+//	should.NotStartWith(t, username, "admin_", should.WithMessage("Username cannot start with admin prefix"))
+//
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
+func NotStartWith(t testing.TB, actual string, prefix string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	actualComp := actual
+	prefixComp := prefix
+	if cfg.IgnoreCase {
+		actualComp = strings.ToLower(actual)
+		prefixComp = strings.ToLower(prefix)
+	}
+
+	// Pass: does not start with prefix.
+	if !strings.HasPrefix(actualComp, prefixComp) {
+		return
+	}
+
+	displayActual := actual
+	displayPrefix := prefix
+
+	if strings.TrimSpace(displayActual) == "" {
+		displayActual = "<empty>"
+	}
+	if strings.TrimSpace(displayPrefix) == "" {
+		displayPrefix = "<empty>"
+	}
+	if len(displayActual) > 56 {
+		displayActual = displayActual[:56] + "... (truncated)"
+	}
+	if len(displayPrefix) > 56 {
+		displayPrefix = displayPrefix[:56] + "... (truncated)"
+	}
+
+	noteMsg := ""
+	if cfg.IgnoreCase && !strings.HasPrefix(actual, prefix) {
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
+	}
+
+	errorMsg := formatNotStartsWithError(displayActual, displayPrefix, noteMsg)
+	if errorMsg != "" {
+		failWithOptions(t, cfg, errorMsg)
+	}
+}
+
 // EndWith reports a test failure if the string does not end with the expected substring.
 //
 // This assertion checks if the actual string ends with the expected substring.
