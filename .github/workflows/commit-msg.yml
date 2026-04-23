@@ -1,0 +1,67 @@
+name: Commit Message Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  commit-msg:
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # Fetch the full history so every commit in the PR is available
+          fetch-depth: 0
+
+      - name: Install BATS
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bats
+
+      - name: Make script executable
+        run: chmod +x scripts/commit-msg
+
+      - name: Run unit tests for commit-msg script
+        run: bats tests/commit-msg.bats
+
+      - name: Validate every commit subject in this PR
+        run: |
+          # Fetch the base branch so merge-base can be computed accurately.
+          # This is robust to rebases and to the base branch advancing between
+          # the rebase and the CI run — unlike relying on base.sha directly.
+          git fetch origin ${{ github.event.pull_request.base.ref }} --no-tags
+
+          BASE=$(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }})
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          echo "merge-base : $BASE"
+          echo "PR head    : $HEAD"
+
+          COMMITS=$(git log --format="%H" "$BASE..$HEAD")
+
+          if [[ -z "$COMMITS" ]]; then
+            echo "No commits found in range $BASE..$HEAD — nothing to validate."
+            exit 0
+          fi
+
+          FAIL=0
+
+          while IFS= read -r sha; do
+            SUBJECT=$(git log --format="%s" -n 1 "$sha")
+            TMPFILE=$(mktemp)
+            echo "$SUBJECT" > "$TMPFILE"
+
+            echo -n "[$sha] $SUBJECT ... "
+            if bash scripts/commit-msg "$TMPFILE"; then
+              echo "OK"
+            else
+              FAIL=1
+            fi
+
+            rm -f "$TMPFILE"
+          done <<< "$COMMITS"
+
+          exit $FAIL
