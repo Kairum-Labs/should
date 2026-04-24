@@ -68,7 +68,7 @@ git checkout -b feature/your-feature-name
 
 ## Linting (golangci-lint)
 
-- CI: we use `golangci-lint` version `v2.3.0` (via `golangci/golangci-lint-action@v8`), configured by `.golangci.yml`.
+- CI: we use `golangci-lint` version `v2.3.0` (via `golangci/golangci-lint-action@v9`), configured by `.golangci.yml`.
 
 ### Local installation
 
