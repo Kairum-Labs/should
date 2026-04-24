@@ -1048,6 +1048,22 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 		return
 	}
 
+	// Compute note message from originals before any display mutation.
+	noteMsg := ""
+	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
+	}
+
+	// Extract the actual leading runes for display (rune-aware, before truncation).
+	actualRunes := []rune(actual)
+	expectedRunes := []rune(expected)
+	var startWith string
+	if len(actualRunes) > len(expectedRunes) {
+		startWith = string(actualRunes[:len(expectedRunes)])
+	} else {
+		startWith = actual
+	}
+
 	if strings.TrimSpace(actual) == "" {
 		actual = "<empty>"
 	}
@@ -1056,26 +1072,8 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 		expected = "<empty>"
 	}
 
-	if len(actual) > 56 {
-		actual = actual[:56] + "... (truncated)"
-	}
-
-	if len(expected) > 56 {
-		expected = expected[:56] + "... (truncated)"
-	}
-
-	var startWith string
-
-	if len(actual) > len(expected) {
-		startWith = actual[:len(expected)]
-	} else {
-		startWith = actual
-	}
-
-	noteMsg := ""
-	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
-		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
-	}
+	actual = truncateHead(actual, displayMaxRunes)
+	expected = truncateHead(expected, displayMaxRunes)
 
 	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg, cfg)
 	if errorMsg != "" {
@@ -1103,18 +1101,38 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	cfg := processOptions(opts...)
 
-	actualEndSufix := ""
-
-	if len(actual) > len(expected) {
-		actualEndSufix = actual[len(actual)-len(expected):]
-	} else {
-		actualEndSufix = actual
+	// --- Logic checks on the original strings ---
+	// An empty suffix matches everything mathematically, but like StartWith with an
+	// empty prefix, we treat it as a likely programming mistake and fall through to
+	// the error path. Only a genuine suffix (non-empty) earns an early return.
+	// Exact match ("" == "") is always valid and returns immediately.
+	if actual == expected {
+		return
 	}
-
-	if actual == expected || (cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actualEndSufix), strings.ToLower(expected))) {
+	if expected != "" && strings.HasSuffix(actual, expected) {
+		return
+	}
+	if expected != "" && cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
 		return
 	}
 
+	// Compute note message from originals before any display mutation.
+	noteMsg := ""
+	if !cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
+		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
+	}
+
+	// Extract the actual trailing runes for display (rune-aware, before truncation).
+	actualRunes := []rune(actual)
+	expectedRunes := []rune(expected)
+	var actualEndSuffix string
+	if len(actualRunes) > len(expectedRunes) {
+		actualEndSuffix = string(actualRunes[len(actualRunes)-len(expectedRunes):])
+	} else {
+		actualEndSuffix = actual
+	}
+
+	// --- Display string preparation ---
 	if strings.TrimSpace(actual) == "" {
 		actual = "<empty>"
 	}
@@ -1123,20 +1141,12 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 		expected = "<empty>"
 	}
 
-	if len(actual) > 56 {
-		actual = "... (truncated)" + actual[56:]
-	}
+	// For suffix assertions: show the tail of actual (where the suffix would appear)
+	// and the start of expected (the full pattern the caller typed).
+	actual = truncateTail(actual, displayMaxRunes)
+	expected = truncateHead(expected, displayMaxRunes)
 
-	if len(expected) > 56 {
-		expected = "... (truncated)" + expected[56:]
-	}
-
-	noteMsg := ""
-	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {
-		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
-	}
-
-	errorMsg := formatEndsWithError(actual, expected, actualEndSufix, noteMsg, cfg)
+	errorMsg := formatEndsWithError(actual, expected, actualEndSuffix, noteMsg, cfg)
 	if errorMsg != "" {
 		failWithOptions(t, cfg, errorMsg)
 	}

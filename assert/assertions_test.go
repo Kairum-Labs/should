@@ -3994,6 +3994,53 @@ func TestStartsWith(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("Unicode — emoji prefix in long string", func(t *testing.T) {
+		t.Parallel()
+		// Leading emoji (4 bytes each); truncateHead must not split a rune.
+		actual := "🎉" + strings.Repeat("a", 200)
+		mockT := &mockT{}
+		StartWith(mockT, actual, "not_there")
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		// The emoji must appear intact in the error output.
+		if !strings.Contains(mockT.message, "🎉") {
+			t.Errorf("Expected leading emoji to be visible in error, got:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("Unicode — CJK prefix kept when truncating", func(t *testing.T) {
+		t.Parallel()
+		// CJK characters are 3 bytes; truncateHead must keep them intact.
+		actual := "你好世界" + strings.Repeat("x", 200)
+		mockT := &mockT{}
+		StartWith(mockT, actual, "abc")
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		if !strings.Contains(mockT.message, "你好世界") {
+			t.Errorf("Expected CJK prefix to be visible in error, got:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("Truncation shows head of actual", func(t *testing.T) {
+		t.Parallel()
+		// For StartWith, the beginning of actual is what matters.
+		// The error should contain the truncation tail marker, not a dump from byte 56.
+		actual := "unique_start_" + strings.Repeat("a", 200)
+		mockT := &mockT{}
+		StartWith(mockT, actual, "other")
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		if !strings.Contains(mockT.message, "unique_start_") {
+			t.Errorf("Expected head of actual to be visible in error, got:\n%s", mockT.message)
+		}
+		if !strings.Contains(mockT.message, "... (truncated)") {
+			t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+		}
+	})
 }
 
 // === Tests for EndWith ===
@@ -4194,8 +4241,8 @@ func TestEndsWith(t *testing.T) {
 				expected:   "Different",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "... (truncated)") {
-						t.Errorf("Expected message to contain truncated actual string, got: %s", message)
+					if !strings.Contains(message, "(truncated)...") {
+						t.Errorf("Expected message to contain tail-truncation marker '(truncated)...', got: %s", message)
 					}
 				},
 			},
@@ -4206,7 +4253,7 @@ func TestEndsWith(t *testing.T) {
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
 					if !strings.Contains(message, "... (truncated)") {
-						t.Errorf("Expected message to contain truncated expected string, got: %s", message)
+						t.Errorf("Expected message to contain head-truncation marker '... (truncated)', got: %s", message)
 					}
 				},
 			},
@@ -4216,9 +4263,11 @@ func TestEndsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					truncatedOccurrences := strings.Count(message, "... (truncated)")
-					if truncatedOccurrences < 2 {
-						t.Errorf("Expected at least 2 truncated strings in message, got %d occurrences in: %s", truncatedOccurrences, message)
+					if !strings.Contains(message, "(truncated)...") {
+						t.Errorf("Expected tail-truncation marker '(truncated)...' for actual, got: %s", message)
+					}
+					if !strings.Contains(message, "... (truncated)") {
+						t.Errorf("Expected head-truncation marker '... (truncated)' for expected, got: %s", message)
 					}
 				},
 			},
@@ -4242,6 +4291,85 @@ func TestEndsWith(t *testing.T) {
 					tt.errorCheck(t, mockT.message)
 				}
 			})
+		}
+	})
+
+	t.Run("Truncation direction — actual shows tail", func(t *testing.T) {
+		t.Parallel()
+		// A 200-char string ending in "xyz" fails to end with "abc".
+		// The error must show the TAIL of actual (the relevant part for a suffix
+		// assertion), not a dump from byte 56 onwards.
+		actual := strings.Repeat("a", 200) + "xyz"
+		mockT := &mockT{}
+		EndWith(mockT, actual, "abc")
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		if !strings.Contains(mockT.message, "(truncated)...") {
+			t.Errorf("Expected tail-truncation marker '(truncated)...' in error, got:\n%s", mockT.message)
+		}
+		if !strings.Contains(mockT.message, "xyz") {
+			t.Errorf("Expected tail 'xyz' to be visible in error, got:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("Truncation direction — expected shows head", func(t *testing.T) {
+		t.Parallel()
+		// When expected is long, its start must remain visible so the developer
+		// can recognize what they typed.
+		longExpected := "start_" + strings.Repeat("x", 100) + "_end"
+		mockT := &mockT{}
+		EndWith(mockT, "something_else", longExpected)
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		if !strings.Contains(mockT.message, "start_") {
+			t.Errorf("Expected start of expected string 'start_' to be visible, got:\n%s", mockT.message)
+		}
+		if !strings.Contains(mockT.message, "... (truncated)") {
+			t.Errorf("Expected head-truncation marker '... (truncated)' for expected string, got:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("HasSuffix — case mismatch note shown", func(t *testing.T) {
+		t.Parallel()
+		// "Hello, World" ends with "World" but not "world" exactly → note shown.
+		// Previously, HasPrefix was used instead of HasSuffix; the note was
+		// generated correctly only because actualEndSuffix had the same length
+		// as expected (making both predicates equivalent). This test pins the
+		// semantically correct behavior with an explicit message check.
+		mockT := &mockT{}
+		EndWith(mockT, "Hello, World", "world")
+		if !mockT.failed {
+			t.Fatal("Expected failure (case-sensitive) but test passed")
+		}
+		if !strings.Contains(mockT.message, "Case mismatch detected") {
+			t.Errorf("Expected case-mismatch note in error, got:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("Unicode — emoji suffix passes", func(t *testing.T) {
+		t.Parallel()
+		// Each emoji is 4 bytes; byte-slicing would corrupt them.
+		actual := strings.Repeat("x", 60) + "🎉🎊🎈"
+		mockT := &mockT{}
+		EndWith(mockT, actual, "🎉🎊🎈")
+		if mockT.failed {
+			t.Errorf("Expected pass for emoji suffix but got failure:\n%s", mockT.message)
+		}
+	})
+
+	t.Run("Unicode — CJK suffix visible after tail truncation", func(t *testing.T) {
+		t.Parallel()
+		// Each CJK char is 3 bytes. truncateTail must not split a rune.
+		actual := strings.Repeat("a", 200) + "你好世界"
+		mockT := &mockT{}
+		EndWith(mockT, actual, "not_there")
+		if !mockT.failed {
+			t.Fatal("Expected failure but test passed")
+		}
+		if !strings.Contains(mockT.message, "你好世界") {
+			t.Errorf("Expected CJK tail to be visible in error (not garbled), got:\n%s", mockT.message)
 		}
 	})
 }

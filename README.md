@@ -351,6 +351,18 @@ should.StartWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
 // String suffix checking
 should.EndWith(t, "Hello, World!", "World!")
 
+// Case-sensitive by default
+should.EndWith(t, "Hello, World!", "Hello")
+// Output:
+// Expected string to end with 'Hello', but it ends with 'orld!'
+// Expected : 'Hello'
+// Actual   : 'Hello, World!'
+//                     ^^^^^
+//                     (actual suffix)
+
+// Case-insensitive option
+should.EndWith(t, "Hello, World!", "world!", should.WithIgnoreCase())
+
 // With custom messages
 should.StartWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
 should.EndWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))

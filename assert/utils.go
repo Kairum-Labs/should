@@ -22,6 +22,33 @@ const maxSimilarLen = 20
 // as effectively equal, preferring the more complete string.
 const similarityThreshold = 0.05
 
+// displayMaxRunes is the maximum number of runes shown for a string in assertion
+// error messages before the string is truncated for readability.
+const displayMaxRunes = 56
+
+// truncateHead keeps the first maxRunes runes of s and appends a truncation marker.
+// Used to display the beginning of a string (prefix assertions, expected values).
+// Safe for multi-byte encodings (emoji, CJK, etc.) — never splits a rune.
+func truncateHead(s string, maxRunes int) string {
+	runes := []rune(s)
+	if len(runes) <= maxRunes {
+		return s
+	}
+	return string(runes[:maxRunes]) + "... (truncated)"
+}
+
+// truncateTail keeps the last maxRunes runes of s and prepends a truncation marker.
+// Used to display the end of a string (suffix assertions like EndWith), so the
+// reader sees the part of the string where the suffix would appear.
+// Safe for multi-byte encodings (emoji, CJK, etc.) — never splits a rune.
+func truncateTail(s string, maxRunes int) string {
+	runes := []rune(s)
+	if len(runes) <= maxRunes {
+		return s
+	}
+	return "(truncated)... " + string(runes[len(runes)-maxRunes:])
+}
+
 // isSliceOrArray checks if the provided value is a slice or an array.
 // It handles nil values by returning false.
 func isSliceOrArray(v interface{}) bool {
@@ -1341,21 +1368,22 @@ func formatIndexesWindow(indexes []int, windowSize int) string {
 } */
 
 func addPrefixHighlight(msg *strings.Builder, actual, expected string) {
-	prefixLength := len(expected)
-	if len(actual) >= prefixLength {
-		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLength))
+	prefixLen := utf8.RuneCountInString(expected)
+	if utf8.RuneCountInString(actual) >= prefixLen {
+		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLen))
 		msg.WriteString("\n          (actual prefix)")
 	}
 }
 
 func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
-	prefixLength := len(expected)
-	if len(actual) >= prefixLength {
-		blanksToAdd := len(actual) - prefixLength
+	expectedLen := utf8.RuneCountInString(expected)
+	actualLen := utf8.RuneCountInString(actual)
+	if actualLen >= expectedLen {
+		blanksToAdd := actualLen - expectedLen
 		blanks := strings.Repeat(" ", blanksToAdd)
 		fmt.Fprintf(msg, "\n            ")
 		msg.WriteString(blanks)
-		msg.WriteString(strings.Repeat("^", prefixLength))
+		msg.WriteString(strings.Repeat("^", expectedLen))
 		msg.WriteString("\n")
 		msg.WriteString("            ")
 		msg.WriteString(blanks)

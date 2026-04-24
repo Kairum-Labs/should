@@ -4742,3 +4742,92 @@ func TestFormatBeWithinError(t *testing.T) {
 		})
 	})
 }
+
+func TestTruncateHelpers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("truncateHead — ASCII within limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateHead("hello", 10)
+		if got != "hello" {
+			t.Errorf("got %q, want %q", got, "hello")
+		}
+	})
+
+	t.Run("truncateHead — ASCII over limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateHead("abcdefghij", 5)
+		want := "abcde... (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateHead — emoji not split", func(t *testing.T) {
+		t.Parallel()
+		// 3 emojis, limit 2 → keep first 2 emojis intact
+		got := truncateHead("🎉🎊🎈", 2)
+		want := "🎉🎊... (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateHead — CJK not split", func(t *testing.T) {
+		t.Parallel()
+		got := truncateHead("你好世界", 2)
+		want := "你好... (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — ASCII within limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateTail("hello", 10)
+		if got != "hello" {
+			t.Errorf("got %q, want %q", got, "hello")
+		}
+	})
+
+	t.Run("truncateTail — ASCII over limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateTail("abcdefghij", 5)
+		want := "(truncated)... fghij"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — emoji not split", func(t *testing.T) {
+		t.Parallel()
+		// 3 emojis, limit 2 → keep last 2 emojis intact
+		got := truncateTail("🎉🎊🎈", 2)
+		want := "(truncated)... 🎊🎈"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — CJK not split", func(t *testing.T) {
+		t.Parallel()
+		got := truncateTail("你好世界", 2)
+		want := "(truncated)... 世界"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — long string shows tail", func(t *testing.T) {
+		t.Parallel()
+		// 200 "a"s + "xyz" — tail must include "xyz"
+		s := strings.Repeat("a", 200) + "xyz"
+		got := truncateTail(s, 56)
+		if !strings.HasSuffix(got, "xyz") {
+			t.Errorf("expected tail to end with xyz, got %q", got)
+		}
+		if !strings.HasPrefix(got, "(truncated)...") {
+			t.Errorf("expected truncation marker, got %q", got)
+		}
+	})
+}
