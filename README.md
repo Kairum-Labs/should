@@ -22,6 +22,172 @@
 - **String Similarity**: When a string assertion fails, `Should` suggests similar strings from your collection to help you spot typos.
 - **Type-Safe**: Uses Go generics for type safety while maintaining a clean API.
 
+## Why `should`?
+
+A side-by-side comparison of real failure output across three Go assertion libraries.
+Same failing tests. Different readability in your terminal.
+
+> **Setup used for all examples below:**
+> ```go
+> import (
+>     "github.com/Kairum-Labs/should"
+>     "github.com/stretchr/testify/assert"
+>     gttassert "gotest.tools/v3/assert"
+> )
+> ```
+
+---
+
+### Case 1: Struct comparison
+
+```go
+type Person struct {
+    Name string
+    Age  int
+    Role string
+}
+
+p1 := Person{Name: "John", Age: 30, Role: "admin"}
+p2 := Person{Name: "Jane", Age: 25, Role: "viewer"}
+```
+
+**`should`**
+```
+comparison_test.go:27: Differences found:
+    Not equal:
+    expected: {Name: "Jane", Age: 25, Role: "viewer"}
+    actual  : {Name: "John", Age: 30, Role: "admin"}
+    Field differences:
+      └─ Name: "Jane" ≠ "John"
+      └─ Age: 25 ≠ 30
+      └─ Role: "viewer" ≠ "admin"
+```
+
+**`testify`**
+```
+comparison_test.go:33:
+    Error Trace: comparison_test.go:33
+    Error:       Not equal:
+                 expected: Person{Name:"John", Age:30, Role:"admin"}
+                 actual  : Person{Name:"Jane", Age:25, Role:"viewer"}
+
+                 Diff:
+                 --- Expected
+                 +++ Actual
+                 @@ -1,5 +1,5 @@
+                  (Person) {
+                 - Name: (string) (len=4) "John",
+                 - Age: (int) 30,
+                 - Role: (string) (len=5) "admin"
+                 + Name: (string) (len=4) "Jane",
+                 + Age: (int) 25,
+                 + Role: (string) (len=6) "viewer"
+                  }
+    Test:        TestComparison_Struct_Testify
+```
+
+**`gotest.tools/v3`**
+```
+comparison_test.go:39: assertion failed:
+    --- p1
+    +++ p2
+      Person{
+    -       Name: "John",
+    +       Name: "Jane",
+    -       Age:  30,
+    +       Age:  25,
+    -       Role: "admin",
+    +       Role: "viewer",
+      }
+```
+
+---
+
+### Case 2: Time comparison
+
+```go
+t1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+t2 := time.Date(2024, 1, 15, 14, 30, 2, 500000000, time.UTC)
+```
+
+**`should`**
+```
+comparison_test.go:47: Expected times to be the same, but difference is 2.5s
+    Expected: 2024-01-15 14:30:02.5 UTC
+    Actual  : 2024-01-15 14:30:00 UTC (2.5s earlier)
+```
+
+**`testify`**
+```
+comparison_test.go:53:
+    Error Trace: comparison_test.go:53
+    Error:       Not equal:
+                 expected: time.Date(2024, time.January, 15, 14, 30, 0, 0, time.UTC)
+                 actual  : time.Date(2024, time.January, 15, 14, 30, 2, 500000000, time.UTC)
+
+                 Diff:
+                 --- Expected
+                 +++ Actual
+                 @@ -1,2 +1,2 @@
+                 -(time.Time) 2024-01-15 14:30:00 +0000 UTC
+                 +(time.Time) 2024-01-15 14:30:02.5 +0000 UTC
+    Test:        TestComparison_Time_Testify
+```
+
+**`gotest.tools/v3`**
+```
+comparison_test.go:59: assertion failed:
+    --- t1
+    +++ t2
+      time.Time(
+    -       s"2024-01-15 14:30:00 +0000 UTC",
+    +       s"2024-01-15 14:30:02.5 +0000 UTC",
+      )
+```
+
+---
+
+### Case 3: Substring with transposition typo (human error)
+
+This is where most libraries completely fail to help.
+
+**`should`**
+```
+comparison_test.go:46: Expected string to contain "tets", but it was not found
+    Substring   : "tets"
+    Actual   : "test testing tester"
+
+    Similar substring found:
+      └─ 'test' at position 0 - 1 character differs
+```
+
+**`testify`**
+```
+comparison_test.go:50:
+    Error Trace: comparison_test.go:50
+    Error:       "test testing tester" does not contain "tets"
+    Test:        TestComparison_Substring_Testify
+```
+
+**`gotest.tools/v3`**
+```
+comparison_test.go:54: assertion failed: string "test testing tester" does not contain "tets"
+```
+
+---
+
+### At a glance
+
+| | `should` | `testify` | `gotest.tools/v3` |
+|---|---|---|---|
+| External dependencies | **0** | 3 (go-spew, go-difflib, yaml.v3) | 1 (go-cmp) |
+| Struct diff output | Named field diff with `≠` | Raw struct dump + unified diff | Inline unified diff |
+| Time diff output | Human-readable delta (`2.5s earlier`) | Raw `time.Date(...)` representation | Opaque quoted string |
+| Typo / similarity hints | ✓ | ✗ | ✗ |
+| API argument order | `(t, actual, expected)` | `(t, expected, actual)` | `(t, x, y)` |
+
+---
+
 ## Installation
 
 **Requirements:** Go 1.22 or later
@@ -65,6 +231,9 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeSameTime(t, t1, t2, should.WithTruncate(time.Second))
 
 	// Numeric comparisons with custom messages
+	should.BeGreaterThan(t, user.Age, 18,
+		should.WithMessagef("User must be adult: current age is %d", user.Age),
+	)
 	should.BeGreaterThan(t, user.Age, 18, should.WithMessage("User must be adult"))
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
 	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
@@ -83,11 +252,17 @@ func TestBasicAssertions(t *testing.T) {
 	should.Contain(t, users, "Alice")
 	should.NotContain(t, users, "David")
 	should.Contain(t, userIDs, targetID, should.WithMessage("User ID must exist in the system"))
+	should.Contain(t, userIDs, targetID,
+		should.WithMessagef("User ID %d must exist in the system", targetID),
+	)
 
 	// Sort check
 	should.BeSorted(t, []int{1, 2, 3, 4, 5})
 	should.BeSorted(t, []string{"apple", "banana", "cherry"})
 	should.BeSorted(t, scores, should.WithMessage("Test scores must be in ascending order"))
+	should.BeSorted(t, scores,
+		should.WithMessagef("Test scores must be in ascending order: got %v", scores),
+	)
 }
 ```
 
