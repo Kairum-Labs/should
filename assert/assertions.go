@@ -1029,6 +1029,7 @@ func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...O
 // This assertion checks if the actual string starts with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
 // along with a note if the case mismatch is detected.
+// The expected prefix must be non-empty.
 //
 // Example:
 //
@@ -1044,13 +1045,21 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	cfg := processOptions(opts...)
 
-	if actual == expected || (cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected))) {
+	expectedIsEmpty := strings.TrimSpace(expected) == ""
+
+	hasPrefix := strings.HasPrefix(actual, expected)
+	if !hasPrefix && cfg.IgnoreCase {
+		hasPrefix = strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected))
+	}
+
+	if !expectedIsEmpty && (actual == expected || hasPrefix) {
 		return
 	}
 
 	// Compute note message from originals before any display mutation.
 	noteMsg := ""
-	if !cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
+	if !expectedIsEmpty && !cfg.IgnoreCase &&
+		strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
 		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 
@@ -1075,7 +1084,7 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	actual = truncateHead(actual, displayMaxRunes)
 	expected = truncateHead(expected, displayMaxRunes)
 
-	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg, cfg)
+	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg)
 	if errorMsg != "" {
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -1086,6 +1095,7 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 // This assertion checks if the actual string ends with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
 // along with a note if the case mismatch is detected.
+// The expected suffix must be non-empty.
 //
 // Example:
 //
@@ -1101,35 +1111,28 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	cfg := processOptions(opts...)
 
-	// --- Logic checks on the original strings ---
-	// An empty suffix matches everything mathematically, but like StartWith with an
-	// empty prefix, we treat it as a likely programming mistake and fall through to
-	// the error path. Only a genuine suffix (non-empty) earns an early return.
-	// Exact match ("" == "") is always valid and returns immediately.
-	if actual == expected {
-		return
-	}
-	if expected != "" && strings.HasSuffix(actual, expected) {
-		return
-	}
-	if expected != "" && cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
+	expectedIsEmpty := strings.TrimSpace(expected) == ""
+
+	if !expectedIsEmpty && (actual == expected ||
+		strings.HasSuffix(actual, expected) ||
+		(cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)))) {
 		return
 	}
 
 	// Compute note message from originals before any display mutation.
 	noteMsg := ""
-	if !cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
+	if !expectedIsEmpty && !cfg.IgnoreCase &&
+		strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
 		noteMsg = "\nNote: Case mismatch detected (use should.WithIgnoreCase() if intended)"
 	}
 
 	// Extract the actual trailing runes for display (rune-aware, before truncation).
 	actualRunes := []rune(actual)
 	expectedRunes := []rune(expected)
-	var actualEndSuffix string
+	actualEndSuffix := actual
+
 	if len(actualRunes) > len(expectedRunes) {
 		actualEndSuffix = string(actualRunes[len(actualRunes)-len(expectedRunes):])
-	} else {
-		actualEndSuffix = actual
 	}
 
 	// --- Display string preparation ---
@@ -1146,7 +1149,7 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	actual = truncateTail(actual, displayMaxRunes)
 	expected = truncateHead(expected, displayMaxRunes)
 
-	errorMsg := formatEndsWithError(actual, expected, actualEndSuffix, noteMsg, cfg)
+	errorMsg := formatEndsWithError(actual, expected, actualEndSuffix, noteMsg)
 	if errorMsg != "" {
 		failWithOptions(t, cfg, errorMsg)
 	}

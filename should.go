@@ -522,6 +522,7 @@ func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...O
 // This assertion checks if the actual string starts with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
 // along with a note if the case mismatch is detected.
+// The expected prefix must be non-empty.
 //
 // Example:
 //
@@ -542,6 +543,7 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 // This assertion checks if the actual string ends with the expected substring.
 // It provides a detailed error message showing the expected and actual strings,
 // along with a note if the case mismatch is detected.
+// The expected suffix must be non-empty.
 //
 // Example:
 //
