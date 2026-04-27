@@ -4746,6 +4746,8 @@ func TestFormatBeWithinError(t *testing.T) {
 func TestTruncateHelpers(t *testing.T) {
 	t.Parallel()
 
+	// --- truncateHead ---
+
 	t.Run("truncateHead — ASCII within limit", func(t *testing.T) {
 		t.Parallel()
 		got := truncateHead("hello", 10)
@@ -4754,10 +4756,22 @@ func TestTruncateHelpers(t *testing.T) {
 		}
 	})
 
+	t.Run("truncateHead — no truncation when marker would make string longer", func(t *testing.T) {
+		t.Parallel()
+		// 57 ASCII runes, limit 56: 56 + 13 (marker runes) = 69 > 57.
+		// Truncating would produce a longer output — must return unchanged.
+		s := strings.Repeat("a", 57)
+		got := truncateHead(s, 56)
+		if got != s {
+			t.Errorf("expected no truncation for 57-rune string at limit 56, got %q", got)
+		}
+	})
+
 	t.Run("truncateHead — ASCII over limit", func(t *testing.T) {
 		t.Parallel()
-		got := truncateHead("abcdefghij", 5)
-		want := "abcde... (truncated)"
+		// 20 ASCII runes, limit 5: 5+13=18 < 20 → must truncate.
+		got := truncateHead("abcdefghijklmnopqrst", 5)
+		want := "abcde… (truncated)"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
@@ -4765,9 +4779,9 @@ func TestTruncateHelpers(t *testing.T) {
 
 	t.Run("truncateHead — emoji not split", func(t *testing.T) {
 		t.Parallel()
-		// 3 emojis, limit 2 → keep first 2 emojis intact
-		got := truncateHead("🎉🎊🎈", 2)
-		want := "🎉🎊... (truncated)"
+		// 20 emoji runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateHead(strings.Repeat("🎉", 20), 2)
+		want := "🎉🎉… (truncated)"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
@@ -4775,12 +4789,15 @@ func TestTruncateHelpers(t *testing.T) {
 
 	t.Run("truncateHead — CJK not split", func(t *testing.T) {
 		t.Parallel()
-		got := truncateHead("你好世界", 2)
-		want := "你好... (truncated)"
+		// 20 CJK runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateHead(strings.Repeat("你", 20), 2)
+		want := "你你… (truncated)"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
+
+	// --- truncateTail ---
 
 	t.Run("truncateTail — ASCII within limit", func(t *testing.T) {
 		t.Parallel()
@@ -4790,10 +4807,22 @@ func TestTruncateHelpers(t *testing.T) {
 		}
 	})
 
+	t.Run("truncateTail — no truncation when marker would make string longer", func(t *testing.T) {
+		t.Parallel()
+		// 57 ASCII runes, limit 56: 56 + 13 (marker runes) = 69 > 57.
+		// Truncating would produce a longer output — must return unchanged.
+		s := strings.Repeat("a", 57)
+		got := truncateTail(s, 56)
+		if got != s {
+			t.Errorf("expected no truncation for 57-rune string at limit 56, got %q", got)
+		}
+	})
+
 	t.Run("truncateTail — ASCII over limit", func(t *testing.T) {
 		t.Parallel()
-		got := truncateTail("abcdefghij", 5)
-		want := "(truncated)... fghij"
+		// 20 ASCII runes, limit 5: 5+13=18 < 20 → must truncate.
+		got := truncateTail("abcdefghijklmnopqrst", 5)
+		want := "(truncated) …pqrst"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
@@ -4801,9 +4830,9 @@ func TestTruncateHelpers(t *testing.T) {
 
 	t.Run("truncateTail — emoji not split", func(t *testing.T) {
 		t.Parallel()
-		// 3 emojis, limit 2 → keep last 2 emojis intact
-		got := truncateTail("🎉🎊🎈", 2)
-		want := "(truncated)... 🎊🎈"
+		// 20 emoji runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateTail(strings.Repeat("🎉", 20), 2)
+		want := "(truncated) …🎉🎉"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
@@ -4811,8 +4840,9 @@ func TestTruncateHelpers(t *testing.T) {
 
 	t.Run("truncateTail — CJK not split", func(t *testing.T) {
 		t.Parallel()
-		got := truncateTail("你好世界", 2)
-		want := "(truncated)... 世界"
+		// 20 CJK runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateTail(strings.Repeat("你", 20), 2)
+		want := "(truncated) …你你"
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
@@ -4826,7 +4856,7 @@ func TestTruncateHelpers(t *testing.T) {
 		if !strings.HasSuffix(got, "xyz") {
 			t.Errorf("expected tail to end with xyz, got %q", got)
 		}
-		if !strings.HasPrefix(got, "(truncated)...") {
+		if !strings.HasPrefix(got, "(truncated) …") {
 			t.Errorf("expected truncation marker, got %q", got)
 		}
 	})

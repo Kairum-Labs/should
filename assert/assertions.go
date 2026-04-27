@@ -1044,7 +1044,14 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	cfg := processOptions(opts...)
 
-	if actual == expected || (cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected))) {
+	// Do not guard against expected == "": by definition, every string starts with
+	// an empty prefix (strings.HasPrefix("hello", "") == true).
+	hasPrefix := strings.HasPrefix(actual, expected)
+	if !hasPrefix && cfg.IgnoreCase {
+		hasPrefix = strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected))
+	}
+
+	if actual == expected || hasPrefix {
 		return
 	}
 
@@ -1075,7 +1082,7 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	actual = truncateHead(actual, displayMaxRunes)
 	expected = truncateHead(expected, displayMaxRunes)
 
-	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg, cfg)
+	errorMsg := formatStartsWithError(actual, expected, startWith, noteMsg)
 	if errorMsg != "" {
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -1101,18 +1108,9 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 
 	cfg := processOptions(opts...)
 
-	// --- Logic checks on the original strings ---
-	// An empty suffix matches everything mathematically, but like StartWith with an
-	// empty prefix, we treat it as a likely programming mistake and fall through to
-	// the error path. Only a genuine suffix (non-empty) earns an early return.
-	// Exact match ("" == "") is always valid and returns immediately.
-	if actual == expected {
-		return
-	}
-	if expected != "" && strings.HasSuffix(actual, expected) {
-		return
-	}
-	if expected != "" && cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected)) {
+	// Do not guard against expected == "": by definition, every string ends with
+	// an empty suffix (strings.HasSuffix("hello", "") == true).
+	if actual == expected || strings.HasSuffix(actual, expected) || (cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected))) {
 		return
 	}
 
@@ -1125,11 +1123,10 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	// Extract the actual trailing runes for display (rune-aware, before truncation).
 	actualRunes := []rune(actual)
 	expectedRunes := []rune(expected)
-	var actualEndSuffix string
+	actualEndSuffix := actual
+
 	if len(actualRunes) > len(expectedRunes) {
 		actualEndSuffix = string(actualRunes[len(actualRunes)-len(expectedRunes):])
-	} else {
-		actualEndSuffix = actual
 	}
 
 	// --- Display string preparation ---
@@ -1146,7 +1143,7 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	actual = truncateTail(actual, displayMaxRunes)
 	expected = truncateHead(expected, displayMaxRunes)
 
-	errorMsg := formatEndsWithError(actual, expected, actualEndSuffix, noteMsg, cfg)
+	errorMsg := formatEndsWithError(actual, expected, actualEndSuffix, noteMsg)
 	if errorMsg != "" {
 		failWithOptions(t, cfg, errorMsg)
 	}

@@ -3787,6 +3787,18 @@ func TestStartsWith(t *testing.T) {
 				}
 			})
 		}
+
+		t.Run("HasPrefix path passes on non-exact match", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+
+			// Covers the non-exact successful prefix path: actual != expected && HasPrefix(actual, expected).
+			StartWith(mockT, "Hello, world!", "Hell")
+
+			if mockT.failed {
+				t.Errorf("Expected StartWith to pass on HasPrefix path, but it failed: %s", mockT.message)
+			}
+		})
 	})
 
 	t.Run("Case sensitivity", func(t *testing.T) {
@@ -3836,6 +3848,18 @@ func TestStartsWith(t *testing.T) {
 				}
 			})
 		}
+
+		t.Run("HasSuffix path passes on non-exact match", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+
+			// Covers the non-exact successful suffix path: actual != expected && HasSuffix(actual, expected).
+			EndWith(mockT, "Hello, world!", "orld!")
+
+			if mockT.failed {
+				t.Errorf("Expected EndWith to pass on HasSuffix path, but it failed: %s", mockT.message)
+			}
+		})
 	})
 
 	t.Run("Custom messages", func(t *testing.T) {
@@ -3882,15 +3906,10 @@ func TestStartsWith(t *testing.T) {
 			errorCheck func(t *testing.T, message string)
 		}{
 			{
-				name:       "should fail for empty prefix",
+				name:       "should pass for empty prefix",
 				actual:     "data",
 				expected:   "",
-				shouldFail: true,
-				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, `Expected string to start with '<empty>'`) {
-						t.Errorf("Expected error message for empty prefix, got: %s", message)
-					}
-				},
+				shouldFail: false,
 			},
 			{
 				name:       "should fail if actual is empty",
@@ -3946,7 +3965,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "Different",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "... (truncated)") {
+					if !strings.Contains(message, "… (truncated)") {
 						t.Errorf("Expected message to contain truncated actual string, got: %s", message)
 					}
 				},
@@ -3957,7 +3976,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "... (truncated)") {
+					if !strings.Contains(message, "… (truncated)") {
 						t.Errorf("Expected message to contain truncated expected string, got: %s", message)
 					}
 				},
@@ -3968,7 +3987,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					truncatedOccurrences := strings.Count(message, "... (truncated)")
+					truncatedOccurrences := strings.Count(message, "… (truncated)")
 					if truncatedOccurrences < 2 {
 						t.Errorf("Expected at least 2 truncated strings in message, got %d occurrences in: %s", truncatedOccurrences, message)
 					}
@@ -4037,7 +4056,7 @@ func TestStartsWith(t *testing.T) {
 		if !strings.Contains(mockT.message, "unique_start_") {
 			t.Errorf("Expected head of actual to be visible in error, got:\n%s", mockT.message)
 		}
-		if !strings.Contains(mockT.message, "... (truncated)") {
+		if !strings.Contains(mockT.message, "… (truncated)") {
 			t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
 		}
 	})
@@ -4199,7 +4218,7 @@ func TestEndsWith(t *testing.T) {
 				name:       "Empty expected with non-empty actual",
 				actual:     "hello",
 				expected:   "",
-				shouldFail: true,
+				shouldFail: false,
 			},
 			{
 				name:       "Non-empty expected with empty actual",
@@ -4241,8 +4260,8 @@ func TestEndsWith(t *testing.T) {
 				expected:   "Different",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "(truncated)...") {
-						t.Errorf("Expected message to contain tail-truncation marker '(truncated)...', got: %s", message)
+					if !strings.Contains(message, "(truncated) …") {
+						t.Errorf("Expected message to contain tail-truncation marker '(truncated) …', got: %s", message)
 					}
 				},
 			},
@@ -4252,8 +4271,8 @@ func TestEndsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "... (truncated)") {
-						t.Errorf("Expected message to contain head-truncation marker '... (truncated)', got: %s", message)
+					if !strings.Contains(message, "… (truncated)") {
+						t.Errorf("Expected message to contain head-truncation marker '… (truncated)', got: %s", message)
 					}
 				},
 			},
@@ -4263,11 +4282,11 @@ func TestEndsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "(truncated)...") {
-						t.Errorf("Expected tail-truncation marker '(truncated)...' for actual, got: %s", message)
+					if !strings.Contains(message, "(truncated) …") {
+						t.Errorf("Expected tail-truncation marker '(truncated) …' for actual, got: %s", message)
 					}
-					if !strings.Contains(message, "... (truncated)") {
-						t.Errorf("Expected head-truncation marker '... (truncated)' for expected, got: %s", message)
+					if !strings.Contains(message, "… (truncated)") {
+						t.Errorf("Expected head-truncation marker '… (truncated)' for expected, got: %s", message)
 					}
 				},
 			},
@@ -4305,8 +4324,8 @@ func TestEndsWith(t *testing.T) {
 		if !mockT.failed {
 			t.Fatal("Expected failure but test passed")
 		}
-		if !strings.Contains(mockT.message, "(truncated)...") {
-			t.Errorf("Expected tail-truncation marker '(truncated)...' in error, got:\n%s", mockT.message)
+		if !strings.Contains(mockT.message, "(truncated) …") {
+			t.Errorf("Expected tail-truncation marker '(truncated) …' in error, got:\n%s", mockT.message)
 		}
 		if !strings.Contains(mockT.message, "xyz") {
 			t.Errorf("Expected tail 'xyz' to be visible in error, got:\n%s", mockT.message)
@@ -4326,8 +4345,8 @@ func TestEndsWith(t *testing.T) {
 		if !strings.Contains(mockT.message, "start_") {
 			t.Errorf("Expected start of expected string 'start_' to be visible, got:\n%s", mockT.message)
 		}
-		if !strings.Contains(mockT.message, "... (truncated)") {
-			t.Errorf("Expected head-truncation marker '... (truncated)' for expected string, got:\n%s", mockT.message)
+		if !strings.Contains(mockT.message, "… (truncated)") {
+			t.Errorf("Expected head-truncation marker '… (truncated)' for expected string, got:\n%s", mockT.message)
 		}
 	})
 
