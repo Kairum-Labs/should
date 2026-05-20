@@ -22,6 +22,47 @@ const maxSimilarLen = 20
 // as effectively equal, preferring the more complete string.
 const similarityThreshold = 0.05
 
+// displayMaxRunes is the maximum number of runes shown for a string in assertion
+// error messages before the string is truncated for readability.
+const displayMaxRunes = 56
+
+// truncateHead keeps the first maxRunes runes of s and appends a truncation marker.
+// Used to display the beginning of a string (prefix assertions, expected values).
+// Safe for multi-byte encodings (emoji, CJK, etc.) — never splits a rune.
+// Returns s unchanged when the marked-up result would be longer than the original.
+func truncateHead(s string, maxRunes int) string {
+	runes := []rune(s)
+	n := len(runes)
+	if n <= maxRunes {
+		return s
+	}
+	const marker = "… (truncated)"
+	// Only truncate when the result is strictly shorter than the original.
+	if maxRunes+utf8.RuneCountInString(marker) >= n {
+		return s
+	}
+	return string(runes[:maxRunes]) + marker
+}
+
+// truncateTail keeps the last maxRunes runes of s and prepends a truncation marker.
+// Used to display the end of a string (suffix assertions like EndWith), so the
+// reader sees the part of the string where the suffix would appear.
+// Safe for multi-byte encodings (emoji, CJK, etc.) — never splits a rune.
+// Returns s unchanged when the marked-up result would be longer than the original.
+func truncateTail(s string, maxRunes int) string {
+	runes := []rune(s)
+	n := len(runes)
+	if n <= maxRunes {
+		return s
+	}
+	const marker = "(truncated) …"
+	// Only truncate when the result is strictly shorter than the original.
+	if maxRunes+utf8.RuneCountInString(marker) >= n {
+		return s
+	}
+	return marker + string(runes[n-maxRunes:])
+}
+
 // isSliceOrArray checks if the provided value is a slice or an array.
 // It handles nil values by returning false.
 func isSliceOrArray(v interface{}) bool {
@@ -1341,21 +1382,22 @@ func formatIndexesWindow(indexes []int, windowSize int) string {
 } */
 
 func addPrefixHighlight(msg *strings.Builder, actual, expected string) {
-	prefixLength := len(expected)
-	if len(actual) >= prefixLength {
-		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLength))
+	prefixLen := utf8.RuneCountInString(expected)
+	if utf8.RuneCountInString(actual) >= prefixLen {
+		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLen))
 		msg.WriteString("\n          (actual prefix)")
 	}
 }
 
 func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
-	prefixLength := len(expected)
-	if len(actual) >= prefixLength {
-		blanksToAdd := len(actual) - prefixLength
+	expectedLen := utf8.RuneCountInString(expected)
+	actualLen := utf8.RuneCountInString(actual)
+	if actualLen >= expectedLen {
+		blanksToAdd := actualLen - expectedLen
 		blanks := strings.Repeat(" ", blanksToAdd)
 		fmt.Fprintf(msg, "\n            ")
 		msg.WriteString(blanks)
-		msg.WriteString(strings.Repeat("^", prefixLength))
+		msg.WriteString(strings.Repeat("^", expectedLen))
 		msg.WriteString("\n")
 		msg.WriteString("            ")
 		msg.WriteString(blanks)
@@ -1363,52 +1405,28 @@ func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
 	}
 }
 
-func formatStartsWithError(actual string, expected string, startWith string, noteMsg string, cfg *Config) string {
+// formatStartsWithError formats a detailed error message for StartWith assertions.
+// It is only called when the assertion has already failed.
+func formatStartsWithError(actual string, expected string, startWith string, noteMsg string) string {
 	var msg strings.Builder
-
-	if cfg.IgnoreCase && strings.HasPrefix(strings.ToLower(actual), strings.ToLower(expected)) {
-		msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
-		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
-		addPrefixHighlight(&msg, actual, expected)
-		msg.WriteString(noteMsg)
-		return msg.String()
-	}
-
-	if !strings.HasPrefix(actual, expected) {
-		msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
-		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
-		addPrefixHighlight(&msg, actual, expected)
-		msg.WriteString(noteMsg)
-		return msg.String()
-	}
-
-	return ""
+	msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
+	msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	addPrefixHighlight(&msg, actual, expected)
+	msg.WriteString(noteMsg)
+	return msg.String()
 }
 
 // formatEndsWithError formats a detailed error message for EndWith assertions.
-func formatEndsWithError(actual string, expected string, actualEndSufix string, noteMsg string, cfg *Config) string {
+// It is only called when the assertion has already failed.
+func formatEndsWithError(actual string, expected string, actualEndSuffix string, noteMsg string) string {
 	var msg strings.Builder
-	if cfg.IgnoreCase && strings.HasSuffix(strings.ToLower(actualEndSufix), strings.ToLower(expected)) {
-		msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSufix))
-		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
-		addPrefixHighlight(&msg, actual, expected)
-		msg.WriteString(noteMsg)
-		return msg.String()
-	}
-
-	if !strings.HasSuffix(actualEndSufix, expected) {
-		msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSufix))
-		msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-		msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
-		addPrefixHighlightToEnd(&msg, actual, expected)
-		msg.WriteString(noteMsg)
-		return msg.String()
-	}
-
-	return ""
+	msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSuffix))
+	msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
+	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	addPrefixHighlightToEnd(&msg, actual, expected)
+	msg.WriteString(noteMsg)
+	return msg.String()
 }
 
 // findExactCaseMismatch finds the exact case mismatch for a substring within a string

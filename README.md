@@ -348,8 +348,50 @@ should.StartWith(t, "Hello, World!", "hello")
 // Case-insensitive option
 should.StartWith(t, "Hello, World!", "hello", should.WithIgnoreCase())
 
+// Long strings: only the beginning is shown (where the prefix appears)
+actual := strings.Repeat("a", 200) + "_suffix"
+should.StartWith(t, actual, "different")
+// Output:
+// Expected string to start with 'different', but it starts with 'aaaaaaaaa'
+// Expected : 'different'
+// Actual   : 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa… (truncated)'
+//             ^^^^^^^^^
+//           (actual prefix)
+
 // String suffix checking
 should.EndWith(t, "Hello, World!", "World!")
+
+// Case-sensitive by default
+should.EndWith(t, "Hello, World!", "Hello")
+// Output:
+// Expected string to end with 'Hello', but it ends with 'orld!'
+// Expected : 'Hello'
+// Actual   : 'Hello, World!'
+//                     ^^^^^
+//                     (actual suffix)
+
+// Case mismatch detection
+should.EndWith(t, "Hello, World", "world")
+// Output:
+// Expected string to end with 'world', but it ends with 'World'
+// Expected : 'world'
+// Actual   : 'Hello, World'
+//                    ^^^^^
+//                    (actual suffix)
+// Note: Case mismatch detected (use should.WithIgnoreCase() if intended)
+
+// Case-insensitive option
+should.EndWith(t, "Hello, World!", "world!", should.WithIgnoreCase())
+
+// Long strings: only the tail is shown (where the suffix appears)
+actual = "prefix_" + strings.Repeat("a", 200)
+should.EndWith(t, actual, "different")
+// Output:
+// Expected string to end with 'different', but it ends with 'aaaaaaaaa'
+// Expected : 'different'
+// Actual   : '(truncated) …aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+//                                                                         ^^^^^^^^^
+//                                                                        (actual suffix)
 
 // With custom messages
 should.StartWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))

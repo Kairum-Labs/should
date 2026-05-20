@@ -4742,3 +4742,122 @@ func TestFormatBeWithinError(t *testing.T) {
 		})
 	})
 }
+
+func TestTruncateHelpers(t *testing.T) {
+	t.Parallel()
+
+	// --- truncateHead ---
+
+	t.Run("truncateHead — ASCII within limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateHead("hello", 10)
+		if got != "hello" {
+			t.Errorf("got %q, want %q", got, "hello")
+		}
+	})
+
+	t.Run("truncateHead — no truncation when marker would make string longer", func(t *testing.T) {
+		t.Parallel()
+		// 57 ASCII runes, limit 56: 56 + 13 (marker runes) = 69 > 57.
+		// Truncating would produce a longer output — must return unchanged.
+		s := strings.Repeat("a", 57)
+		got := truncateHead(s, 56)
+		if got != s {
+			t.Errorf("expected no truncation for 57-rune string at limit 56, got %q", got)
+		}
+	})
+
+	t.Run("truncateHead — ASCII over limit", func(t *testing.T) {
+		t.Parallel()
+		// 20 ASCII runes, limit 5: 5+13=18 < 20 → must truncate.
+		got := truncateHead("abcdefghijklmnopqrst", 5)
+		want := "abcde… (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateHead — emoji not split", func(t *testing.T) {
+		t.Parallel()
+		// 20 emoji runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateHead(strings.Repeat("🎉", 20), 2)
+		want := "🎉🎉… (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateHead — CJK not split", func(t *testing.T) {
+		t.Parallel()
+		// 20 CJK runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateHead(strings.Repeat("你", 20), 2)
+		want := "你你… (truncated)"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	// --- truncateTail ---
+
+	t.Run("truncateTail — ASCII within limit", func(t *testing.T) {
+		t.Parallel()
+		got := truncateTail("hello", 10)
+		if got != "hello" {
+			t.Errorf("got %q, want %q", got, "hello")
+		}
+	})
+
+	t.Run("truncateTail — no truncation when marker would make string longer", func(t *testing.T) {
+		t.Parallel()
+		// 57 ASCII runes, limit 56: 56 + 13 (marker runes) = 69 > 57.
+		// Truncating would produce a longer output — must return unchanged.
+		s := strings.Repeat("a", 57)
+		got := truncateTail(s, 56)
+		if got != s {
+			t.Errorf("expected no truncation for 57-rune string at limit 56, got %q", got)
+		}
+	})
+
+	t.Run("truncateTail — ASCII over limit", func(t *testing.T) {
+		t.Parallel()
+		// 20 ASCII runes, limit 5: 5+13=18 < 20 → must truncate.
+		got := truncateTail("abcdefghijklmnopqrst", 5)
+		want := "(truncated) …pqrst"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — emoji not split", func(t *testing.T) {
+		t.Parallel()
+		// 20 emoji runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateTail(strings.Repeat("🎉", 20), 2)
+		want := "(truncated) …🎉🎉"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — CJK not split", func(t *testing.T) {
+		t.Parallel()
+		// 20 CJK runes, limit 2: 2+13=15 < 20 → must truncate, no rune splitting.
+		got := truncateTail(strings.Repeat("你", 20), 2)
+		want := "(truncated) …你你"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("truncateTail — long string shows tail", func(t *testing.T) {
+		t.Parallel()
+		// 200 "a"s + "xyz" — tail must include "xyz"
+		s := strings.Repeat("a", 200) + "xyz"
+		got := truncateTail(s, 56)
+		if !strings.HasSuffix(got, "xyz") {
+			t.Errorf("expected tail to end with xyz, got %q", got)
+		}
+		if !strings.HasPrefix(got, "(truncated) …") {
+			t.Errorf("expected truncation marker, got %q", got)
+		}
+	})
+}
