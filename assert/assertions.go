@@ -1151,6 +1151,60 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 }
 
+// NotEndWith reports a test failure if the string ends with the expected suffix.
+//
+// This assertion checks if the actual string ends with the expected substring
+// and fails if it does. It supports optional [WithIgnoreCase] and [WithMessage].
+// The expected suffix must be non-empty.
+//
+// Example:
+//
+//	should.NotEndWith(t, "Hello, world!", "planet")
+//
+//	should.NotEndWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+//
+//	should.NotEndWith(t, "/safe/path", "/admin", should.WithMessage("Path must not end with /admin"))
+func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if expected == "" {
+		failWithOptions(t, cfg, "NotEndWith requires a non-empty expected suffix")
+		return
+	}
+
+	hasSuffix := strings.HasSuffix(actual, expected)
+	if !hasSuffix && cfg.IgnoreCase {
+		hasSuffix = strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected))
+	}
+
+	if !hasSuffix {
+		return
+	}
+
+	// Extract the actual trailing runes for display (rune-aware, before truncation).
+	actualRunes := []rune(actual)
+	expectedRunes := []rune(expected)
+	actualEndSuffix := actual
+
+	if len(actualRunes) > len(expectedRunes) {
+		actualEndSuffix = string(actualRunes[len(actualRunes)-len(expectedRunes):])
+	}
+
+	if strings.TrimSpace(actual) == "" {
+		actual = "<empty>"
+	}
+
+	actual = truncateTail(actual, displayMaxRunes)
+	expected = truncateHead(expected, displayMaxRunes)
+
+	errorMsg := formatNotEndsWithError(actual, expected, actualEndSuffix)
+	if errorMsg != "" {
+		failWithOptions(t, cfg, errorMsg)
+	}
+}
+
 // ContainSubstring reports a test failure if the string does not contain the expected substring.
 //
 // This assertion checks if the actual string contains the expected substring.

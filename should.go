@@ -559,6 +559,24 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	assert.EndWith(t, actual, expected, opts...)
 }
 
+// NotEndWith reports a test failure if the string ends with the expected suffix.
+//
+// This assertion checks if the actual string ends with the expected substring
+// and fails if it does. It supports optional [WithIgnoreCase] and [WithMessage].
+// The expected suffix must be non-empty.
+//
+// Example:
+//
+//	should.NotEndWith(t, "Hello, world!", "planet")
+//
+//	should.NotEndWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+//
+//	should.NotEndWith(t, "/safe/path", "/admin", should.WithMessage("Path must not end with /admin"))
+func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+	assert.NotEndWith(t, actual, expected, opts...)
+}
+
 // ContainSubstring reports a test failure if the string does not contain the expected substring.
 //
 // This assertion checks if the actual string contains the expected substring.

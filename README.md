@@ -716,6 +716,7 @@ should.NotContainValue(t, userRoles, 3)
 
 - `StartWith(t, actual, expected)` - Check if string starts with expected substring
 - `EndWith(t, actual, expected)` - Check if string ends with expected substring
+- `NotEndWith(t, actual, suffix)` - Check if string does NOT end with expected suffix
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
 ### Collection Operations

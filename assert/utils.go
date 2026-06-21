@@ -1429,6 +1429,17 @@ func formatEndsWithError(actual string, expected string, actualEndSuffix string,
 	return msg.String()
 }
 
+// formatNotEndsWithError formats a detailed error message for NotEndWith assertions.
+// It is only called when the assertion has already failed.
+func formatNotEndsWithError(actual string, expected string, actualEndSuffix string) string {
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("Expected string to NOT end with '%s', but it does:", expected))
+	msg.WriteString(fmt.Sprintf("\nSuffix   : '%s'", expected))
+	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actualEndSuffix))
+	addPrefixHighlightToEnd(&msg, actualEndSuffix, expected)
+	return msg.String()
+}
+
 // findExactCaseMismatch finds the exact case mismatch for a substring within a string
 // Returns the position and the found substring if there's an exact case-only difference
 func findExactCaseMismatch(actual, substring string) caseMismatchResult {
