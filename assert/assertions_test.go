@@ -4423,6 +4423,198 @@ func TestEndsWith(t *testing.T) {
 	})
 }
 
+// === Tests for NotEndWith ===
+
+func TestNotEndsWith(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+		}{
+			{
+				name:       "Success when actual does not end with expected",
+				actual:     "Hello, world!",
+				expected:   "planet",
+				shouldFail: false,
+			},
+			{
+				name:       "Fails when actual ends with expected",
+				actual:     "Hello, world!",
+				expected:   "world!",
+				shouldFail: true,
+			},
+			{
+				name:       "Exact match fails",
+				actual:     "world",
+				expected:   "world",
+				shouldFail: true,
+			},
+			{
+				name:       "Expected longer than actual",
+				actual:     "abc",
+				expected:   "abcdef",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+			})
+		}
+	})
+
+	t.Run("Case sensitivity", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+		}{
+			{
+				name:       "Fails with ignore case when actual ends with expected ignoring case",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{WithIgnoreCase()},
+				shouldFail: true,
+			},
+			{
+				name:       "Passes with ignore case disabled when case differs",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{},
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
+		t.Run("Fails with custom message", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			NotEndWith(mockT, "Hello, world!", "world!", WithMessage("String should not end with 'world!'"))
+
+			if !mockT.Failed() {
+				t.Errorf("Expected failure but test passed")
+			}
+
+			expectedStrings := []string{
+				"Expected string to NOT end with 'world!'",
+				"but it does",
+			}
+
+			for _, expectedString := range expectedStrings {
+				if !strings.Contains(mockT.message, expectedString) {
+					t.Errorf("Expected message to contain %q, but got %q", expectedString, mockT.message)
+				}
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Empty expected with empty actual",
+				actual:     "",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NotEndWith requires a non-empty expected suffix") {
+						t.Errorf("Expected clear empty-suffix error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Empty expected with non-empty actual",
+				actual:     "hello",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NotEndWith requires a non-empty expected suffix") {
+						t.Errorf("Expected clear empty-suffix error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Non-empty expected with empty actual",
+				actual:     "",
+				expected:   "hello",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed")
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Unicode — emoji suffix passes", func(t *testing.T) {
+		t.Parallel()
+		actual := strings.Repeat("x", 60) + "🎉🎊🎈"
+		mockT := &mockT{}
+		NotEndWith(mockT, actual, "world")
+		if mockT.failed {
+			t.Errorf("Expected pass for non-matching suffix but got failure:\n%s", mockT.message)
+		}
+	})
+}
+
 // === Tests for BeEqual with complex types and custom messages ===
 
 func TestBeEqual_WithComplexNestedStructs_CustomMessage(t *testing.T) {
