@@ -1151,6 +1151,46 @@ func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 }
 
+// NotEndWith reports a test failure if the string ends with the expected substring.
+//
+// This assertion checks if the actual string does NOT end with the expected substring.
+// It provides a detailed error message showing the expected and actual strings.
+// The expected suffix must be non-empty.
+//
+// Example:
+//
+//	should.NotEndWith(t, "Hello, world!", "planet")
+//
+//	should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase()) // fails
+//
+//	should.NotEndWith(t, "Hello, world!", "world", should.WithMessage("String should not end with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use [WithIgnoreCase] to ignore case.
+func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+
+	cfg := processOptions(opts...)
+
+	if expected == "" {
+		failWithOptions(t, cfg, "NotEndWith requires a non-empty expected suffix")
+		return
+	}
+
+	hasSuffix := strings.HasSuffix(actual, expected)
+	if !hasSuffix && cfg.IgnoreCase {
+		hasSuffix = strings.HasSuffix(strings.ToLower(actual), strings.ToLower(expected))
+	}
+
+	if actual == expected || hasSuffix {
+		displayActual := truncateTail(actual, displayMaxRunes)
+		displayExpected := truncateHead(expected, displayMaxRunes)
+
+		errorMsg := fmt.Sprintf("Expected string to NOT end with '%s', but it does\nExpected : '%s'\nActual   : '%s'",
+			displayExpected, displayExpected, displayActual)
+		failWithOptions(t, cfg, errorMsg)
+	}
+}
+
 // ContainSubstring reports a test failure if the string does not contain the expected substring.
 //
 // This assertion checks if the actual string contains the expected substring.
