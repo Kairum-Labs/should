@@ -4641,6 +4641,50 @@ func TestNotEndsWith(t *testing.T) {
 				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
 			}
 		})
+
+		t.Run("Whitespace-only actual is rendered as empty placeholder", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			NotEndWith(mockT, "   ", " ")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "Actual   : '<empty>'") {
+				t.Errorf("Expected whitespace-only actual to render as <empty>, got:\n%s", mockT.message)
+			}
+		})
+
+		t.Run("Unicode — emoji suffix visible after tail truncation", func(t *testing.T) {
+			t.Parallel()
+			longActual := strings.Repeat("a", 200) + "🎉🎊🎈"
+			mockT := &mockT{}
+			NotEndWith(mockT, longActual, "🎉🎊🎈")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "🎉🎊🎈") {
+				t.Errorf("Expected emoji suffix to be visible in error (not garbled), got:\n%s", mockT.message)
+			}
+			if !strings.Contains(mockT.message, "(truncated)") {
+				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+			}
+		})
+
+		t.Run("Unicode — CJK suffix visible after tail truncation", func(t *testing.T) {
+			t.Parallel()
+			longActual := strings.Repeat("a", 200) + "你好世界"
+			mockT := &mockT{}
+			NotEndWith(mockT, longActual, "你好世界")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "你好世界") {
+				t.Errorf("Expected CJK suffix to be visible in error (not garbled), got:\n%s", mockT.message)
+			}
+			if !strings.Contains(mockT.message, "(truncated)") {
+				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+			}
+		})
 	})
 }
 

@@ -1182,6 +1182,12 @@ func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	}
 
 	if actual == expected || hasSuffix {
+		// Match EndWith display preparation so tail excerpts stay rune-aware for
+		// emoji, CJK, and other multi-byte characters.
+		if strings.TrimSpace(actual) == "" {
+			actual = "<empty>"
+		}
+
 		displayActual := truncateTail(actual, displayMaxRunes)
 		displayExpected := truncateHead(expected, displayMaxRunes)
 
