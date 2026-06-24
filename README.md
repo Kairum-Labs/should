@@ -396,6 +396,20 @@ should.EndWith(t, actual, "different")
 // With custom messages
 should.StartWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
 should.EndWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
+
+// Negated suffix checking
+should.NotEndWith(t, "Hello, world!", "planet")  // passes
+should.NotEndWith(t, "Hello, world!", "world!") // fails
+// Output:
+// Expected string to NOT end with 'world!', but it does
+// Expected : 'world!'
+// Actual   : 'Hello, world!'
+
+// Case-insensitive negated suffix
+should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase()) // fails
+
+// With custom messages
+should.NotEndWith(t, filename, ".tmp", should.WithMessage("Output files must not have .tmp extension"))
 ```
 
 ### String Substring Assertions
@@ -718,6 +732,7 @@ should.NotContainValue(t, userRoles, 3)
 
 - `StartWith(t, actual, expected)` - Check if string starts with expected substring
 - `EndWith(t, actual, expected)` - Check if string ends with expected substring
+- `NotEndWith(t, actual, expected)` - Check if string does NOT end with expected substring
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
 ### Collection Operations

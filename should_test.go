@@ -478,6 +478,23 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("NotEndWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotEndWith(mockT, "Hello, world", "planet")
+		if mockT.failed {
+			t.Error("NotEndWith should pass")
+		}
+	})
+	t.Run("NotEndWith fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotEndWith(mockT, "Hello, world", "world")
+		if !mockT.failed {
+			t.Error("NotEndWith should fail")
+		}
+	})
+
 	// AnyMatch
 	t.Run("AnyMatch passes", func(t *testing.T) {
 		t.Parallel()
