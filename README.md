@@ -458,6 +458,8 @@ should.ContainSubstring(t, apiResponse, "success", should.WithIgnoreCase(), shou
 
 **Note**: Typo detection using Levenshtein distance is automatically enabled for substrings up to 20 characters to maintain good performance. For longer substrings, only exact matching is performed.
 
+**Known limitation**: Multiline previews of long strings are sliced on rune (code point) boundaries, so multi-byte characters are never corrupted in the output. They are not sliced on grapheme-cluster boundaries, so a combined sequence such as an emoji ZWJ sequence (for example, a family emoji) can still be split across two preview lines. This affects only the rendered error preview, never the assertion result.
+
 ### Duplicate Detection
 
 Ensure collections contain no duplicate values with detailed reporting:
