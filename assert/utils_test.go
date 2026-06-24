@@ -1007,9 +1007,10 @@ func TestFormatMultilineString(t *testing.T) {
 		}
 	})
 
-	t.Run("Emoji string is not split mid-rune", func(t *testing.T) {
+	t.Run("Single-code-point emoji is not split mid-rune", func(t *testing.T) {
 		t.Parallel()
-		// 100 emoji runes = 400 UTF-8 bytes (4 bytes each).
+		// 🎉 (U+1F389) is a single code point: 100 runes = 400 UTF-8 bytes.
+		// Rune-based slicing keeps each one whole.
 		input := strings.Repeat("🎉", 100)
 		result := formatMultilineString(input)
 
@@ -1018,6 +1019,27 @@ func TestFormatMultilineString(t *testing.T) {
 		}
 		if !strings.Contains(result, "Length: 100 characters") {
 			t.Errorf("Expected rune count 100 in header, got:\n%s", result)
+		}
+	})
+
+	t.Run("ZWJ grapheme cluster is sliced at code-point granularity (known limitation)", func(t *testing.T) {
+		t.Parallel()
+		// A ZWJ emoji sequence is several code points joined by U+200D, so a
+		// preview line boundary can fall inside one cluster. should slices on
+		// runes, not grapheme clusters, so that split is accepted: making it
+		// grapheme-aware would require a Unicode segmentation dependency. What
+		// must still hold is that rune-slicing never emits U+FFFD and the header
+		// reports the code-point count, not the grapheme count.
+		cluster := "\U0001F9D1\U0001F3FD\u200D\u2764\uFE0F\u200D\U0001F9D1\U0001F3FF" // couple with heart, mixed skin tones
+		input := strings.Repeat(cluster, 40)                                          // 320 runes, ~1120 bytes
+		result := formatMultilineString(input)
+
+		if strings.ContainsRune(result, '\uFFFD') {
+			t.Errorf("Expected no U+FFFD replacement characters\n\nFull result:\n%s", result)
+		}
+		wantRunes := len([]rune(input))
+		if !strings.Contains(result, fmt.Sprintf("Length: %d characters", wantRunes)) {
+			t.Errorf("Expected code-point count %d in header, got:\n%s", wantRunes, result)
 		}
 	})
 
