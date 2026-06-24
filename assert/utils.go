@@ -409,20 +409,30 @@ func formatMultilineString(s string) string {
 		return s
 	}
 
+	// Work in runes, not bytes: slicing on byte offsets can cut through a
+	// multi-byte UTF-8 sequence and emit U+FFFD replacement characters, and
+	// len(s) would report the byte count where the header promises characters.
+	runes := []rune(s)
+	totalRunes := len(runes)
+
 	builder := strings.Builder{}
 
-	totalLine := len(s) / 56
+	totalLine := totalRunes / 56
 
 	builder.WriteString("Length: ")
-	builder.WriteString(fmt.Sprintf("%d", len(s)))
+	builder.WriteString(fmt.Sprintf("%d", totalRunes))
 	builder.WriteString(" characters, ")
 	builder.WriteString(fmt.Sprintf("%d lines", totalLine))
 	builder.WriteString("\n")
 
 	// max 5 lines and 56 characters per line
 	for i := range 5 {
+		start := i * 56
+		if start >= totalRunes {
+			break
+		}
 		builder.WriteString(fmt.Sprintf("%d. ", i+1))
-		builder.WriteString(s[i*56 : min(i*56+56, len(s))])
+		builder.WriteString(string(runes[start:min(start+56, totalRunes)]))
 		builder.WriteString("\n")
 	}
 
@@ -432,8 +442,12 @@ func formatMultilineString(s string) string {
 
 		// print last 3 lines
 		for i := totalLine - 3; i < totalLine; i++ {
+			start := i * 56
+			if start >= totalRunes {
+				break
+			}
 			builder.WriteString(fmt.Sprintf("%d. ", i+1))
-			builder.WriteString(s[i*56 : min(i*56+56, len(s))])
+			builder.WriteString(string(runes[start:min(start+56, totalRunes)]))
 			builder.WriteString("\n")
 		}
 	}

@@ -990,6 +990,54 @@ func TestFormatMultilineString(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Multi-byte CJK string is not split mid-rune", func(t *testing.T) {
+		t.Parallel()
+		// 100 CJK runes = 300 UTF-8 bytes, past the 280-byte threshold so the
+		// multiline formatter runs. Byte-based slicing would cut through a
+		// 3-byte rune and emit U+FFFD; rune-based slicing must not.
+		input := strings.Repeat("中", 100)
+		result := formatMultilineString(input)
+
+		if strings.ContainsRune(result, '\uFFFD') {
+			t.Errorf("Expected no U+FFFD replacement characters\n\nFull result:\n%s", result)
+		}
+		if !strings.Contains(result, "Length: 100 characters") {
+			t.Errorf("Expected rune count 100 in header, got:\n%s", result)
+		}
+	})
+
+	t.Run("Emoji string is not split mid-rune", func(t *testing.T) {
+		t.Parallel()
+		// 100 emoji runes = 400 UTF-8 bytes (4 bytes each).
+		input := strings.Repeat("🎉", 100)
+		result := formatMultilineString(input)
+
+		if strings.ContainsRune(result, '\uFFFD') {
+			t.Errorf("Expected no U+FFFD replacement characters\n\nFull result:\n%s", result)
+		}
+		if !strings.Contains(result, "Length: 100 characters") {
+			t.Errorf("Expected rune count 100 in header, got:\n%s", result)
+		}
+	})
+
+	t.Run("Accented string spanning last lines preserves runes", func(t *testing.T) {
+		t.Parallel()
+		// 400 accented runes = 800 UTF-8 bytes (2 bytes each), long enough to
+		// trigger the "Last lines" section so both slicing loops are exercised.
+		input := strings.Repeat("é", 400)
+		result := formatMultilineString(input)
+
+		if strings.ContainsRune(result, '\uFFFD') {
+			t.Errorf("Expected no U+FFFD replacement characters\n\nFull result:\n%s", result)
+		}
+		if !strings.Contains(result, "Length: 400 characters") {
+			t.Errorf("Expected rune count 400 in header, got:\n%s", result)
+		}
+		if !strings.Contains(result, "Last lines:") {
+			t.Errorf("Expected 'Last lines:' section, got:\n%s", result)
+		}
+	})
 }
 
 func TestIsSliceOrArray(t *testing.T) {
