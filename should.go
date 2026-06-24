@@ -55,12 +55,13 @@ func WithMessagef(message string, args ...any) Option {
 // WithIgnoreCase returns an option that makes string comparisons case-insensitive.
 //
 // This option can be passed to assertions that perform string comparisons,
-// such as [StartWith] and [EndWith], to ensure that case differences are ignored.
+// such as [StartWith], [EndWith], and [NotEndWith], to ensure that case differences are ignored.
 //
 // Example:
 //
 //	should.StartWith(t, "hello", "HELLO", should.WithIgnoreCase())
 //	should.EndWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+//	should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase())
 func WithIgnoreCase() Option {
 	return assert.WithIgnoreCase()
 }
@@ -557,6 +558,26 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 	assert.EndWith(t, actual, expected, opts...)
+}
+
+// NotEndWith reports a test failure if the string ends with the expected substring.
+//
+// This assertion checks if the actual string does NOT end with the expected substring.
+// It provides a detailed error message showing the expected and actual strings.
+// The expected suffix must be non-empty.
+//
+// Example:
+//
+//	should.NotEndWith(t, "Hello, world!", "planet")
+//
+//	should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase()) // fails
+//
+//	should.NotEndWith(t, "Hello, world!", "world", should.WithMessage("String should not end with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use [WithIgnoreCase] to ignore case.
+func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+	assert.NotEndWith(t, actual, expected, opts...)
 }
 
 // ContainSubstring reports a test failure if the string does not contain the expected substring.
