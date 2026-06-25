@@ -861,6 +861,48 @@ func TestNotContain_WithCustomMessage(t *testing.T) {
 	}
 }
 
+func TestNotContain_Fails_WhenItemAppearsMultipleTimes_ReportsAllIndexesOnce(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContain(t, []string{"a", "x", "b", "x", "c", "x"}, "x")
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	// The failure must be reported exactly once with all indexes listed together,
+	// instead of accumulating a growing message per matching element.
+	if c := strings.Count(message, "Expected collection to NOT contain element"); c != 1 {
+		t.Fatalf("Expected the header to appear exactly once, but it appeared %d times.\n\nFull message:\n%s", c, message)
+	}
+
+	if c := strings.Count(message, "Collection:"); c != 1 {
+		t.Fatalf("Expected the collection to be printed exactly once, but it appeared %d times.\n\nFull message:\n%s", c, message)
+	}
+
+	if !strings.Contains(message, "at indexes [1, 3, 5]") {
+		t.Fatalf("Expected message to list all matching indexes as [1, 3, 5].\n\nFull message:\n%s", message)
+	}
+}
+
+func TestNotContain_Fails_WhenItemAppearsOnce_UsesSingularIndex(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContain(t, []int{1, 2, 3}, 2)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	if !strings.Contains(message, "at index 1") {
+		t.Fatalf("Expected message to report the single match as \"at index 1\".\n\nFull message:\n%s", message)
+	}
+}
+
 func TestContain_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 

@@ -878,19 +878,32 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 
 	actualValue := reflect.ValueOf(actual)
 
-	foundOutput := []string{}
+	var foundIndexes []int
 	for i := range actualValue.Len() {
 		item := actualValue.Index(i).Interface()
 		if reflect.DeepEqual(item, expected) {
-			foundOutput = append(foundOutput, fmt.Sprintf("\nCollection: %s", formatSlice(actual)))
-			foundOutput = append(foundOutput, fmt.Sprintf("Found: %s at index %d", formatComparisonValue(item), i))
-			output := strings.Join(foundOutput, "\n")
-
-			cfg := processOptions(opts...)
-			errorMsg := fmt.Sprintf("\nExpected collection to NOT contain element: %s", output)
-			failWithOptions(t, cfg, errorMsg)
+			foundIndexes = append(foundIndexes, i)
 		}
 	}
+
+	if len(foundIndexes) == 0 {
+		return
+	}
+
+	var location string
+	if len(foundIndexes) == 1 {
+		location = fmt.Sprintf("Found: %s at index %d", formatComparisonValue(expected), foundIndexes[0])
+	} else {
+		idxStrs := make([]string, len(foundIndexes))
+		for i, idx := range foundIndexes {
+			idxStrs[i] = fmt.Sprintf("%d", idx)
+		}
+		location = fmt.Sprintf("Found: %s at indexes [%s]", formatComparisonValue(expected), strings.Join(idxStrs, ", "))
+	}
+
+	cfg := processOptions(opts...)
+	errorMsg := fmt.Sprintf("\nExpected collection to NOT contain element: \nCollection: %s\n%s", formatSlice(actual), location)
+	failWithOptions(t, cfg, errorMsg)
 }
 
 // NotContainDuplicates reports a test failure if the slice or array contains duplicate values.
