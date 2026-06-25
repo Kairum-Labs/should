@@ -545,6 +545,12 @@ func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...
 // Only works with numeric types. All values must be of the same type.
 func BeInRange[T Ordered](t testing.TB, actual T, minValue T, maxValue T, opts ...Option) {
 	t.Helper()
+
+	if minValue > maxValue {
+		fail(t, "BeInRange: invalid range — minValue (%v) must be less than or equal to maxValue (%v)", minValue, maxValue)
+		return
+	}
+
 	if actual >= minValue && actual <= maxValue {
 		return
 	}

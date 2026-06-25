@@ -7209,6 +7209,14 @@ func TestBeInRange(t *testing.T) {
 				shouldFail:  true,
 				expectedMsg: "Expected value to be in range [0, 100], but it was above:",
 			},
+			{
+				name:        "should fail when minimum exceeds maximum",
+				value:       5,
+				minValue:    100,
+				maxValue:    0,
+				shouldFail:  true,
+				expectedMsg: "BeInRange: invalid range — minValue (100) must be less than or equal to maxValue (0)",
+			},
 		}
 
 		for _, tt := range tests {
