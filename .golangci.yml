@@ -1,0 +1,35 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - dupword
+    - staticcheck
+    - unused
+    - paralleltest
+    - lll
+  settings:
+    lll:
+      line-length: 130
+    misspell:
+      locale: US
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/Kairum-Labs/should
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

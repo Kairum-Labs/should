@@ -1,0 +1,41 @@
+#!/bin/bash
+# commit-msg — Git hook that enforces a 72-character subject line limit.
+#
+# Install locally:
+#   cp scripts/commit-msg .git/hooks/commit-msg
+#   chmod +x .git/hooks/commit-msg
+#
+# The hook is also enforced in CI via .github/workflows/commit-msg.yml.
+
+set -euo pipefail
+
+COMMIT_MSG_FILE="${1:-}"
+MAX_SUBJECT_LENGTH=72
+
+if [[ -z "$COMMIT_MSG_FILE" ]] || [[ ! -f "$COMMIT_MSG_FILE" ]]; then
+  echo "Error: commit message file was not provided or does not exist." >&2
+  exit 1
+fi
+
+# Extract the subject line:
+#   - strip lines that are Git comments (start with #)
+#   - strip blank lines
+#   - take the first remaining line
+SUBJECT=$(grep -v '^[[:space:]]*#' "$COMMIT_MSG_FILE" | sed '/^[[:space:]]*$/d' | head -n 1)
+
+if [[ -z "$SUBJECT" ]]; then
+  echo "Error: commit message must have a subject line." >&2
+  exit 1
+fi
+
+SUBJECT_LENGTH=${#SUBJECT}
+
+if [[ "$SUBJECT_LENGTH" -gt "$MAX_SUBJECT_LENGTH" ]]; then
+  echo "Error: subject line is $SUBJECT_LENGTH characters long." >&2
+  echo "Limit : $MAX_SUBJECT_LENGTH characters." >&2
+  echo "Subject: $SUBJECT" >&2
+  echo "Tip    : put extra detail in the commit body (blank line after subject)." >&2
+  exit 1
+fi
+
+exit 0

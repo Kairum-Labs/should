@@ -1,0 +1,619 @@
+package should
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"testing"
+	"time"
+)
+
+type mockTB struct {
+	testing.TB
+	failed      bool
+	lastMessage string
+}
+
+func (m *mockTB) Helper() {}
+
+func (m *mockTB) Errorf(format string, args ...any) {
+	m.failed = true
+	m.lastMessage = fmt.Sprintf(format, args...)
+}
+
+func (m *mockTB) Error(args ...any) {
+	m.failed = true
+	m.lastMessage = fmt.Sprint(args...)
+}
+
+func (m *mockTB) FailNow() {
+	m.failed = true
+	panic("FailNow called")
+}
+
+func TestAssertions(t *testing.T) {
+	t.Parallel()
+	t.Run("BeEqual should pass for equal values", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeEqual(mockT, "some value", "some value")
+		if mockT.failed {
+			t.Errorf("Expected BeEqual to pass, but it failed with message: %q", mockT.lastMessage)
+		}
+	})
+
+	t.Run("BeEqual should fail for unequal values", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeEqual(mockT, "some value", "another value")
+		if !mockT.failed {
+			t.Error("Expected BeEqual to fail, but it passed")
+		}
+	})
+}
+
+func TestPanic(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name        string
+		fn          func()
+		opts        []Option
+		shouldFail  bool
+		expectedMsg string
+	}{
+		{
+			name:       "should pass when function panics",
+			fn:         func() { panic("expected panic") },
+			shouldFail: false,
+		},
+		{
+			name:        "should fail when function does not panic",
+			fn:          func() {},
+			shouldFail:  true,
+			expectedMsg: "Expected panic, but did not panic",
+		},
+		{
+			name: "should fail with custom message when function does not panic",
+			fn:   func() {},
+			opts: []Option{
+				WithMessage("custom message"),
+			},
+			shouldFail:  true,
+			expectedMsg: "custom message\nExpected panic, but did not panic",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockTB{}
+			Panic(mockT, tc.fn, tc.opts...)
+
+			if tc.shouldFail != mockT.failed {
+				t.Errorf("Expected test failure to be %v, but was %v", tc.shouldFail, mockT.failed)
+			}
+
+			if tc.shouldFail && !strings.Contains(mockT.lastMessage, tc.expectedMsg) {
+				t.Errorf("Expected error message to contain %q, but got %q", tc.expectedMsg, mockT.lastMessage)
+			}
+		})
+	}
+}
+
+func TestNotPanic(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name        string
+		fn          func()
+		opts        []Option
+		shouldFail  bool
+		expectedMsg string
+	}{
+		{
+			name:       "should pass when function does not panic",
+			fn:         func() {},
+			shouldFail: false,
+		},
+		{
+			name:        "should fail when function panics",
+			fn:          func() { panic("some panic") },
+			shouldFail:  true,
+			expectedMsg: "Expected for the function to not panic, but it panicked with: some panic",
+		},
+		{
+			name: "should fail with custom message when function panics",
+			fn:   func() { panic("some panic") },
+			opts: []Option{
+				WithMessage("custom message"),
+			},
+			shouldFail:  true,
+			expectedMsg: "custom message\nExpected for the function to not panic, but it panicked with: some panic",
+		},
+		{
+			name: "should fail with formatted custom message when function panics",
+			fn:   func() { panic("some panic") },
+			opts: []Option{
+				WithMessagef("custom message: %s", "additional info"),
+			},
+			shouldFail:  true,
+			expectedMsg: "custom message: additional info\nExpected for the function to not panic, but it panicked with: some panic",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockTB{}
+			NotPanic(mockT, tc.fn, tc.opts...)
+
+			if tc.shouldFail != mockT.failed {
+				t.Errorf("Expected test failure to be %v, but was %v", tc.shouldFail, mockT.failed)
+			}
+
+			if tc.shouldFail && !strings.Contains(mockT.lastMessage, tc.expectedMsg) {
+				t.Errorf("Expected error message to contain %q, but got %q", tc.expectedMsg, mockT.lastMessage)
+			}
+		})
+	}
+}
+
+func TestWrappers(t *testing.T) {
+	t.Parallel()
+	// BeTrue
+	t.Run("BeTrue passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeTrue(mockT, true)
+		if mockT.failed {
+			t.Error("BeTrue should pass")
+		}
+	})
+	t.Run("BeTrue fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeTrue(mockT, false)
+		if !mockT.failed {
+			t.Error("BeTrue should fail")
+		}
+	})
+
+	// BeFalse
+	t.Run("BeFalse passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeFalse(mockT, false)
+		if mockT.failed {
+			t.Error("BeFalse should pass")
+		}
+	})
+	t.Run("BeFalse fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeFalse(mockT, true)
+		if !mockT.failed {
+			t.Error("BeFalse should fail")
+		}
+	})
+
+	// BeEmpty
+	t.Run("BeEmpty passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeEmpty(mockT, "")
+		if mockT.failed {
+			t.Error("BeEmpty should pass for empty string")
+		}
+	})
+	t.Run("BeEmpty fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeEmpty(mockT, "not empty")
+		if !mockT.failed {
+			t.Error("BeEmpty should fail for non-empty string")
+		}
+	})
+
+	// NotBeEmpty
+	t.Run("NotBeEmpty passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotBeEmpty(mockT, "not empty")
+		if mockT.failed {
+			t.Error("NotBeEmpty should pass")
+		}
+	})
+	t.Run("NotBeEmpty fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotBeEmpty(mockT, "")
+		if !mockT.failed {
+			t.Error("NotBeEmpty should fail")
+		}
+	})
+
+	// BeNil
+	t.Run("BeNil passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeNil(mockT, nil)
+		if mockT.failed {
+			t.Error("BeNil should pass")
+		}
+	})
+	t.Run("BeNil fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		var x = 1
+		BeNil(mockT, &x)
+		if !mockT.failed {
+			t.Error("BeNil should fail")
+		}
+	})
+
+	// NotBeNil
+	t.Run("NotBeNil passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		var x = 1
+		NotBeNil(mockT, &x)
+		if mockT.failed {
+			t.Error("NotBeNil should pass")
+		}
+	})
+	t.Run("NotBeNil fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotBeNil(mockT, nil)
+		if !mockT.failed {
+			t.Error("NotBeNil should fail")
+		}
+	})
+
+	t.Run("NotBeEqual passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotBeEqual(mockT, "a", "b")
+		if mockT.failed {
+			t.Error("NotBeEqual should pass")
+		}
+	})
+
+	t.Run("BeError passes", func(t *testing.T) {
+		t.Parallel()
+		err := errors.New("something went wrong")
+		BeError(t, err)
+	})
+
+	t.Run("NotBeError passes", func(t *testing.T) {
+		t.Parallel()
+		NotBeError(t, nil)
+	})
+
+	t.Run("BeErrorAs passes", func(t *testing.T) {
+		t.Parallel()
+		var target *os.PathError
+		err := &os.PathError{Op: "open", Path: "file.txt", Err: errors.New("not found")}
+		BeErrorAs(t, err, &target)
+	})
+
+	t.Run("BeErrorIs passes", func(t *testing.T) {
+		t.Parallel()
+		err := fmt.Errorf("wrapped: %w", io.EOF)
+		BeErrorIs(t, err, io.EOF)
+	})
+
+	// BeGreaterThan
+	t.Run("BeGreaterThan passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeGreaterThan(mockT, 10, 5)
+		if mockT.failed {
+			t.Error("BeGreaterThan should pass")
+		}
+	})
+	t.Run("BeGreaterThan fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeGreaterThan(mockT, 5, 10)
+		if !mockT.failed {
+			t.Error("BeGreaterThan should fail")
+		}
+	})
+
+	// BeLessThan
+	t.Run("BeLessThan passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeLessThan(mockT, 5, 10)
+		if mockT.failed {
+			t.Error("BeLessThan should pass")
+		}
+	})
+	t.Run("BeLessThan fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeLessThan(mockT, 10, 5)
+		if !mockT.failed {
+			t.Error("BeLessThan should fail")
+		}
+	})
+
+	// BeGreaterOrEqualTo
+	t.Run("BeGreaterOrEqualTo passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeGreaterOrEqualTo(mockT, 10, 10)
+		if mockT.failed {
+			t.Error("BeGreaterOrEqualTo should pass")
+		}
+	})
+	t.Run("BeGreaterOrEqualTo fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeGreaterOrEqualTo(mockT, 9, 10)
+		if !mockT.failed {
+			t.Error("BeGreaterOrEqualTo should fail")
+		}
+	})
+
+	t.Run("BeLessOrEqualTo passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeLessOrEqualTo(mockT, 10, 10)
+		if mockT.failed {
+			t.Error("BeLessOrEqualTo should pass")
+		}
+	})
+
+	t.Run("BeWithin passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeWithin(t, 3.14159, 3.14, 0.002)
+		if mockT.failed {
+			t.Error("BeWithin should pass")
+		}
+	})
+
+	t.Run("BeSameTime passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeSameTime(mockT, time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC), time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC))
+		if mockT.failed {
+			t.Error("BeSameTime should pass")
+		}
+	})
+
+	t.Run("BeSameTime with options passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		t1 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+		t2 := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+		BeSameTime(mockT, t1, t2, WithIgnoreTimezone(), WithTruncate(time.Second))
+		if mockT.failed {
+			t.Error("BeSameTimeAs with options should pass")
+		}
+	})
+	// Contain
+	t.Run("Contain passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		Contain(mockT, []int{1, 2, 3}, 2)
+		if mockT.failed {
+			t.Error("Contain should pass")
+		}
+	})
+	t.Run("Contain fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		Contain(mockT, []int{1, 2, 3}, 4)
+		if !mockT.failed {
+			t.Error("Contain should fail")
+		}
+	})
+
+	// NotContain
+	t.Run("NotContain passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotContain(mockT, []int{1, 2, 3}, 4)
+		if mockT.failed {
+			t.Error("NotContain should pass")
+		}
+	})
+
+	t.Run("NotContain fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotContain(mockT, []int{1, 2, 3}, 2)
+		if !mockT.failed {
+			t.Error("NotContain should fail")
+		}
+	})
+
+	t.Run("NotContainDuplicates passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotContainDuplicates(mockT, []int{1, 2, 3})
+		if mockT.failed {
+			t.Error("NotContainDuplicates should pass")
+		}
+	})
+
+	t.Run("NotContainKey passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotContainKey(mockT, map[string]int{"a": 1, "b": 2}, "c")
+		if mockT.failed {
+			t.Error("NotContainKey should pass")
+		}
+	})
+
+	t.Run("NotContainValue passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotContainValue(mockT, map[string]int{"a": 1, "b": 2}, 3)
+		if mockT.failed {
+			t.Error("NotContainValue should pass")
+		}
+	})
+
+	t.Run("StartWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		StartWith(mockT, "Hello, world!", "Hello")
+		StartWith(mockT, "Hello, world!", "hello", WithIgnoreCase())
+		if mockT.failed {
+			t.Error("StartWith should pass")
+		}
+	})
+
+	t.Run("EndWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		EndWith(mockT, "Hello, world", "world")
+		if mockT.failed {
+			t.Error("EndWith should pass")
+		}
+	})
+
+	// AnyMatch
+	t.Run("AnyMatch passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		AnyMatch(mockT, []int{1, 2, 3}, func(item int) bool { return item == 2 })
+		if mockT.failed {
+			t.Error("AnyMatch should pass")
+		}
+	})
+	t.Run("AnyMatch fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		AnyMatch(mockT, []int{1, 2, 3}, func(item int) bool { return item == 4 })
+		if !mockT.failed {
+			t.Error("AnyMatch should fail")
+		}
+	})
+
+	t.Run("ContainSubstring passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		ContainSubstring(mockT, "Hello, world!", "world")
+		if mockT.failed {
+			t.Error("ContainSubstring should pass")
+		}
+	})
+
+	// HaveLength
+	t.Run("HaveLength passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		HaveLength(mockT, []int{1, 2, 3}, 3)
+		if mockT.failed {
+			t.Error("HaveLength should pass")
+		}
+	})
+	t.Run("HaveLength fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		HaveLength(mockT, []int{1, 2, 3}, 4)
+		if !mockT.failed {
+			t.Error("HaveLength should fail")
+		}
+	})
+
+	// BeOfType
+	t.Run("BeOfType passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeOfType(mockT, "hello", "world")
+		if mockT.failed {
+			t.Error("BeOfType should pass")
+		}
+	})
+	t.Run("BeOfType fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeOfType(mockT, "hello", 123)
+		if !mockT.failed {
+			t.Error("BeOfType should fail")
+		}
+	})
+
+	// BeOneOf
+	t.Run("BeOneOf passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeOneOf(mockT, "a", []string{"a", "b"})
+		if mockT.failed {
+			t.Error("BeOneOf should pass")
+		}
+	})
+	t.Run("BeOneOf fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeOneOf(mockT, "c", []string{"a", "b"})
+		if !mockT.failed {
+			t.Error("BeOneOf should fail")
+		}
+	})
+
+	t.Run("BeSorted passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeSorted(mockT, []int{1, 2, 3})
+		if mockT.failed {
+			t.Error("BeSorted should pass")
+		}
+	})
+
+	t.Run("BeInRange passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeInRange(mockT, 5, 0, 10)
+		if mockT.failed {
+			t.Error("BeInRange should pass")
+		}
+	})
+	t.Run("BeInRange fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		BeInRange(mockT, 15, 0, 10)
+		if !mockT.failed {
+			t.Error("BeInRange should fail")
+		}
+	})
+
+	t.Run("NotPanic with stack trace passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotPanic(mockT, func() {
+		}, WithStackTrace())
+		if mockT.failed {
+			t.Error("NotPanic should pass")
+		}
+	})
+}
+
+func TestContainKey_Integration(t *testing.T) {
+	t.Parallel()
+
+	// Test successful cases
+	userMap := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainKey(t, userMap, "email")
+
+	intMap := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainKey(t, intMap, 2)
+}
+
+func TestContainValue_Integration(t *testing.T) {
+	t.Parallel()
+
+	// Test successful cases
+	userMap := map[string]int{"name": 1, "age": 2, "email": 3}
+	ContainValue(t, userMap, 2)
+
+	intMap := map[int]string{1: "one", 2: "two", 3: "three"}
+	ContainValue(t, intMap, "two")
+}
