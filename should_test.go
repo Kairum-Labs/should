@@ -469,6 +469,15 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("NotStartWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotStartWith(mockT, "Hello, world!", "world")
+		if mockT.failed {
+			t.Error("NotStartWith should pass")
+		}
+	})
+
 	t.Run("EndWith passes", func(t *testing.T) {
 		t.Parallel()
 		mockT := &mockTB{}
