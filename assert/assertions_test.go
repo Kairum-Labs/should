@@ -874,12 +874,13 @@ func TestNotContain_Fails_WhenItemAppearsMultipleTimes_ReportsAllIndexesOnce(t *
 
 	// The failure must be reported exactly once with all indexes listed together,
 	// instead of accumulating a growing message per matching element.
-	if c := strings.Count(message, "Expected collection to NOT contain element"); c != 1 {
-		t.Fatalf("Expected the header to appear exactly once, but it appeared %d times.\n\nFull message:\n%s", c, message)
+	if occurrences := strings.Count(message, "Expected collection to NOT contain element"); occurrences != 1 {
+		t.Fatalf("Expected the header to appear exactly once, but it appeared %d times.\n\nFull message:\n%s", occurrences, message)
 	}
 
-	if c := strings.Count(message, "Collection:"); c != 1 {
-		t.Fatalf("Expected the collection to be printed exactly once, but it appeared %d times.\n\nFull message:\n%s", c, message)
+	if occurrences := strings.Count(message, "Collection:"); occurrences != 1 {
+		t.Fatalf("Expected the collection to be printed exactly once, but it appeared %d times.\n\nFull message:\n%s",
+			occurrences, message)
 	}
 
 	if !strings.Contains(message, "at indexes [1, 3, 5]") {

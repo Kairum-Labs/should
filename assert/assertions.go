@@ -890,10 +890,8 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 		return
 	}
 
-	var location string
-	if len(foundIndexes) == 1 {
-		location = fmt.Sprintf("Found: %s at index %d", formatComparisonValue(expected), foundIndexes[0])
-	} else {
+	location := fmt.Sprintf("Found: %s at index %d", formatComparisonValue(expected), foundIndexes[0])
+	if len(foundIndexes) > 1 {
 		idxStrs := make([]string, len(foundIndexes))
 		for i, idx := range foundIndexes {
 			idxStrs[i] = fmt.Sprintf("%d", idx)
