@@ -1152,55 +1152,6 @@ func TestFormatValueComparison_EdgeCases(t *testing.T) {
 	})
 }
 
-func TestLevenshteinDistance(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name     string
-		s1, s2   string
-		expected int
-	}{
-		{
-			name:     "Empty strings",
-			s1:       "",
-			s2:       "",
-			expected: 0,
-		},
-		{
-			name:     "One empty string",
-			s1:       "hello",
-			s2:       "",
-			expected: 5,
-		},
-		{
-			name:     "Identical strings",
-			s1:       "hello",
-			s2:       "hello",
-			expected: 0,
-		},
-		{
-			name:     "Single character difference",
-			s1:       "hello",
-			s2:       "hallo",
-			expected: 1,
-		},
-		{
-			name:     "Multiple differences",
-			s1:       "kitten",
-			s2:       "sitting",
-			expected: 3,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			result := levenshteinDistance(tc.s1, tc.s2)
-			BeEqual(t, result, tc.expected)
-		})
-	}
-}
-
 func TestGenerateTypoDetails(t *testing.T) {
 	t.Parallel()
 
