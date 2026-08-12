@@ -1,3 +1,16 @@
+## [0.2.4] - 2026-08-12
+
+### Bug Fixes
+
+- Slice multi-byte strings on rune boundaries in error preview
+- Report NotContain duplicates once with all indexes
+- Reject inverted BeInRange bounds
+
+### Miscellaneous Tasks
+
+- Swap retired Go Report Card badge for Lint CI badge
+- Remove unused levenshteinDistance
+
 ## [0.2.3] - 2026-06-21
 
 ### Bug Fixes
