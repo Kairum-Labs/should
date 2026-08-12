@@ -593,42 +593,6 @@ func calculateStringSimilarity(target, candidate string) similarItem {
 	return item
 }
 
-// levenshteinDistance calculates the Levenshtein distance between two strings
-func levenshteinDistance(s1, s2 string) int {
-	len1, len2 := len(s1), len(s2)
-
-	matrix := make([][]int, len1+1)
-	for i := range matrix {
-		matrix[i] = make([]int, len2+1)
-	}
-
-	// Initialize first row and column
-	for i := 0; i <= len1; i++ {
-		matrix[i][0] = i
-	}
-	for j := 0; j <= len2; j++ {
-		matrix[0][j] = j
-	}
-
-	// Fill matrix
-	for i := 1; i <= len1; i++ {
-		for j := 1; j <= len2; j++ {
-			cost := 0
-			if s1[i-1] != s2[j-1] {
-				cost = 1
-			}
-
-			matrix[i][j] = min3(
-				matrix[i-1][j]+1,      // deletion
-				matrix[i][j-1]+1,      // insertion
-				matrix[i-1][j-1]+cost, // substitution
-			)
-		}
-	}
-
-	return matrix[len1][len2]
-}
-
 // damerauLevenshteinDistance calculates the Damerau-Levenshtein distance between two strings.
 // Unlike standard Levenshtein, it treats transposition of adjacent characters as a single operation.
 // For example, "tets" -> "test" has distance 1 (transposition) instead of 2 (delete + insert).
