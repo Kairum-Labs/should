@@ -130,7 +130,7 @@ func formatValueComparison(v reflect.Value) string {
 		reflect.Bool:
 		return fmt.Sprint(v.Interface())
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if v.IsNil() {
 			return "nil"
 		}
@@ -284,7 +284,7 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 			})
 		}
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if expectedValue.IsNil() != actualValue.IsNil() {
 			diffs = append(diffs, fieldDiff{
 				Path:     path,
@@ -435,9 +435,9 @@ func formatMultilineString(s string) string {
 	totalLine := totalRunes / lineWidth
 
 	builder.WriteString("Length: ")
-	builder.WriteString(fmt.Sprintf("%d", totalRunes))
+	fmt.Fprintf(&builder, "%d", totalRunes)
 	builder.WriteString(" characters, ")
-	builder.WriteString(fmt.Sprintf("%d lines", totalLine))
+	fmt.Fprintf(&builder, "%d lines", totalLine)
 	builder.WriteString("\n")
 
 	// writeLine appends the 1-indexed preview line that starts at rune i*lineWidth,
@@ -449,7 +449,7 @@ func formatMultilineString(s string) string {
 		if start >= totalRunes {
 			return
 		}
-		builder.WriteString(fmt.Sprintf("%d. ", i+1))
+		fmt.Fprintf(&builder, "%d. ", i+1)
 		builder.WriteString(string(runes[start:min(start+lineWidth, totalRunes)]))
 		builder.WriteString("\n")
 	}
@@ -735,26 +735,26 @@ func formatContainsError(target interface{}, result containResult) string {
 	msg.WriteString("Expected collection to contain element:\n")
 
 	// Show context of the collection
-	msg.WriteString(fmt.Sprintf("        Collection: %v", formatComparisonValue(result.Context)))
+	fmt.Fprintf(&msg, "        Collection: %v", formatComparisonValue(result.Context))
 	if len(result.Context) < result.Total {
-		msg.WriteString(fmt.Sprintf(" (showing %d of %d)", len(result.Context), result.Total))
+		fmt.Fprintf(&msg, " (showing %d of %d)", len(result.Context), result.Total)
 	}
 	msg.WriteString("\n")
 
-	msg.WriteString(fmt.Sprintf("        Missing   : %v\n", target))
+	fmt.Fprintf(&msg, "        Missing   : %v\n", target)
 
 	// Show similar if found
 	if len(result.Similar) > 0 {
 		msg.WriteString("\n")
 		if len(result.Similar) == 1 {
 			similar := result.Similar[0]
-			msg.WriteString(fmt.Sprintf("        Found similar: %v (at index %d) - %s\n",
-				similar.Value, similar.Index, similar.Details))
+			fmt.Fprintf(&msg, "        Found similar: %v (at index %d) - %s\n",
+				similar.Value, similar.Index, similar.Details)
 		} else {
 			msg.WriteString("        Hint: Similar elements found:\n")
 			for _, similar := range result.Similar {
-				msg.WriteString(fmt.Sprintf("          └─ %v (at index %d) - %s\n",
-					similar.Value, similar.Index, similar.Details))
+				fmt.Fprintf(&msg, "          └─ %v (at index %d) - %s\n",
+					similar.Value, similar.Index, similar.Details)
 			}
 		}
 	}
@@ -860,7 +860,7 @@ func formatInsertionContext[T Ordered](collection []T, target T, info insertionI
 	if collectionLength == 0 {
 		builder.WriteString("Collection: []\n")
 		builder.WriteString("Missing  : ")
-		builder.WriteString(fmt.Sprint(target))
+		fmt.Fprint(&builder, target)
 		return builder.String()
 	}
 
@@ -872,7 +872,7 @@ func formatInsertionContext[T Ordered](collection []T, target T, info insertionI
 		for _, item := range collection {
 			elements = append(elements, fmt.Sprintf("%v", item))
 		}
-		builder.WriteString(fmt.Sprintf("[%s]", strings.Join(elements, ", ")))
+		fmt.Fprintf(&builder, "[%s]", strings.Join(elements, ", "))
 	} else {
 		// Show first 5
 		for i := 0; i < 5; i++ {
@@ -883,21 +883,21 @@ func formatInsertionContext[T Ordered](collection []T, target T, info insertionI
 		for i := collectionLength - 5; i < collectionLength; i++ {
 			lastElements = append(lastElements, fmt.Sprintf("%v", collection[i]))
 		}
-		builder.WriteString(fmt.Sprintf("[%s, ..., %s]", strings.Join(elements, ", "), strings.Join(lastElements, ", ")))
-		builder.WriteString(fmt.Sprintf(" (showing first 5 and last 5 of %d elements)", collectionLength))
+		fmt.Fprintf(&builder, "[%s, ..., %s]", strings.Join(elements, ", "), strings.Join(lastElements, ", "))
+		fmt.Fprintf(&builder, " (showing first 5 and last 5 of %d elements)", collectionLength)
 	}
 
 	builder.WriteString("\nMissing  : ")
-	builder.WriteString(fmt.Sprint(target))
+	fmt.Fprint(&builder, target)
 
 	if info.prev != nil || info.next != nil {
 		builder.WriteString("\n\n")
 		if info.prev != nil && info.next != nil {
-			builder.WriteString(fmt.Sprintf("Element %v would fit between %v and %v in sorted order", target, *info.prev, *info.next))
+			fmt.Fprintf(&builder, "Element %v would fit between %v and %v in sorted order", target, *info.prev, *info.next)
 		} else if info.prev != nil {
-			builder.WriteString(fmt.Sprintf("Element %v would be after %v in sorted order", target, *info.prev))
+			fmt.Fprintf(&builder, "Element %v would be after %v in sorted order", target, *info.prev)
 		} else if info.next != nil {
-			builder.WriteString(fmt.Sprintf("Element %v would be before %v in sorted order", target, *info.next))
+			fmt.Fprintf(&builder, "Element %v would be before %v in sorted order", target, *info.next)
 		}
 	}
 
@@ -905,7 +905,7 @@ func formatInsertionContext[T Ordered](collection []T, target T, info insertionI
 		if info.prev == nil && info.next == nil {
 			builder.WriteString("\n")
 		}
-		builder.WriteString(fmt.Sprintf("\n└─ Sorted view: %s", info.sortedWindow))
+		fmt.Fprintf(&builder, "\n└─ Sorted view: %s", info.sortedWindow)
 	}
 
 	return builder.String()
@@ -949,52 +949,52 @@ func formatEmptyError(value interface{}, expectedEmpty bool) string {
 
 		str := actualValue.String()
 		msg.WriteString("        Type    : string\n")
-		msg.WriteString(fmt.Sprintf("        Length  : %d characters\n", len(str)))
+		fmt.Fprintf(&msg, "        Length  : %d characters\n", len(str))
 		if expectedEmpty && len(str) > 0 {
 			if len(str) <= 50 {
-				msg.WriteString(fmt.Sprintf("        Content : %q\n", str))
+				fmt.Fprintf(&msg, "        Content : %q\n", str)
 			} else {
-				msg.WriteString(fmt.Sprintf("        Content : %q... (truncated)\n", str[:47]))
+				fmt.Fprintf(&msg, "        Content : %q... (truncated)\n", str[:47])
 			}
 		}
 
 	case reflect.Slice, reflect.Array:
 		length := actualValue.Len()
-		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
-		msg.WriteString(fmt.Sprintf("        Length  : %d elements\n", length))
+		fmt.Fprintf(&msg, "        Type    : %s\n", actualValue.Type())
+		fmt.Fprintf(&msg, "        Length  : %d elements\n", length)
 		if expectedEmpty && length > 0 {
 			if length <= 5 {
-				msg.WriteString(fmt.Sprintf("        Content : %s\n", formatComparisonValue(value)))
+				fmt.Fprintf(&msg, "        Content : %s\n", formatComparisonValue(value))
 			} else {
 				// Show first 3 elements
 				elements := make([]string, 3)
 				for i := 0; i < 3; i++ {
 					elements[i] = formatValueComparison(actualValue.Index(i))
 				}
-				msg.WriteString(fmt.Sprintf("        Content : [%s, ...] (showing first 3 of %d)\n",
-					strings.Join(elements, ", "), length))
+				fmt.Fprintf(&msg, "        Content : [%s, ...] (showing first 3 of %d)\n",
+					strings.Join(elements, ", "), length)
 			}
 		}
 
 	case reflect.Map:
 		length := actualValue.Len()
-		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
-		msg.WriteString(fmt.Sprintf("        Length  : %d entries\n", length))
+		fmt.Fprintf(&msg, "        Type    : %s\n", actualValue.Type())
+		fmt.Fprintf(&msg, "        Length  : %d entries\n", length)
 		if expectedEmpty && length > 0 {
 			if length <= 3 {
-				msg.WriteString(fmt.Sprintf("        Content : %s\n", formatComparisonValue(value)))
+				fmt.Fprintf(&msg, "        Content : %s\n", formatComparisonValue(value))
 			} else {
-				msg.WriteString(fmt.Sprintf("        Content : map[...] (showing %d entries)\n", length))
+				fmt.Fprintf(&msg, "        Content : map[...] (showing %d entries)\n", length)
 			}
 		}
 
 	case reflect.Chan:
-		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
+		fmt.Fprintf(&msg, "        Type    : %s\n", actualValue.Type())
 		msg.WriteString("        Note    : Channel length cannot be determined\n")
 
 	default:
-		msg.WriteString(fmt.Sprintf("        Type    : %s\n", actualValue.Type()))
-		msg.WriteString(fmt.Sprintf("        Value   : %s\n", formatComparisonValue(value)))
+		fmt.Fprintf(&msg, "        Type    : %s\n", actualValue.Type())
+		fmt.Fprintf(&msg, "        Value   : %s\n", formatComparisonValue(value))
 	}
 
 	return msg.String()
@@ -1023,13 +1023,13 @@ func formatNumericComparisonError(actual, expected interface{}, operation string
 		msg.WriteString("Expected value to be less than or equal to threshold:\n")
 	}
 
-	msg.WriteString(fmt.Sprintf("        Value     : %v\n", actual))
-	msg.WriteString(fmt.Sprintf("        Threshold : %v\n", expected))
+	fmt.Fprintf(&msg, "        Value     : %v\n", actual)
+	fmt.Fprintf(&msg, "        Threshold : %v\n", expected)
 
 	if difference > 0 {
-		msg.WriteString(fmt.Sprintf("        Difference: +%v (value is %v greater)\n", difference, difference))
+		fmt.Fprintf(&msg, "        Difference: +%v (value is %v greater)\n", difference, difference)
 	} else if difference < 0 {
-		msg.WriteString(fmt.Sprintf("        Difference: %v (value is %v smaller)\n", difference, -difference))
+		fmt.Fprintf(&msg, "        Difference: %v (value is %v smaller)\n", difference, -difference)
 	} else {
 		msg.WriteString("        Difference: 0 (values are equal)\n")
 	}
@@ -1070,18 +1070,17 @@ func formatBeWithinError[T Float](actual, expected, tolerance T) string {
 
 	var msg strings.Builder
 
-	msg.WriteString(fmt.Sprintf(
-		"Expected "+format+" to be within ±"+format+" of "+format+"\n",
-		actualF, toleranceF, expectedF))
-	msg.WriteString(fmt.Sprintf("Difference: "+format, diffF))
+	fmt.Fprintf(&msg, "Expected "+format+" to be within ±"+format+" of "+format+"\n",
+		actualF, toleranceF, expectedF)
+	fmt.Fprintf(&msg, "Difference: "+format, diffF)
 
 	if toleranceF > 0 {
 		excess := ((diffF - toleranceF) / toleranceF)
 		switch {
 		case excess > 2:
-			msg.WriteString(fmt.Sprintf(" (%.2f× greater than tolerance)", excess))
+			fmt.Fprintf(&msg, " (%.2f× greater than tolerance)", excess)
 		case excess > 0:
-			msg.WriteString(fmt.Sprintf(" (%.2f%% greater than tolerance)", 100*excess))
+			fmt.Fprintf(&msg, " (%.2f%% greater than tolerance)", 100*excess)
 		}
 	}
 
@@ -1115,9 +1114,9 @@ func chooseFormat(values ...float64) string {
 func formatLengthError(actual any, expected, actualLen int) string {
 	var msg strings.Builder
 	msg.WriteString("Expected collection to have specific length:\n")
-	msg.WriteString(fmt.Sprintf("Type          : %T\n", actual))
-	msg.WriteString(fmt.Sprintf("Expected Length: %d\n", expected))
-	msg.WriteString(fmt.Sprintf("Actual Length : %d\n", actualLen))
+	fmt.Fprintf(&msg, "Type          : %T\n", actual)
+	fmt.Fprintf(&msg, "Expected Length: %d\n", expected)
+	fmt.Fprintf(&msg, "Actual Length : %d\n", actualLen)
 
 	diff := actualLen - expected
 	if diff > 0 {
@@ -1125,13 +1124,13 @@ func formatLengthError(actual any, expected, actualLen int) string {
 		if diff == 1 {
 			elementWord = "element"
 		}
-		msg.WriteString(fmt.Sprintf("Difference    : +%d (%d %s extra)\n", diff, diff, elementWord))
+		fmt.Fprintf(&msg, "Difference    : +%d (%d %s extra)\n", diff, diff, elementWord)
 	} else {
 		elementWord := "elements"
 		if -diff == 1 {
 			elementWord = "element"
 		}
-		msg.WriteString(fmt.Sprintf("Difference    : %d (%d %s missing)\n", diff, -diff, elementWord))
+		fmt.Fprintf(&msg, "Difference    : %d (%d %s missing)\n", diff, -diff, elementWord)
 	}
 
 	return msg.String()
@@ -1141,8 +1140,8 @@ func formatLengthError(actual any, expected, actualLen int) string {
 func formatTypeError(expectedType, actualType reflect.Type) string {
 	var msg strings.Builder
 	msg.WriteString("Expected value to be of specific type:\n")
-	msg.WriteString(fmt.Sprintf("Expected Type: %v\n", expectedType))
-	msg.WriteString(fmt.Sprintf("Actual Type  : %v\n", actualType))
+	fmt.Fprintf(&msg, "Expected Type: %v\n", expectedType)
+	fmt.Fprintf(&msg, "Actual Type  : %v\n", actualType)
 	msg.WriteString("Difference   : Different concrete types\n")
 
 	return msg.String()
@@ -1152,7 +1151,7 @@ func formatTypeError(expectedType, actualType reflect.Type) string {
 func formatOneOfError[T any](actual T, options []T) string {
 	var msg strings.Builder
 	msg.WriteString("Expected value to be one of the allowed options:\n")
-	msg.WriteString(fmt.Sprintf("Value   : %s\n", formatComparisonValue(actual)))
+	fmt.Fprintf(&msg, "Value   : %s\n", formatComparisonValue(actual))
 
 	// Truncate options if there are more than 4
 	msg.WriteString("Options : ")
@@ -1166,14 +1165,14 @@ func formatOneOfError[T any](actual T, options []T) string {
 		// Remove the closing bracket and add truncation indicator
 		if strings.HasSuffix(baseStr, "]") {
 			msg.WriteString(baseStr[:len(baseStr)-1])
-			msg.WriteString(fmt.Sprintf(", ...] (showing first 4 of %d)", len(options)))
+			fmt.Fprintf(&msg, ", ...] (showing first 4 of %d)", len(options))
 		} else {
 			msg.WriteString(baseStr)
 		}
 	}
 	msg.WriteString("\n")
 
-	msg.WriteString(fmt.Sprintf("Count   : 0 of %d options matched\n", len(options)))
+	fmt.Fprintf(&msg, "Count   : 0 of %d options matched\n", len(options))
 	return msg.String()
 }
 
@@ -1255,17 +1254,15 @@ func formatDuplicatesErrors(duplicates []duplicateGroup) string {
 		if len(group.Indexes) > 4 {
 			windowMsg := formatIndexesWindow(group.Indexes, 4)
 
-			msg.WriteString(fmt.Sprintf(
-				"\n└─ %s appears %d times at indexes %v",
+			fmt.Fprintf(&msg, "\n└─ %s appears %d times at indexes %v",
 				formatDuplicateItem(group.Value),
 				len(group.Indexes),
-				windowMsg,
-			))
+				windowMsg)
 			continue
 		}
 
-		msg.WriteString(fmt.Sprintf("\n└─ %s appears %d times at indexes %v",
-			formatDuplicateItem(group.Value), len(group.Indexes), formatComparisonValue(group.Indexes)))
+		fmt.Fprintf(&msg, "\n└─ %s appears %d times at indexes %v",
+			formatDuplicateItem(group.Value), len(group.Indexes), formatComparisonValue(group.Indexes))
 	}
 
 	return msg.String()
@@ -1352,7 +1349,7 @@ func formatIndexesWindow(indexes []int, windowSize int) string {
 
 	windowMsg.WriteString("[")
 	for i := range windowSize {
-		windowMsg.WriteString(fmt.Sprintf("%d, ", indexes[i]))
+		fmt.Fprintf(&windowMsg, "%d, ", indexes[i])
 	}
 
 	windowMsg.WriteString("...")
@@ -1402,9 +1399,9 @@ func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
 // It is only called when the assertion has already failed.
 func formatStartsWithError(actual string, expected string, startWith string, noteMsg string) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("Expected string to start with '%s', but it starts with '%s'", expected, startWith))
-	msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	fmt.Fprintf(&msg, "Expected string to start with '%s', but it starts with '%s'", expected, startWith)
+	fmt.Fprintf(&msg, "\nExpected : '%s'", expected)
+	fmt.Fprintf(&msg, "\nActual   : '%s'", actual)
 	addPrefixHighlight(&msg, actual, expected)
 	msg.WriteString(noteMsg)
 	return msg.String()
@@ -1414,9 +1411,9 @@ func formatStartsWithError(actual string, expected string, startWith string, not
 // It is only called when the assertion has already failed.
 func formatEndsWithError(actual string, expected string, actualEndSuffix string, noteMsg string) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("Expected string to end with '%s', but it ends with '%s'", expected, actualEndSuffix))
-	msg.WriteString(fmt.Sprintf("\nExpected : '%s'", expected))
-	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	fmt.Fprintf(&msg, "Expected string to end with '%s', but it ends with '%s'", expected, actualEndSuffix)
+	fmt.Fprintf(&msg, "\nExpected : '%s'", expected)
+	fmt.Fprintf(&msg, "\nActual   : '%s'", actual)
 	addPrefixHighlightToEnd(&msg, actual, expected)
 	msg.WriteString(noteMsg)
 	return msg.String()
@@ -1488,15 +1485,15 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 		displayNeedle = "<empty>"
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected string to contain %q, but it was not found", displayNeedle))
-	msg.WriteString(fmt.Sprintf("\nSubstring   : %q", displayNeedle))
+	fmt.Fprintf(&msg, "Expected string to contain %q, but it was not found", displayNeedle)
+	fmt.Fprintf(&msg, "\nSubstring   : %q", displayNeedle)
 
 	// Handle very long strings with multiline formatting
 	if len(actual) > 200 || strings.Contains(actual, "\n") {
-		msg.WriteString(fmt.Sprintf("\nActual   : (length: %d)", len(actual)))
-		msg.WriteString(fmt.Sprintf("\n%s", formatMultilineString(actual)))
+		fmt.Fprintf(&msg, "\nActual   : (length: %d)", len(actual))
+		fmt.Fprintf(&msg, "\n%s", formatMultilineString(actual))
 	} else {
-		msg.WriteString(fmt.Sprintf("\nActual   : %q", displayActual))
+		fmt.Fprintf(&msg, "\nActual   : %q", displayActual)
 	}
 
 	// Find similar substrings if substring is reasonable size
@@ -1515,12 +1512,12 @@ func formatContainSubstringError(actual string, substring string, noteMsg string
 		if len(goodSuggestions) > 0 {
 			sim := goodSuggestions[0]
 			msg.WriteString("\n\nSimilar substring found:")
-			msg.WriteString(fmt.Sprintf("\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details))
+			fmt.Fprintf(&msg, "\n  └─ '%s' at position %d - %s", sim.Value, sim.Index, sim.Details)
 		}
 	}
 
 	if len(substring) > maxSimilarLen {
-		msg.WriteString(fmt.Sprintf("\nNote: Substring is %d characters long (too large for similarity search)", len(substring)))
+		fmt.Fprintf(&msg, "\nNote: Substring is %d characters long (too large for similarity search)", len(substring))
 	}
 
 	msg.WriteString(noteMsg)
@@ -1904,7 +1901,8 @@ func containsMapValue(mapValue interface{}, targetValue interface{}) mapContainR
 		result.Context = allValues
 	}
 
-	isComplex := targetVal.Kind() == reflect.Struct || (targetVal.Kind() == reflect.Ptr && targetVal.Elem().Kind() == reflect.Struct)
+	isComplex := targetVal.Kind() == reflect.Struct ||
+		(targetVal.Kind() == reflect.Pointer && targetVal.Elem().Kind() == reflect.Struct)
 	if isComplex {
 		// Find close matches for structs
 		var closeMatches []struct {
@@ -2092,17 +2090,17 @@ func formatMapContainKeyError(target interface{}, result mapContainResult) strin
 		targetStr = formatComparisonValue(target)
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected map to contain key %s, but key was not found\n", targetStr))
+	fmt.Fprintf(&msg, "Expected map to contain key %s, but key was not found\n", targetStr)
 
 	// Show available keys - use formatMapValuesList for better formatting
 	msg.WriteString("Available keys: ")
 	msg.WriteString(formatMapValuesList(result.Context))
 	if len(result.Context) < result.Total {
-		msg.WriteString(fmt.Sprintf(" (showing %d of %d)", len(result.Context), result.Total))
+		fmt.Fprintf(&msg, " (showing %d of %d)", len(result.Context), result.Total)
 	}
 	msg.WriteString("\n")
 
-	msg.WriteString(fmt.Sprintf("Missing: %s\n", targetStr))
+	fmt.Fprintf(&msg, "Missing: %s\n", targetStr)
 
 	// Show similar keys if found
 	if len(result.Similar) > 0 {
@@ -2116,7 +2114,7 @@ func formatMapContainKeyError(target interface{}, result mapContainResult) strin
 				similarStr = formatComparisonValue(similar.Value)
 			}
 			msg.WriteString("Similar key found:\n")
-			msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+			fmt.Fprintf(&msg, "  └─ %s - %s\n", similarStr, similar.Details)
 		} else {
 			msg.WriteString("Similar keys found:\n")
 			for _, similar := range result.Similar {
@@ -2126,7 +2124,7 @@ func formatMapContainKeyError(target interface{}, result mapContainResult) strin
 				} else {
 					similarStr = formatComparisonValue(similar.Value)
 				}
-				msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+				fmt.Fprintf(&msg, "  └─ %s - %s\n", similarStr, similar.Details)
 			}
 		}
 	}
@@ -2139,12 +2137,12 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 	var msg strings.Builder
 
 	targetV := reflect.ValueOf(target)
-	isComplex := targetV.Kind() == reflect.Struct || (targetV.Kind() == reflect.Ptr && targetV.Elem().Kind() == reflect.Struct)
+	isComplex := targetV.Kind() == reflect.Struct || (targetV.Kind() == reflect.Pointer && targetV.Elem().Kind() == reflect.Struct)
 
 	// Use new formatting for complex types (structs)
 	if isComplex {
 		var typeName string
-		if targetV.Kind() == reflect.Ptr {
+		if targetV.Kind() == reflect.Pointer {
 			typeName = targetV.Elem().Type().Name()
 		} else {
 			typeName = targetV.Type().Name()
@@ -2155,8 +2153,8 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 		}
 
 		msg.WriteString("Expected map to contain value, but it was not found:\n")
-		msg.WriteString(fmt.Sprintf("Collection: %d values of type %s\n", result.Total, typeName))
-		msg.WriteString(fmt.Sprintf("Missing   : %s\n", formatComplexType(target)))
+		fmt.Fprintf(&msg, "Collection: %d values of type %s\n", result.Total, typeName)
+		fmt.Fprintf(&msg, "Missing   : %s\n", formatComplexType(target))
 
 		if len(result.Context) > 0 {
 			msg.WriteString("\nAvailable values:\n")
@@ -2165,7 +2163,7 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 				if i == len(result.Context)-1 {
 					prefix = "└─"
 				}
-				msg.WriteString(fmt.Sprintf("%s %s\n", prefix, formatComplexType(v)))
+				fmt.Fprintf(&msg, "%s %s\n", prefix, formatComplexType(v))
 			}
 		}
 
@@ -2176,9 +2174,9 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 				if i == len(result.CloseMatches)-1 {
 					prefix = "└─"
 				}
-				msg.WriteString(fmt.Sprintf("%s Match #%d: %s\n", prefix, i+1, formatComplexType(match.Value)))
+				fmt.Fprintf(&msg, "%s Match #%d: %s\n", prefix, i+1, formatComplexType(match.Value))
 				for _, diff := range match.Differences {
-					msg.WriteString(fmt.Sprintf("│   └─ Differs in: %s\n", diff))
+					fmt.Fprintf(&msg, "│   └─ Differs in: %s\n", diff)
 				}
 			}
 		}
@@ -2194,17 +2192,17 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 		targetStr = formatComparisonValue(target)
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected map to contain value %s, but value was not found\n", targetStr))
+	fmt.Fprintf(&msg, "Expected map to contain value %s, but value was not found\n", targetStr)
 
 	// Show available values - use formatMapValuesList for better formatting
 	msg.WriteString("Available values: ")
 	msg.WriteString(formatMapValuesList(result.Context))
 	if len(result.Context) < result.Total {
-		msg.WriteString(fmt.Sprintf(" (showing %d of %d)", len(result.Context), result.Total))
+		fmt.Fprintf(&msg, " (showing %d of %d)", len(result.Context), result.Total)
 	}
 	msg.WriteString("\n")
 
-	msg.WriteString(fmt.Sprintf("Missing: %s\n", targetStr))
+	fmt.Fprintf(&msg, "Missing: %s\n", targetStr)
 
 	// Show similar values if found
 	if len(result.Similar) > 0 {
@@ -2218,7 +2216,7 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 				similarStr = formatComparisonValue(similar.Value)
 			}
 			msg.WriteString("Similar value found:\n")
-			msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+			fmt.Fprintf(&msg, "  └─ %s - %s\n", similarStr, similar.Details)
 		} else {
 			msg.WriteString("Similar values found:\n")
 			for _, similar := range result.Similar {
@@ -2228,7 +2226,7 @@ func formatMapContainValueError(target interface{}, result mapContainResult) str
 				} else {
 					similarStr = formatComparisonValue(similar.Value)
 				}
-				msg.WriteString(fmt.Sprintf("  └─ %s - %s\n", similarStr, similar.Details))
+				fmt.Fprintf(&msg, "  └─ %s - %s\n", similarStr, similar.Details)
 			}
 		}
 	}
@@ -2245,7 +2243,7 @@ func formatComplexType(item any) string {
 	rv := reflect.ValueOf(item)
 
 	// If it's a pointer, dereference it
-	if rv.Kind() == reflect.Ptr && !rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && !rv.IsNil() {
 		rv = rv.Elem()
 	}
 
@@ -2308,7 +2306,7 @@ func formatFieldWithTruncation(rv reflect.Value) string {
 			return fmt.Sprintf("%q", str[:17]+"...")
 		}
 		return fmt.Sprintf("%q", str)
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if rv.IsNil() {
 			return "nil"
 		}
@@ -2412,9 +2410,9 @@ func formatMapNotContainKeyError(target interface{}, mapValue interface{}) strin
 	}
 
 	msg.WriteString("Expected map to NOT contain key, but key was found:\n")
-	msg.WriteString(fmt.Sprintf("Map Type : %s\n", mapType))
-	msg.WriteString(fmt.Sprintf("Map Size : %d entries\n", mapSize))
-	msg.WriteString(fmt.Sprintf("Found Key: %s", targetStr))
+	fmt.Fprintf(&msg, "Map Type : %s\n", mapType)
+	fmt.Fprintf(&msg, "Map Size : %d entries\n", mapSize)
+	fmt.Fprintf(&msg, "Found Key: %s", targetStr)
 
 	return msg.String()
 }
@@ -2428,11 +2426,11 @@ func formatMapNotContainValueError(target interface{}, mapValue interface{}) str
 	mapSize := v.Len()
 
 	msg.WriteString("Expected map to NOT contain value, but it was found:\n")
-	msg.WriteString(fmt.Sprintf("Map Type : %s\n", mapType))
-	msg.WriteString(fmt.Sprintf("Map Size : %d entries\n", mapSize))
+	fmt.Fprintf(&msg, "Map Type : %s\n", mapType)
+	fmt.Fprintf(&msg, "Map Size : %d entries\n", mapSize)
 
 	// Format the found value
-	msg.WriteString(fmt.Sprintf("Found Value: %s\n", formatComplexType(target)))
+	fmt.Fprintf(&msg, "Found Value: %s\n", formatComplexType(target))
 
 	// Find which key(s) contain this value
 	keys := v.MapKeys()
@@ -2445,12 +2443,12 @@ func formatMapNotContainValueError(target interface{}, mapValue interface{}) str
 	}
 
 	if len(foundKeys) == 1 {
-		msg.WriteString(fmt.Sprintf("Found At: key %s", foundKeys[0]))
+		fmt.Fprintf(&msg, "Found At: key %s", foundKeys[0])
 	} else if len(foundKeys) > 1 {
 		if len(foundKeys) <= 3 {
-			msg.WriteString(fmt.Sprintf("Found At: keys %s", strings.Join(foundKeys, ", ")))
+			fmt.Fprintf(&msg, "Found At: keys %s", strings.Join(foundKeys, ", "))
 		} else {
-			msg.WriteString(fmt.Sprintf("Found At: %d keys (%s, ...)", len(foundKeys), strings.Join(foundKeys[:2], ", ")))
+			fmt.Fprintf(&msg, "Found At: %d keys (%s, ...)", len(foundKeys), strings.Join(foundKeys[:2], ", "))
 		}
 	}
 
@@ -2479,7 +2477,7 @@ func formatRangeError[T Ordered](actual, minValue, maxValue T) string {
 func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
 	var messageBuilder strings.Builder
 	messageBuilder.WriteString("Expected for the function to not panic, but it panicked with: ")
-	messageBuilder.WriteString(fmt.Sprintf("%v", panicInfo.Recovered))
+	fmt.Fprintf(&messageBuilder, "%v", panicInfo.Recovered)
 
 	if cfg.StackTrace && panicInfo.Stack != "" {
 		messageBuilder.WriteString("\nStack trace:\n")
@@ -2566,8 +2564,8 @@ func formatSortError(result sortCheckResult) string {
 	maxShow := min(violationCount, 5)
 	for i := 0; i < maxShow; i++ {
 		violation := result.Violations[i]
-		msg.WriteString(fmt.Sprintf("  - Index %d: %v > %v\n",
-			violation.Index, violation.Value, violation.Next))
+		fmt.Fprintf(&msg, "  - Index %d: %v > %v\n",
+			violation.Index, violation.Value, violation.Next)
 	}
 
 	remaining := violationCount - maxShow
@@ -2595,9 +2593,9 @@ func formatBeSameTimeError(expected time.Time, actual time.Time, diff time.Durat
 		relation = "earlier"
 	}
 
-	msg.WriteString(fmt.Sprintf("Expected times to be the same, but difference is %s\n", human))
-	msg.WriteString(fmt.Sprintf("Expected: %s\n", formatTimeForDisplay(expected)))
-	msg.WriteString(fmt.Sprintf("Actual  : %s (%s %s)", formatTimeForDisplay(actual), human, relation))
+	fmt.Fprintf(&msg, "Expected times to be the same, but difference is %s\n", human)
+	fmt.Fprintf(&msg, "Expected: %s\n", formatTimeForDisplay(expected))
+	fmt.Fprintf(&msg, "Actual  : %s (%s %s)", formatTimeForDisplay(actual), human, relation)
 	return msg.String()
 }
 
@@ -2705,15 +2703,15 @@ func formatBeErrorMessage(action string, err error, target interface{}) string {
 
 	switch action {
 	case "as":
-		msg.WriteString(fmt.Sprintf("Expected error to be %T, but type not found in error chain\n", target))
+		fmt.Fprintf(&msg, "Expected error to be %T, but type not found in error chain\n", target)
 	case "is":
-		msg.WriteString(fmt.Sprintf("Expected error to be \"%s\", but not found in error chain\n", target))
+		fmt.Fprintf(&msg, "Expected error to be \"%s\", but not found in error chain\n", target)
 	default:
 		msg.WriteString("Assertion failed with an unknown type of error.\n")
 	}
 
-	msg.WriteString(fmt.Sprintf("Error: \"%s\"\n", err.Error()))
-	msg.WriteString(fmt.Sprintf("Types  : [%s]", strings.Join(types, ", ")))
+	fmt.Fprintf(&msg, "Error: \"%s\"\n", err.Error())
+	fmt.Fprintf(&msg, "Types  : [%s]", strings.Join(types, ", "))
 
 	return msg.String()
 }

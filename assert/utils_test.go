@@ -62,7 +62,7 @@ func TestIsPrimitive(t *testing.T) {
 		{"map", reflect.Map, false},
 		{"struct", reflect.Struct, false},
 		{"array", reflect.Array, false},
-		{"ptr", reflect.Ptr, false},
+		{"ptr", reflect.Pointer, false},
 		{"interface", reflect.Interface, false},
 		{"func", reflect.Func, false},
 	}
