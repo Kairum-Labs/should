@@ -264,6 +264,56 @@ func TestBeEqual_ForMaps_Fails_WhenNotEqual(t *testing.T) {
 	}
 }
 
+func TestBeEqual_ActualNonNil_ExpectedNilLiteral_FailsWithoutPanic(t *testing.T) {
+	t.Parallel()
+
+	err := errors.New("boom")
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEqual(t, err, nil)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected: nil"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestBeEqual_ExpectedNonNil_ActualNilLiteral_FailsWithoutPanic(t *testing.T) {
+	t.Parallel()
+
+	err := errors.New("boom")
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEqual(t, nil, err)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "actual  : nil"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestBeEqual_BothNilLiteral_Succeeds(t *testing.T) {
+	t.Parallel()
+
+	failed, _ := assertFails(t, func(t testing.TB) {
+		BeEqual(t, nil, nil)
+	})
+
+	if failed {
+		t.Fatal("Expected test to pass, but it failed")
+	}
+}
+
 func TestBeEqual_PrimitiveFormatting(t *testing.T) {
 	t.Parallel()
 

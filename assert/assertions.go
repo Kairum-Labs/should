@@ -665,6 +665,19 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	actualValue := reflect.ValueOf(actual)
 	expectedValue := reflect.ValueOf(expected)
 
+	// A literal nil passed for actual/expected becomes an invalid reflect.Value
+	// (no type to describe), and reflect.Value.Type panics on those. Since
+	// reflect.DeepEqual already ruled out "both nil", one side must hold a
+	// real value here, so report the mismatch directly instead of reflecting.
+	if !actualValue.IsValid() || !expectedValue.IsValid() {
+		fail(t, "%sNot equal:\nexpected: %s\nactual  : %s",
+			customMsg,
+			formatComparisonValue(expected),
+			formatComparisonValue(actual),
+		)
+		return
+	}
+
 	actualType := actualValue.Type()
 	expectedType := expectedValue.Type()
 	typesAreDifferent := actualType != expectedType
