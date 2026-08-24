@@ -117,7 +117,7 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 			errorMsg := formatEmptyError(actual, true)
 			failWithOptions(t, cfg, errorMsg)
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if actualValue.IsNil() {
 			return // nil pointer is considered empty
 		}
@@ -164,7 +164,7 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 			errorMsg := formatEmptyError(actual, false)
 			failWithOptions(t, cfg, errorMsg)
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if actualValue.IsNil() {
 			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, false)
@@ -202,7 +202,7 @@ func BeNil(t testing.TB, actual any, opts ...Option) {
 		kind == reflect.Func ||
 		kind == reflect.Interface ||
 		kind == reflect.Map ||
-		kind == reflect.Ptr ||
+		kind == reflect.Pointer ||
 		kind == reflect.Slice
 
 	if !nillable {
@@ -240,7 +240,7 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 			kind == reflect.Func ||
 			kind == reflect.Interface ||
 			kind == reflect.Map ||
-			kind == reflect.Ptr ||
+			kind == reflect.Pointer ||
 			kind == reflect.Slice
 
 		if !nillable {

@@ -1272,6 +1272,31 @@ func TestBeEmpty_Fails_WithLargeSlice(t *testing.T) {
 	}
 }
 
+func TestBeEmpty_Fails_WithSmallNonEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEmpty(t, map[string]int{"a": 1})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Expected value to be empty, but it was not:",
+		"Type    : map[string]int",
+		"Length  : 1 entries",
+		`Content : map["a": 1]`,
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
 func TestBeEmpty_Fails_WithUnsupportedType(t *testing.T) {
 	t.Parallel()
 
@@ -5554,6 +5579,27 @@ func TestContainValue_EdgeCases_WithZeroValues(t *testing.T) {
 	ContainValue(t, m2, "")
 }
 
+func TestContainValue_Fails_ShowsTruncatedContext_WhenMapLargerThanMaxShow(t *testing.T) {
+	t.Parallel()
+
+	// containsMapValue caps the preview at 5 entries (maxShow), so a map
+	// with more than 5 entries must report "(showing 5 of N)".
+	m := map[string]int{"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		ContainValue(t, m, 999)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "(showing 5 of 7)"
+	if !strings.Contains(message, expected) {
+		t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", expected, message)
+	}
+}
+
 // === Tests for NotContainKey ===
 
 func TestNotContainKey(t *testing.T) {
@@ -6454,6 +6500,33 @@ func TestNotContainValue(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestNotContainValue_Fails_ShowsTruncatedKeys_WhenValueFoundInMoreThanThreeKeys(t *testing.T) {
+	t.Parallel()
+
+	// formatMapNotContainValueError only lists all found keys for <=3 matches;
+	// beyond that it reports the count and truncates to "key1, key2, ...".
+	m := map[string]int{"a": 1, "b": 1, "c": 1, "d": 1, "e": 2}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContainValue(t, m, 1)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Found At: 4 keys (",
+		", ...)",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
 }
 
 func TestContainSubstring_WithCustomMessage(t *testing.T) {
