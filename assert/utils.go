@@ -1424,9 +1424,9 @@ func formatStartsWithError(actual string, expected string, startWith string, not
 // formatNotStartsWithError formats the error message for NotStartWith assertions.
 func formatNotStartsWithError(actual string, prefix string, noteMsg string) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("Expected string to NOT start with '%s', but it does:", prefix))
-	msg.WriteString(fmt.Sprintf("\nPrefix   : '%s'", prefix))
-	msg.WriteString(fmt.Sprintf("\nActual   : '%s'", actual))
+	fmt.Fprintf(&msg, "Expected string to NOT start with '%s', but it does:", prefix)
+	fmt.Fprintf(&msg, "\nPrefix   : '%s'", prefix)
+	fmt.Fprintf(&msg, "\nActual   : '%s'", actual)
 	addMatchingPrefixHighlight(&msg, actual, prefix)
 	msg.WriteString(noteMsg)
 	return msg.String()
