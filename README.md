@@ -836,6 +836,18 @@ should.NotPanic(t, func() {
 }, should.WithStackTrace())
 ```
 
+#### Fail Fast with `WithFailFast`
+
+By default, a failed assertion marks the test as failed and execution continues. `should.WithFailFast()` stops the test immediately instead, which is useful for preconditions where continuing could be misleading or cause a panic:
+
+```go
+user, err := findUser(id)
+should.NotBeError(t, err, should.WithFailFast())
+
+// Reached only when findUser succeeded.
+should.NotBeNil(t, user, should.WithFailFast())
+```
+
 #### Time comparisons with options
 
 These options customize time comparisons for `BeSameTime`.

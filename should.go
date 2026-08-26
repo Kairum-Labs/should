@@ -77,6 +77,12 @@ func WithStackTrace() Option {
 	return assert.WithStackTrace()
 }
 
+// WithFailFast stops the test immediately when an assertion fails, instead of
+// marking it failed and allowing execution to continue.
+func WithFailFast() Option {
+	return assert.WithFailFast()
+}
+
 // WithIgnoreTimezone returns an option that makes time comparisons ignore timezone/location differences.
 //
 // Currently, this option is only supported by [BeSameTime].

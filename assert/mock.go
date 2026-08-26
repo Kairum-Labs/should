@@ -7,8 +7,9 @@ import (
 
 type mockT struct {
 	*testing.T
-	failed  bool
-	message string
+	failed    bool
+	failedNow bool
+	message   string
 }
 
 func (m *mockT) Errorf(format string, args ...interface{}) {
@@ -29,9 +30,21 @@ func (m *mockT) Failed() bool {
 	return m.failed
 }
 
+func (m *mockT) FailNow() {
+	m.failed = true
+	m.failedNow = true
+}
+
 func assertFails(t *testing.T, test func(t testing.TB)) (failed bool, message string) {
 	t.Helper()
 	mock := &mockT{T: t}
 	test(mock)
 	return mock.failed, mock.message
+}
+
+func assertFailsFast(t *testing.T, test func(t testing.TB)) (failed bool, failedNow bool, message string) {
+	t.Helper()
+	mock := &mockT{T: t}
+	test(mock)
+	return mock.failed, mock.failedNow, mock.message
 }

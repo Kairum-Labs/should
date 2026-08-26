@@ -148,6 +148,43 @@ func TestFailWithOptions(t *testing.T) {
 	}
 }
 
+func TestWithFailFast(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stops after a value mismatch", func(t *testing.T) {
+		t.Parallel()
+		failed, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2, WithFailFast())
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+	})
+
+	t.Run("stops after an invalid assertion input", func(t *testing.T) {
+		t.Parallel()
+		failed, failedNow, message := assertFailsFast(t, func(t testing.TB) {
+			BeInRange(t, 5, 100, 0, WithFailFast(), WithMessage("invalid range"))
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected invalid input failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if !strings.Contains(message, "invalid range") {
+			t.Fatalf("Expected custom message in invalid input failure, got %q", message)
+		}
+	})
+
+	t.Run("does not stop by default", func(t *testing.T) {
+		t.Parallel()
+		_, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2)
+		})
+		if failedNow {
+			t.Fatal("Expected failure without WithFailFast not to call FailNow")
+		}
+	})
+}
+
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
 	t.Parallel()
 

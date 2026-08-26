@@ -13,6 +13,7 @@ import (
 type mockTB struct {
 	testing.TB
 	failed      bool
+	failedNow   bool
 	lastMessage string
 }
 
@@ -30,7 +31,18 @@ func (m *mockTB) Error(args ...any) {
 
 func (m *mockTB) FailNow() {
 	m.failed = true
-	panic("FailNow called")
+	m.failedNow = true
+}
+
+func TestWithFailFast(t *testing.T) {
+	t.Parallel()
+
+	mockT := &mockTB{}
+	BeTrue(mockT, false, WithFailFast())
+
+	if !mockT.failed || !mockT.failedNow {
+		t.Fatalf("Expected WithFailFast to fail and call FailNow, got failed=%v failedNow=%v", mockT.failed, mockT.failedNow)
+	}
 }
 
 func TestAssertions(t *testing.T) {
