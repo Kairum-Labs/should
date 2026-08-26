@@ -1,3 +1,13 @@
+## [0.2.5] - 2026-08-26
+
+### Bug Fixes
+
+- Report BeEqual nil-literal mismatch instead of panicking
+
+### Miscellaneous Tasks
+
+- Bump pinned golangci-lint for Go 1.27 support
+
 ## [0.2.4] - 2026-08-12
 
 ### Bug Fixes
