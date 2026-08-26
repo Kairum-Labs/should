@@ -7596,9 +7596,9 @@ func TestContainSubstring(t *testing.T) {
 	})
 }
 
-// === Tests for fail function ===
+// === Tests for failWithOptions error reporting ===
 
-func TestFail(t *testing.T) {
+func TestFailWithOptions_ErrorReporting(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
@@ -7644,10 +7644,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7700,10 +7700,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7756,10 +7756,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7816,27 +7816,27 @@ func TestFail(t *testing.T) {
 					}
 				}()
 
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 			})
 		}
 	})
 
 	t.Run("Helper method call", func(t *testing.T) {
-		// This test verifies that fail calls t.Helper()
+		// This test verifies that failWithOptions calls t.Helper().
 		t.Parallel()
 
 		t.Run("should call Helper method", func(t *testing.T) {
 			t.Parallel()
 			mockT := &mockT{}
 
-			fail(mockT, "test message")
+			failWithOptions(mockT, nil, "test message")
 
 			if !mockT.Failed() {
-				t.Fatal("Expected fail to mark test as failed")
+				t.Fatal("Expected failWithOptions to mark test as failed")
 			}
 		})
 	})
@@ -7851,7 +7851,7 @@ func TestFail_Integration(t *testing.T) {
 		BeTrue(mockT, false)
 
 		if !mockT.Failed() {
-			t.Fatal("Expected BeTrue to fail and call fail function")
+			t.Fatal("Expected BeTrue to fail and report the failure")
 		}
 
 		expected := "Expected true, got false"

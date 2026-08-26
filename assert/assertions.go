@@ -24,16 +24,6 @@ func processOptions(opts ...Option) *Config {
 	return cfg
 }
 
-func fail(t testing.TB, message string, args ...any) {
-	t.Helper()
-	if len(args) > 0 {
-		t.Errorf(message, args...)
-		return
-	}
-
-	t.Error(message)
-}
-
 func failWithOptions(t testing.TB, cfg *Config, format string, args ...any) {
 	t.Helper()
 
@@ -43,11 +33,18 @@ func failWithOptions(t testing.TB, cfg *Config, format string, args ...any) {
 		message = fmt.Sprintf("%s\n%s", cfg.Message, message)
 	}
 
-	fail(t, message, args...)
+	defer func() {
+		if cfg != nil && cfg.FailFast {
+			t.FailNow()
+		}
+	}()
 
-	if cfg != nil && cfg.FailFast {
-		t.FailNow()
+	if len(args) > 0 {
+		t.Errorf(message, args...)
+		return
 	}
+
+	t.Error(message)
 }
 
 // BeTrue reports a test failure if the value is not true.
