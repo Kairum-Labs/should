@@ -153,24 +153,34 @@ func TestWithFailFast(t *testing.T) {
 
 	t.Run("stops after a value mismatch", func(t *testing.T) {
 		t.Parallel()
+		reached := false
 		failed, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
 			BeEqual(t, 1, 2, WithFailFast())
+			reached = true
 		})
 		if !failed || !failedNow {
 			t.Fatalf("Expected failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
 		}
 	})
 
 	t.Run("stops after an invalid assertion input", func(t *testing.T) {
 		t.Parallel()
+		reached := false
 		failed, failedNow, message := assertFailsFast(t, func(t testing.TB) {
 			BeInRange(t, 5, 100, 0, WithFailFast(), WithMessage("invalid range"))
+			reached = true
 		})
 		if !failed || !failedNow {
 			t.Fatalf("Expected invalid input failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
 		}
 		if !strings.Contains(message, "invalid range") {
 			t.Fatalf("Expected custom message in invalid input failure, got %q", message)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
 		}
 	})
 
@@ -181,6 +191,24 @@ func TestWithFailFast(t *testing.T) {
 		})
 		if failedNow {
 			t.Fatal("Expected failure without WithFailFast not to call FailNow")
+		}
+	})
+
+	t.Run("re-panics a value that is not the FailNow sentinel", func(t *testing.T) {
+		t.Parallel()
+
+		var recovered any
+		func() {
+			defer func() {
+				recovered = recover()
+			}()
+			assertFails(t, func(t testing.TB) {
+				panic("boom")
+			})
+		}()
+
+		if recovered != "boom" {
+			t.Fatalf("Expected the unrelated panic to propagate out, got %v", recovered)
 		}
 	})
 }
@@ -3831,6 +3859,23 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 	}
 
 	NotContainDuplicates(t, users)
+}
+
+func TestNotContainDuplicates_Fails_WithNonSliceInput(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a slice or array, but got int"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
 }
 
 func TestNotContainDuplicates_WithCustomMessage(t *testing.T) {

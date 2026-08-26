@@ -29,19 +29,47 @@ func (m *mockTB) Error(args ...any) {
 	m.lastMessage = fmt.Sprint(args...)
 }
 
+// failNowSignalType backs the failNowSignal sentinel. It carries a field
+// specifically so it isn't zero-size: the Go spec allows distinct zero-size
+// variables to share the same address (allocation may just return &zerobase),
+// which would make pointer-identity comparison on a *struct{} unreliable.
+type failNowSignalType struct{ _ byte }
+
+// failNowSignal is the panic value FailNow raises to unwind the current
+// goroutine, mirroring the real testing.T.FailNow (which calls runtime.Goexit
+// and never returns to the caller). Without it, code placed after a failed
+// WithFailFast assertion would keep running in the test below.
+//
+// It's compared by pointer identity (not a type assertion), so the recover
+// below only ever swallows this exact panic.
+var failNowSignal = &failNowSignalType{}
+
 func (m *mockTB) FailNow() {
 	m.failed = true
 	m.failedNow = true
+	panic(failNowSignal)
 }
 
 func TestWithFailFast(t *testing.T) {
 	t.Parallel()
 
 	mockT := &mockTB{}
-	BeTrue(mockT, false, WithFailFast())
+	reached := false
+	func() {
+		defer func() {
+			if r := recover(); r != nil && r != failNowSignal {
+				panic(r)
+			}
+		}()
+		BeTrue(mockT, false, WithFailFast())
+		reached = true
+	}()
 
 	if !mockT.failed || !mockT.failedNow {
 		t.Fatalf("Expected WithFailFast to fail and call FailNow, got failed=%v failedNow=%v", mockT.failed, mockT.failedNow)
+	}
+	if reached {
+		t.Fatal("Expected code after the failed assertion not to run")
 	}
 }
 

@@ -378,13 +378,7 @@ func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option
 	t.Helper()
 	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		failWithOptions(t, cfg, "cannot compare values: %v", err)
-		return
-	}
-
-	if result <= 0 {
+	if compareOrdered(actual, expected) <= 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "greater")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -409,13 +403,7 @@ func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
 	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		failWithOptions(t, cfg, "cannot compare values: %v", err)
-		return
-	}
-
-	if result >= 0 {
+	if compareOrdered(actual, expected) >= 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "less")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -439,13 +427,7 @@ func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...O
 	t.Helper()
 	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		failWithOptions(t, cfg, "cannot compare values: %v", err)
-		return
-	}
-
-	if result < 0 {
+	if compareOrdered(actual, expected) < 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "greaterOrEqual")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -469,13 +451,7 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 	t.Helper()
 	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		failWithOptions(t, cfg, "cannot compare values: %v", err)
-		return
-	}
-
-	if result > 0 {
+	if compareOrdered(actual, expected) > 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "lessOrEqual")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -1483,30 +1459,20 @@ func toFloat64(v reflect.Value) (float64, bool) {
 	}
 }
 
-// compareOrdered compares two values of orderable types.
-// Returns:
-// - -1 if a < b
-// - 0 if a == b
-// - 1 if a > b
-// - error if types are incompatible
-func compareOrdered[T Ordered](a, b T) (int, error) {
-	aValue := reflect.ValueOf(a)
-	bValue := reflect.ValueOf(b)
-
-	// Handle numeric comparison
-	aFloat, aOk := toFloat64(aValue)
-	bFloat, bOk := toFloat64(bValue)
-
-	if !aOk || !bOk {
-		return 0, fmt.Errorf("cannot compare incompatible types")
+// compareOrdered compares two values of an ordered numeric type.
+// Returns -1 if a < b, 0 if a == b, and 1 if a > b.
+//
+// Ordered's type set is numeric-only, so the comparison operators below are
+// always valid for T — there is no "incompatible types" case to guard against.
+func compareOrdered[T Ordered](a, b T) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	default:
+		return 0
 	}
-
-	if aFloat < bFloat {
-		return -1, nil
-	} else if aFloat > bFloat {
-		return 1, nil
-	}
-	return 0, nil
 }
 
 // isNumericType checks if a reflect.Type represents a numeric type
