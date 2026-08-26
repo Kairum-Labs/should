@@ -16,6 +16,7 @@ type Config struct {
 	Message    string
 	IgnoreCase bool
 	StackTrace bool
+	FailFast   bool
 	Time       TimeOptions
 	/*
 		 	Description    string
@@ -37,6 +38,9 @@ type ignoreCase bool
 // stackTrace is a boolean flag for including stack traces on NotPanic assertions.
 type stackTrace bool
 
+// failFast is a boolean flag for stopping the test on assertion failure.
+type failFast bool
+
 // ignoreTimezone configures time comparisons to ignore timezone/location differences
 type ignoreTimezone bool
 
@@ -54,6 +58,10 @@ func (i ignoreCase) Apply(c *Config) {
 
 func (s stackTrace) Apply(c *Config) {
 	c.StackTrace = bool(s)
+}
+
+func (f failFast) Apply(c *Config) {
+	c.FailFast = bool(f)
 }
 
 // Apply implements Option for ignoreTimezone
@@ -101,6 +109,16 @@ func WithIgnoreCase() Option {
 // WithStackTrace creates an option for including stack traces on [NotPanic] assertions.
 func WithStackTrace() Option {
 	return stackTrace(true)
+}
+
+// WithFailFast stops the test immediately when an assertion fails, instead of
+// marking it failed and allowing execution to continue.
+//
+// It has the same goroutine restrictions as [testing.T.FailNow]. Use it for
+// preconditions where continuing after a failed assertion would be misleading
+// or could cause a panic.
+func WithFailFast() Option {
+	return failFast(true)
 }
 
 // WithIgnoreTimezone creates an option for ignoring timezone when comparing times in [BeSameTime].

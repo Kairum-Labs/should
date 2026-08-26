@@ -69,6 +69,9 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
 	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 
+	// Stop the test immediately if a critical assertion fails
+	should.NotBeError(t, err, should.WithFailFast())
+
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
 	should.NotBeEmpty(t, []int{1, 2, 3})
@@ -834,6 +837,18 @@ For `NotPanic` assert, you can capture detailed stack traces using `should.WithS
 should.NotPanic(t, func() {
     riskyOperation()
 }, should.WithStackTrace())
+```
+
+#### Fail Fast with `WithFailFast`
+
+By default, a failed assertion marks the test as failed and execution continues. `should.WithFailFast()` stops the test immediately instead, which is useful for preconditions where continuing could be misleading or cause a panic:
+
+```go
+user, err := findUser(id)
+should.NotBeError(t, err, should.WithFailFast())
+
+// Reached only when findUser succeeded.
+should.NotBeNil(t, user, should.WithFailFast())
 ```
 
 #### Time comparisons with options

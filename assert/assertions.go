@@ -24,16 +24,6 @@ func processOptions(opts ...Option) *Config {
 	return cfg
 }
 
-func fail(t testing.TB, message string, args ...any) {
-	t.Helper()
-	if len(args) > 0 {
-		t.Errorf(message, args...)
-		return
-	}
-
-	t.Error(message)
-}
-
 func failWithOptions(t testing.TB, cfg *Config, format string, args ...any) {
 	t.Helper()
 
@@ -43,7 +33,18 @@ func failWithOptions(t testing.TB, cfg *Config, format string, args ...any) {
 		message = fmt.Sprintf("%s\n%s", cfg.Message, message)
 	}
 
-	fail(t, message, args...)
+	defer func() {
+		if cfg != nil && cfg.FailFast {
+			t.FailNow()
+		}
+	}()
+
+	if len(args) > 0 {
+		t.Errorf(message, args...)
+		return
+	}
+
+	t.Error(message)
 }
 
 // BeTrue reports a test failure if the value is not true.
@@ -102,6 +103,7 @@ func BeFalse(t testing.TB, actual bool, opts ...Option) {
 // Only works with strings, slices, arrays, maps, channels, or pointers.
 func BeEmpty(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	actualValue := reflect.ValueOf(actual)
 
 	// Handle nil values
@@ -113,7 +115,6 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 	switch actualValue.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		if actualValue.Len() > 0 {
-			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, true)
 			failWithOptions(t, cfg, errorMsg)
 		}
@@ -121,11 +122,11 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 		if actualValue.IsNil() {
 			return // nil pointer is considered empty
 		}
-		cfg := processOptions(opts...)
 		errorMsg := formatEmptyError(actual, true)
 		failWithOptions(t, cfg, errorMsg)
 	default:
-		fail(t, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
+		failWithOptions(t, cfg, "BeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T",
+			actual)
 	}
 }
 
@@ -146,11 +147,11 @@ func BeEmpty(t testing.TB, actual any, opts ...Option) {
 // Only works with strings, slices, arrays, maps, channels, or pointers.
 func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	actualValue := reflect.ValueOf(actual)
 
 	// Handle nil values
 	if !actualValue.IsValid() {
-		cfg := processOptions(opts...)
 		errorMsg := formatEmptyError(actual, false)
 		failWithOptions(t, cfg, errorMsg)
 		return
@@ -160,18 +161,17 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 	switch actualValue.Kind() {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		if actualValue.Len() == 0 {
-			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, false)
 			failWithOptions(t, cfg, errorMsg)
 		}
 	case reflect.Pointer:
 		if actualValue.IsNil() {
-			cfg := processOptions(opts...)
 			errorMsg := formatEmptyError(actual, false)
 			failWithOptions(t, cfg, errorMsg)
 		}
 	default:
-		fail(t, "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T", actual)
+		failWithOptions(t, cfg, "NotBeEmpty can only be used with strings, slices, arrays, maps, channels, or pointers, but got %T",
+			actual)
 	}
 }
 
@@ -191,6 +191,7 @@ func NotBeEmpty(t testing.TB, actual any, opts ...Option) {
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
 func BeNil(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	v := reflect.ValueOf(actual)
 
 	if !v.IsValid() {
@@ -206,12 +207,11 @@ func BeNil(t testing.TB, actual any, opts ...Option) {
 		kind == reflect.Slice
 
 	if !nillable {
-		fail(t, "BeNil can only be used with nillable types, but got %T", actual)
+		failWithOptions(t, cfg, "BeNil can only be used with nillable types, but got %T", actual)
 		return
 	}
 
 	if !v.IsNil() {
-		cfg := processOptions(opts...)
 		failWithOptions(t, cfg, "Expected nil, but was not")
 	}
 }
@@ -231,6 +231,7 @@ func BeNil(t testing.TB, actual any, opts ...Option) {
 // Only works with nillable types (pointers, interfaces, channels, functions, slices, maps).
 func NotBeNil(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	v := reflect.ValueOf(actual)
 
 	isNil := !v.IsValid()
@@ -244,14 +245,13 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 			kind == reflect.Slice
 
 		if !nillable {
-			fail(t, "NotBeNil can only be used with nillable types, but got %T", actual)
+			failWithOptions(t, cfg, "NotBeNil can only be used with nillable types, but got %T", actual)
 			return
 		}
 		isNil = v.IsNil()
 	}
 
 	if isNil {
-		cfg := processOptions(opts...)
 		failWithOptions(t, cfg, "Expected not nil, but was nil")
 	}
 }
@@ -322,7 +322,7 @@ func BeErrorAs(t testing.TB, err error, target interface{}, opts ...Option) {
 	}
 
 	if target == nil {
-		fail(t, "target cannot be nil")
+		failWithOptions(t, cfg, "target cannot be nil")
 		return
 	}
 
@@ -376,15 +376,9 @@ func BeErrorIs(t testing.TB, err error, target error, opts ...Option) {
 // Only works with numeric types. Both values must be of the same type.
 func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		fail(t, "cannot compare values: %v", err)
-		return
-	}
-
-	if result <= 0 {
-		cfg := processOptions(opts...)
+	if compareOrdered(actual, expected) <= 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "greater")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -407,15 +401,9 @@ func BeGreaterThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option
 // Only works with numeric types. Both values must be of the same type.
 func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		fail(t, "cannot compare values: %v", err)
-		return
-	}
-
-	if result >= 0 {
-		cfg := processOptions(opts...)
+	if compareOrdered(actual, expected) >= 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "less")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -437,15 +425,9 @@ func BeLessThan[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 // Only works with numeric types. Both values must be of the same type.
 func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		fail(t, "cannot compare values: %v", err)
-		return
-	}
-
-	if result < 0 {
-		cfg := processOptions(opts...)
+	if compareOrdered(actual, expected) < 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "greaterOrEqual")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -467,15 +449,9 @@ func BeGreaterOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...O
 // Only works with numeric types. Both values must be of the same type.
 func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
-	result, err := compareOrdered(actual, expected)
-	if err != nil {
-		fail(t, "cannot compare values: %v", err)
-		return
-	}
-
-	if result > 0 {
-		cfg := processOptions(opts...)
+	if compareOrdered(actual, expected) > 0 {
 		errorMsg := formatNumericComparisonError(actual, expected, "lessOrEqual")
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -496,9 +472,10 @@ func BeLessOrEqualTo[T Ordered](t testing.TB, actual T, expected T, opts ...Opti
 //	should.BeWithin(t, 3.142, 3.14, 0.001, should.WithMessage("Pi approximation is outside the allowed range"))
 func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
 	if tolerance < 0 {
-		fail(t, "Tolerance must be non-negative, got %v", tolerance)
+		failWithOptions(t, cfg, "Tolerance must be non-negative, got %v", tolerance)
 		return
 	}
 
@@ -507,7 +484,7 @@ func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...
 	tolF := float64(tolerance)
 
 	if math.IsNaN(actualF) || math.IsNaN(expectedF) || math.IsNaN(tolF) {
-		fail(t, "Invalid input: actual=%v, expected=%v, tolerance=%v (NaN detected)", actual, expected, tolerance)
+		failWithOptions(t, cfg, "Invalid input: actual=%v, expected=%v, tolerance=%v (NaN detected)", actual, expected, tolerance)
 		return
 	}
 
@@ -515,7 +492,7 @@ func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...
 		if math.IsInf(actualF, 0) && math.IsInf(expectedF, 0) && math.Signbit(actualF) == math.Signbit(expectedF) {
 			return
 		}
-		fail(t, "Invalid input: actual=%v, expected=%v (Inf mismatch)", actual, expected)
+		failWithOptions(t, cfg, "Invalid input: actual=%v, expected=%v (Inf mismatch)", actual, expected)
 		return
 	}
 
@@ -523,7 +500,6 @@ func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...
 
 	if diff > tolF {
 		errorMsg := formatBeWithinError(actual, expected, tolerance)
-		cfg := processOptions(opts...)
 		failWithOptions(t, cfg, errorMsg)
 	}
 }
@@ -545,9 +521,11 @@ func BeWithin[T Float](t testing.TB, actual T, expected T, tolerance T, opts ...
 // Only works with numeric types. All values must be of the same type.
 func BeInRange[T Ordered](t testing.TB, actual T, minValue T, maxValue T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 
 	if minValue > maxValue {
-		fail(t, "BeInRange: invalid range — minValue (%v) must be less than or equal to maxValue (%v)", minValue, maxValue)
+		failWithOptions(t, cfg, "BeInRange: invalid range — minValue (%v) must be less than or equal to maxValue (%v)",
+			minValue, maxValue)
 		return
 	}
 
@@ -555,7 +533,6 @@ func BeInRange[T Ordered](t testing.TB, actual T, minValue T, maxValue T, opts .
 		return
 	}
 
-	cfg := processOptions(opts...)
 	errorMsg := formatRangeError(actual, minValue, maxValue)
 
 	failWithOptions(t, cfg, errorMsg)
@@ -653,10 +630,6 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
 
 	cfg := processOptions(opts...)
-	customMsg := cfg.Message
-	if customMsg != "" {
-		customMsg += "\n"
-	}
 
 	if reflect.DeepEqual(actual, expected) {
 		return
@@ -670,8 +643,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	// reflect.DeepEqual already ruled out "both nil", one side must hold a
 	// real value here, so report the mismatch directly instead of reflecting.
 	if !actualValue.IsValid() || !expectedValue.IsValid() {
-		fail(t, "%sNot equal:\nexpected: %s\nactual  : %s",
-			customMsg,
+		failWithOptions(t, cfg, "Not equal:\nexpected: %s\nactual  : %s",
 			formatComparisonValue(expected),
 			formatComparisonValue(actual),
 		)
@@ -685,8 +657,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	// For primitive types, handle type differences specially
 	if isPrimitive(actualValue.Kind()) && isPrimitive(expectedValue.Kind()) {
 		message := fmt.Sprintf(
-			"%sNot equal:\nexpected: %v\nactual  : %v",
-			customMsg,
+			"Not equal:\nexpected: %v\nactual  : %v",
 			expected,
 			actual,
 		)
@@ -695,7 +666,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 			message += fmt.Sprintf("\nField differences:\n  └─ : %s ≠ %s", expectedType, actualType)
 		}
 
-		fail(t, message)
+		failWithOptions(t, cfg, message)
 		return
 	}
 
@@ -712,8 +683,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	}
 
 	message := fmt.Sprintf(
-		"%sNot equal:\nexpected: %v\nactual  : %v",
-		customMsg,
+		"Not equal:\nexpected: %v\nactual  : %v",
 		formatComparisonValue(expected),
 		formatComparisonValue(actual),
 	)
@@ -721,7 +691,7 @@ func BeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 	differences = append(differences, message, differencesOutput)
 
 	diffMessage := strings.Join(differences, "\n")
-	fail(t, "Differences found:\n%s", diffMessage)
+	failWithOptions(t, cfg, "Differences found:\n%s", diffMessage)
 }
 
 // NotBeEqual reports a test failure if the two values are deeply equal.
@@ -770,8 +740,9 @@ func NotBeEqual(t testing.TB, actual any, expected any, opts ...Option) {
 // If the input is not a slice or array, the test fails immediately.
 func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	if !isSliceOrArray(actual) {
-		fail(t, "expected a slice or array, but got %T", actual)
+		failWithOptions(t, cfg, "expected a slice or array, but got %T", actual)
 		return
 	}
 
@@ -782,7 +753,6 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 			if result.Found {
 				return
 			}
-			cfg := processOptions(opts...)
 			errorMsg := formatContainsError(target, result)
 			failWithOptions(t, cfg, errorMsg)
 			return
@@ -799,7 +769,6 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 		if found {
 			return
 		}
-		cfg := processOptions(opts...)
 		failWithOptions(t, cfg, output)
 		return
 	}
@@ -813,7 +782,6 @@ func Contain(t testing.TB, actual any, expected any, opts ...Option) {
 	}
 
 	// If not found, fail with a detailed message
-	cfg := processOptions(opts...)
 	baseMsg := fmt.Sprintf("Expected collection to contain element:\n  Collection: %s\n  Missing   : %s",
 		formatSlice(actual), formatComparisonValue(expected))
 
@@ -890,8 +858,9 @@ func ContainValue[K comparable, V any](t testing.TB, actual map[K]V, expectedVal
 // If the input is not a slice or array, the test fails immediately.
 func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	if !isSliceOrArray(actual) {
-		fail(t, "expected a slice or array, but got %T", actual)
+		failWithOptions(t, cfg, "expected a slice or array, but got %T", actual)
 		return
 	}
 
@@ -918,7 +887,6 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 		location = fmt.Sprintf("Found: %s at indexes [%s]", formatComparisonValue(expected), strings.Join(idxStrs, ", "))
 	}
 
-	cfg := processOptions(opts...)
 	errorMsg := fmt.Sprintf("\nExpected collection to NOT contain element: \nCollection: %s\n%s", formatSlice(actual), location)
 	failWithOptions(t, cfg, errorMsg)
 }
@@ -937,8 +905,9 @@ func NotContain(t testing.TB, actual any, expected any, opts ...Option) {
 // If the input is not a slice or array, the test fails immediately.
 func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	if !isSliceOrArray(actual) {
-		fail(t, "expected a slice or array, but got %T", actual)
+		failWithOptions(t, cfg, "expected a slice or array, but got %T", actual)
 		return
 	}
 
@@ -946,35 +915,17 @@ func NotContainDuplicates(t testing.TB, actual any, opts ...Option) {
 
 	duplicates := findDuplicates(collection)
 
-	cfg := processOptions(opts...)
-	customMsg := cfg.Message
-
 	if len(duplicates) == 0 {
 		return
 	}
 
-	if customMsg != "" {
-		if len(duplicates) == 1 {
-			fail(t, "%s\nExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
-			return
-		}
-
-		fail(
-			t,
-			"%s\nExpected no duplicates, but found %d duplicate values: %s",
-			customMsg,
-			len(duplicates),
-			formatDuplicatesErrors(duplicates),
-		)
-		return
-	}
-
 	if len(duplicates) == 1 {
-		fail(t, "%s\nExpected no duplicates, but found 1 duplicate value: %s", customMsg, formatDuplicatesErrors(duplicates))
+		failWithOptions(t, cfg, "Expected no duplicates, but found 1 duplicate value: %s", formatDuplicatesErrors(duplicates))
 		return
 	}
 
-	fail(t, "Expected no duplicates, but found %d duplicate values: %s", len(duplicates), formatDuplicatesErrors(duplicates))
+	failWithOptions(t, cfg, "Expected no duplicates, but found %d duplicate values: %s",
+		len(duplicates), formatDuplicatesErrors(duplicates))
 }
 
 // NotContainKey reports a test failure if the map contains the expected key.
@@ -1351,6 +1302,9 @@ func ContainSubstring(t testing.TB, actual string, substring string, opts ...Opt
 //	should.HaveLength(t, "hello", 5)
 func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
+	const invalidTypeMessage = "HaveLength can only be used with types that have a concept of length " +
+		"(string, slice, array, map), but got %T"
 	v := reflect.ValueOf(actual)
 	var actualLen int
 
@@ -1358,12 +1312,11 @@ func HaveLength(t testing.TB, actual any, expected int, opts ...Option) {
 	case reflect.String, reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
 		actualLen = v.Len()
 	default:
-		fail(t, "HaveLength can only be used with types that have a concept of length (string, slice, array, map), but got %T", actual)
+		failWithOptions(t, cfg, invalidTypeMessage, actual)
 		return
 	}
 
 	if actualLen != expected {
-		cfg := processOptions(opts...)
 		errorMsg := formatLengthError(actual, expected, actualLen)
 		failWithOptions(t, cfg, errorMsg)
 	}
@@ -1403,8 +1356,9 @@ func BeOfType(t testing.TB, actual, expected any, opts ...Option) {
 //	should.BeOneOf(t, status, allowedStatus)
 func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 	t.Helper()
+	cfg := processOptions(opts...)
 	if len(options) == 0 {
-		fail(t, "Options list cannot be empty for BeOneOf assertion")
+		failWithOptions(t, cfg, "Options list cannot be empty for BeOneOf assertion")
 		return
 	}
 
@@ -1414,7 +1368,6 @@ func BeOneOf[T any](t testing.TB, actual T, options []T, opts ...Option) {
 		}
 	}
 
-	cfg := processOptions(opts...)
 	errorMsg := formatOneOfError(actual, options)
 	failWithOptions(t, cfg, errorMsg)
 }
@@ -1506,30 +1459,20 @@ func toFloat64(v reflect.Value) (float64, bool) {
 	}
 }
 
-// compareOrdered compares two values of orderable types.
-// Returns:
-// - -1 if a < b
-// - 0 if a == b
-// - 1 if a > b
-// - error if types are incompatible
-func compareOrdered[T Ordered](a, b T) (int, error) {
-	aValue := reflect.ValueOf(a)
-	bValue := reflect.ValueOf(b)
-
-	// Handle numeric comparison
-	aFloat, aOk := toFloat64(aValue)
-	bFloat, bOk := toFloat64(bValue)
-
-	if !aOk || !bOk {
-		return 0, fmt.Errorf("cannot compare incompatible types")
+// compareOrdered compares two values of an ordered numeric type.
+// Returns -1 if a < b, 0 if a == b, and 1 if a > b.
+//
+// Ordered's type set is numeric-only, so the comparison operators below are
+// always valid for T — there is no "incompatible types" case to guard against.
+func compareOrdered[T Ordered](a, b T) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	default:
+		return 0
 	}
-
-	if aFloat < bFloat {
-		return -1, nil
-	} else if aFloat > bFloat {
-		return 1, nil
-	}
-	return 0, nil
 }
 
 // isNumericType checks if a reflect.Type represents a numeric type

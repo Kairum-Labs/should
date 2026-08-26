@@ -148,6 +148,71 @@ func TestFailWithOptions(t *testing.T) {
 	}
 }
 
+func TestWithFailFast(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stops after a value mismatch", func(t *testing.T) {
+		t.Parallel()
+		reached := false
+		failed, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2, WithFailFast())
+			reached = true
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
+		}
+	})
+
+	t.Run("stops after an invalid assertion input", func(t *testing.T) {
+		t.Parallel()
+		reached := false
+		failed, failedNow, message := assertFailsFast(t, func(t testing.TB) {
+			BeInRange(t, 5, 100, 0, WithFailFast(), WithMessage("invalid range"))
+			reached = true
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected invalid input failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if !strings.Contains(message, "invalid range") {
+			t.Fatalf("Expected custom message in invalid input failure, got %q", message)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
+		}
+	})
+
+	t.Run("does not stop by default", func(t *testing.T) {
+		t.Parallel()
+		_, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2)
+		})
+		if failedNow {
+			t.Fatal("Expected failure without WithFailFast not to call FailNow")
+		}
+	})
+
+	t.Run("re-panics a value that is not the FailNow sentinel", func(t *testing.T) {
+		t.Parallel()
+
+		var recovered any
+		func() {
+			defer func() {
+				recovered = recover()
+			}()
+			assertFails(t, func(t testing.TB) {
+				panic("boom")
+			})
+		}()
+
+		if recovered != "boom" {
+			t.Fatalf("Expected the unrelated panic to propagate out, got %v", recovered)
+		}
+	})
+}
+
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
 	t.Parallel()
 
@@ -3794,6 +3859,23 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 	}
 
 	NotContainDuplicates(t, users)
+}
+
+func TestNotContainDuplicates_Fails_WithNonSliceInput(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a slice or array, but got int"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
 }
 
 func TestNotContainDuplicates_WithCustomMessage(t *testing.T) {
@@ -7559,9 +7641,9 @@ func TestContainSubstring(t *testing.T) {
 	})
 }
 
-// === Tests for fail function ===
+// === Tests for failWithOptions error reporting ===
 
-func TestFail(t *testing.T) {
+func TestFailWithOptions_ErrorReporting(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
@@ -7607,10 +7689,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7663,10 +7745,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7719,10 +7801,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7779,27 +7861,27 @@ func TestFail(t *testing.T) {
 					}
 				}()
 
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 			})
 		}
 	})
 
 	t.Run("Helper method call", func(t *testing.T) {
-		// This test verifies that fail calls t.Helper()
+		// This test verifies that failWithOptions calls t.Helper().
 		t.Parallel()
 
 		t.Run("should call Helper method", func(t *testing.T) {
 			t.Parallel()
 			mockT := &mockT{}
 
-			fail(mockT, "test message")
+			failWithOptions(mockT, nil, "test message")
 
 			if !mockT.Failed() {
-				t.Fatal("Expected fail to mark test as failed")
+				t.Fatal("Expected failWithOptions to mark test as failed")
 			}
 		})
 	})
@@ -7814,7 +7896,7 @@ func TestFail_Integration(t *testing.T) {
 		BeTrue(mockT, false)
 
 		if !mockT.Failed() {
-			t.Fatal("Expected BeTrue to fail and call fail function")
+			t.Fatal("Expected BeTrue to fail and report the failure")
 		}
 
 		expected := "Expected true, got false"
