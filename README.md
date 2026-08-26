@@ -69,6 +69,9 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
 	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 
+	// Stop the test immediately if a critical assertion fails
+	should.NotBeError(t, err, should.WithFailFast())
+
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
 	should.NotBeEmpty(t, []int{1, 2, 3})
