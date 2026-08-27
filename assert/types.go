@@ -109,6 +109,19 @@ type sortCheckResult struct {
 	Total      int
 }
 
+// allMatchFailure represents an item for which an AllMatch predicate returned false.
+type allMatchFailure struct {
+	Index int
+	Value any
+}
+
+// allMatchResult contains the failures found while evaluating an AllMatch predicate.
+type allMatchResult struct {
+	Failures     []allMatchFailure
+	FailureCount int
+	Total        int
+}
+
 // caseMismatchResult holds the result of searching for an exact case mismatch
 type caseMismatchResult struct {
 	Found     bool
