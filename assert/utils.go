@@ -2498,13 +2498,13 @@ func formatRangeError[T Ordered](actual, minValue, maxValue T) string {
 		minValue, maxValue, actual, minValue, maxValue, actual-maxValue, actual, maxValue, maxValue)
 }
 
-// formatNotPanicError formats a detailed error message for NotPanic assertions
-func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
+// formatNotPanicError formats a detailed error message for NotPanic assertions.
+func formatNotPanicError(panicInfo panicInfo) string {
 	var messageBuilder strings.Builder
 	messageBuilder.WriteString("Expected for the function to not panic, but it panicked with: ")
 	fmt.Fprintf(&messageBuilder, "%v", panicInfo.Recovered)
 
-	if cfg.StackTrace && panicInfo.Stack != "" {
+	if panicInfo.Stack != "" {
 		messageBuilder.WriteString("\nStack trace:\n")
 		messageBuilder.WriteString(panicInfo.Stack)
 	}

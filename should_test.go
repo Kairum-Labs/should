@@ -201,6 +201,15 @@ func TestNotPanic(t *testing.T) {
 
 func TestWrappers(t *testing.T) {
 	t.Parallel()
+	t.Run("NotPanic with deprecated stack trace option passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotPanic(mockT, func() {}, WithStackTrace())
+		if mockT.failed {
+			t.Error("NotPanic should pass")
+		}
+	})
+
 	// BeTrue
 	t.Run("BeTrue passes", func(t *testing.T) {
 		t.Parallel()
@@ -651,15 +660,6 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	t.Run("NotPanic with stack trace passes", func(t *testing.T) {
-		t.Parallel()
-		mockT := &mockTB{}
-		NotPanic(mockT, func() {
-		}, WithStackTrace())
-		if mockT.failed {
-			t.Error("NotPanic should pass")
-		}
-	})
 }
 
 func TestContainKey_Integration(t *testing.T) {

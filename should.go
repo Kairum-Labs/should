@@ -66,13 +66,10 @@ func WithIgnoreCase() Option {
 	return assert.WithIgnoreCase()
 }
 
-// WithStackTrace creates an option for including stack traces on [NotPanic] assertions.
+// WithStackTrace is retained for compatibility and has no effect because NotPanic
+// includes stack traces by default.
 //
-// Example:
-//
-//	should.NotPanic(t, func() {
-//		panic("expected panic")
-//	}, should.WithStackTrace())
+// Deprecated: NotPanic includes stack traces by default.
 func WithStackTrace() Option {
 	return assert.WithStackTrace()
 }
@@ -652,8 +649,9 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 // NotPanic reports a test failure if the given function panics.
 //
 // This assertion executes the provided function and expects it to complete normally
-// without panicking. If a panic occurs, it captures the panic value and includes it
-// in the error message. Supports optional custom error messages through [Option].
+// without panicking. If a panic occurs, it captures the panic value and stack trace
+// and includes both in the error message. Supports optional custom error messages
+// through [Option].
 //
 // Example:
 //
@@ -665,8 +663,6 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 //	should.NotPanic(t, func() {
 //		user.Save()
 //	}, should.WithMessage("Save operation should not panic"))
-//
-// Note: Stack trace is only available when [WithStackTrace] is used
 //
 // The function parameter must not be nil.
 func NotPanic(t testing.TB, fn func(), opts ...Option) {
