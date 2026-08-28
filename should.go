@@ -521,6 +521,27 @@ func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...O
 	assert.AnyMatch(t, actual, predicate, opts...)
 }
 
+// AllMatch reports a test failure if any element in the slice does not match the predicate function.
+//
+// The assertion evaluates every element so that its failure message can report
+// the total number of predicate failures. Empty and nil slices fail.
+//
+// Example:
+//
+//	numbers := []int{2, 4, 6, 8}
+//	should.AllMatch(t, numbers, func(n int) bool {
+//		return n%2 == 0
+//	})
+//
+//	users := []User{{Active: true}, {Active: false}}
+//	should.AllMatch(t, users, func(user User) bool {
+//		return user.Active
+//	}, should.WithMessage("All users must be active"))
+func AllMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...Option) {
+	t.Helper()
+	assert.AllMatch(t, actual, predicate, opts...)
+}
+
 // StartWith reports a test failure if the string does not start with the expected substring.
 //
 // This assertion checks if the actual string starts with the expected substring.

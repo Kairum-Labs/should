@@ -1005,6 +1005,55 @@ func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...O
 	failWithOptions(t, cfg, errorMsg)
 }
 
+// AllMatch reports a test failure if any element in the slice does not match the predicate function.
+//
+// The assertion evaluates every element so that its failure message can report
+// the total number of predicate failures. Empty and nil slices fail.
+//
+// Example:
+//
+//	numbers := []int{2, 4, 6, 8}
+//	should.AllMatch(t, numbers, func(n int) bool {
+//		return n%2 == 0
+//	})
+//
+//	users := []User{{Active: true}, {Active: false}}
+//	should.AllMatch(t, users, func(user User) bool {
+//		return user.Active
+//	}, should.WithMessage("All users must be active"))
+func AllMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...Option) {
+	t.Helper()
+
+	if len(actual) == 0 {
+		cfg := processOptions(opts...)
+		failWithOptions(t, cfg, "Expected collection to contain at least one item, but it is empty")
+		return
+	}
+
+	const maxFailuresToShow = 5
+	result := allMatchResult{Total: len(actual)}
+	for index, item := range actual {
+		if predicate(item) {
+			continue
+		}
+
+		result.FailureCount++
+		if len(result.Failures) < maxFailuresToShow {
+			result.Failures = append(result.Failures, allMatchFailure{
+				Index: index,
+				Value: item,
+			})
+		}
+	}
+
+	if result.FailureCount == 0 {
+		return
+	}
+
+	cfg := processOptions(opts...)
+	failWithOptions(t, cfg, formatAllMatchError(result))
+}
+
 // StartWith reports a test failure if the string does not start with the expected substring.
 //
 // This assertion checks if the actual string starts with the expected substring.

@@ -2605,6 +2605,43 @@ func formatSortError(result sortCheckResult) string {
 	return msg.String()
 }
 
+const allMatchLargeCollectionThreshold = 100
+
+// formatAllMatchError creates a detailed error message for AllMatch failures.
+func formatAllMatchError(result allMatchResult) string {
+	var msg strings.Builder
+
+	msg.WriteString("Expected every item in the collection to match the predicate, but some did not:\n")
+
+	collectionInfo := fmt.Sprintf("Collection: (total: %d elements)\n", result.Total)
+	if result.Total > allMatchLargeCollectionThreshold {
+		collectionInfo = fmt.Sprintf("Collection: [Large collection] (total: %d elements)\n", result.Total)
+	}
+	msg.WriteString(collectionInfo)
+
+	statusText := fmt.Sprintf("Status    : %d predicate failures found\n", result.FailureCount)
+	if result.FailureCount == 1 {
+		statusText = "Status    : 1 predicate failure found\n"
+	}
+	msg.WriteString(statusText)
+
+	msg.WriteString("Problems  :\n")
+	for _, failure := range result.Failures {
+		fmt.Fprintf(&msg, "  - Index %d: %s (predicate returned false)\n",
+			failure.Index, formatComparisonValue(failure.Value))
+	}
+
+	remaining := result.FailureCount - len(result.Failures)
+	if remaining == 1 {
+		msg.WriteString("  - ... and 1 more predicate failure")
+	}
+	if remaining > 1 {
+		fmt.Fprintf(&msg, "  - ... and %d more predicate failures", remaining)
+	}
+
+	return msg.String()
+}
+
 // formatBeSameTimeError builds a friendly error message for time equality comparisons.
 func formatBeSameTimeError(expected time.Time, actual time.Time, diff time.Duration) string {
 	var msg strings.Builder

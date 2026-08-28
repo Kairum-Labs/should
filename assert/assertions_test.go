@@ -1095,6 +1095,154 @@ func TestContainFunc_WithCustomMessage(t *testing.T) {
 	}
 }
 
+func TestAllMatch(t *testing.T) {
+	t.Parallel()
+
+	largeOddNumbers := make([]int, 101)
+	for index := range largeOddNumbers {
+		largeOddNumbers[index] = index*2 + 1
+	}
+
+	tests := []struct {
+		name            string
+		actual          []int
+		opts            []Option
+		shouldFail      bool
+		expectedParts   []string
+		unexpectedParts []string
+		expectedCalls   int
+	}{
+		{
+			name:          "passes when every item matches",
+			actual:        []int{2, 4, 6, 8},
+			expectedCalls: 4,
+		},
+		{
+			name:       "fails for an empty slice",
+			actual:     []int{},
+			shouldFail: true,
+			expectedParts: []string{
+				"Expected collection to contain at least one item, but it is empty",
+			},
+			expectedCalls: 0,
+		},
+		{
+			name:       "fails for a nil slice",
+			actual:     nil,
+			shouldFail: true,
+			expectedParts: []string{
+				"Expected collection to contain at least one item, but it is empty",
+			},
+			expectedCalls: 0,
+		},
+		{
+			name:       "reports a single failing item",
+			actual:     []int{2, 4, 5, 8},
+			shouldFail: true,
+			expectedParts: []string{
+				"Collection: (total: 4 elements)",
+				"Status    : 1 predicate failure found",
+				"  - Index 2: 5 (predicate returned false)",
+			},
+			unexpectedParts: []string{
+				"and 0 more predicate failures",
+			},
+			expectedCalls: 4,
+		},
+		{
+			name:       "reports multiple failures and a custom message",
+			actual:     []int{1, 2, 3, 4, 5, 6, 7},
+			opts:       []Option{WithMessage("All values must be even")},
+			shouldFail: true,
+			expectedParts: []string{
+				"All values must be even",
+				"Status    : 4 predicate failures found",
+				"  - Index 0: 1 (predicate returned false)",
+				"  - Index 6: 7 (predicate returned false)",
+			},
+			expectedCalls: 7,
+		},
+		{
+			name:       "reports a single omitted failure",
+			actual:     []int{1, 3, 5, 7, 9, 11},
+			shouldFail: true,
+			expectedParts: []string{
+				"Status    : 6 predicate failures found",
+				"  - ... and 1 more predicate failure",
+			},
+			expectedCalls: 6,
+		},
+		{
+			name:       "limits displayed failures while retaining the total",
+			actual:     largeOddNumbers,
+			shouldFail: true,
+			expectedParts: []string{
+				"Collection: [Large collection] (total: 101 elements)",
+				"Status    : 101 predicate failures found",
+				"  - Index 4: 9 (predicate returned false)",
+				"  - ... and 96 more predicate failures",
+			},
+			expectedCalls: 101,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			calls := 0
+			predicate := func(item int) bool {
+				calls++
+				return item%2 == 0
+			}
+
+			failed, message := assertFails(t, func(t testing.TB) {
+				AllMatch(t, tt.actual, predicate, tt.opts...)
+			})
+
+			if failed != tt.shouldFail {
+				t.Fatalf("Expected failure=%v, got failure=%v with message %q", tt.shouldFail, failed, message)
+			}
+			if calls != tt.expectedCalls {
+				t.Fatalf("Expected predicate to be called %d times, got %d", tt.expectedCalls, calls)
+			}
+			for _, expected := range tt.expectedParts {
+				if !strings.Contains(message, expected) {
+					t.Errorf("Expected message to contain %q, got:\n%s", expected, message)
+				}
+			}
+			for _, unexpected := range tt.unexpectedParts {
+				if strings.Contains(message, unexpected) {
+					t.Errorf("Expected message not to contain %q, got:\n%s", unexpected, message)
+				}
+			}
+		})
+	}
+}
+
+func TestAllMatch_FormatsStructValues(t *testing.T) {
+	t.Parallel()
+
+	type user struct {
+		Name   string
+		Active bool
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		AllMatch(t, []user{{Name: "Ana", Active: true}, {Name: "João", Active: false}}, func(item user) bool {
+			return item.Active
+		})
+	})
+
+	if !failed {
+		t.Fatal("Expected AllMatch to fail")
+	}
+	expected := `  - Index 1: {Name: "João", Active: false} (predicate returned false)`
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, got:\n%s", expected, message)
+	}
+}
+
 func TestShouldContain_ShowsSimilarElements_OnFailure(t *testing.T) {
 	t.Parallel()
 

@@ -772,6 +772,7 @@ should.NotContainValue(t, userRoles, 3)
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
 - `NotContainDuplicates(t, collection)` - Check if slice/array contains no duplicate values
 - `AnyMatch(t, collection, predicate)` - Check if any element matches a custom predicate
+- `AllMatch(t, collection, predicate)` - Check if every element matches a custom predicate
 - `BeSorted(t, slice)` - Check if slice is sorted in ascending order (supports numeric types and strings)
 
 ### Map Operations
@@ -878,6 +879,18 @@ should.AnyMatch(t, people, func(item Person) bool {
 should.AnyMatch(t, people, func(item Person) bool {
 	return item.Age >= 65
 }, should.WithMessage("No elderly users found"))
+
+// Verify every person satisfies a predicate
+should.AllMatch(t, people, func(item Person) bool {
+	return item.Age >= 30
+}, should.WithMessage("All users must be at least 30"))
+// Output:
+// All users must be at least 30
+// Expected every item in the collection to match the predicate, but some did not:
+// Collection: (total: 3 elements)
+// Status    : 1 predicate failure found
+// Problems  :
+//   - Index 0: {Name: "Alice", Age: 25} (predicate returned false)
 ```
 
 ## Contributing

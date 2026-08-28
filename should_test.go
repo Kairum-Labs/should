@@ -73,6 +73,45 @@ func TestWithFailFast(t *testing.T) {
 	}
 }
 
+func TestAllMatch(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		actual   []int
+		expected string
+	}{
+		{
+			name:     "forwards a predicate failure",
+			actual:   []int{2, 3, 4},
+			expected: "Index 1: 3",
+		},
+		{
+			name:     "forwards an empty slice failure",
+			actual:   []int{},
+			expected: "Expected collection to contain at least one item, but it is empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockT := &mockTB{}
+			AllMatch(mockT, tt.actual, func(value int) bool {
+				return value%2 == 0
+			})
+
+			if !mockT.failed {
+				t.Fatal("Expected AllMatch to fail")
+			}
+			if !strings.Contains(mockT.lastMessage, tt.expected) {
+				t.Fatalf("Expected AllMatch message to contain %q, got %q", tt.expected, mockT.lastMessage)
+			}
+		})
+	}
+}
+
 func TestAssertions(t *testing.T) {
 	t.Parallel()
 	t.Run("BeEqual should pass for equal values", func(t *testing.T) {
