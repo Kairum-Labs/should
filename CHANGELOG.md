@@ -1,3 +1,21 @@
+## [0.3.0] - 2026-08-28
+
+### Features
+
+- Add NotStartWith and NotEndWith assertions with case-insensitive matching support
+- Add AllMatch to verify every item in a slice satisfies a predicate
+- Add WithFailFast to stop the current test after an assertion failure
+- Include stack traces by default in NotPanic failure output
+
+### Refactor
+
+- Seal assertion options to the package-provided With* helpers
+- Deprecate Config, TimeOptions, and WithStackTrace compatibility APIs
+
+### Documentation
+
+- Document the new assertions and updated panic behavior
+
 ## [0.2.5] - 2026-08-26
 
 ### Bug Fixes
