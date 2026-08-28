@@ -22,7 +22,9 @@ import (
 	"github.com/Kairum-Labs/should/assert"
 )
 
-// Option is a functional option for configuring assertions.
+// Option configures an assertion.
+//
+// Options are created by the With* helpers.
 type Option = assert.Option
 
 // WithMessage creates an option for setting a custom error message.

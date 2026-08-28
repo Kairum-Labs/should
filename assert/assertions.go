@@ -16,15 +16,15 @@ import (
 	"time"
 )
 
-func processOptions(opts ...Option) *Config {
-	cfg := &Config{}
+func processOptions(opts ...Option) *config {
+	cfg := &config{}
 	for _, opt := range opts {
-		opt.Apply(cfg)
+		opt.apply(cfg)
 	}
 	return cfg
 }
 
-func failWithOptions(t testing.TB, cfg *Config, format string, args ...any) {
+func failWithOptions(t testing.TB, cfg *config, format string, args ...any) {
 	t.Helper()
 
 	message := format
