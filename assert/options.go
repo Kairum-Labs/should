@@ -12,9 +12,13 @@ type Option interface {
 
 // Config provides configuration options for assertions.
 // It allows for custom error messages and future extensibility.
+//
+// TODO: Consider making Config unexported in v1 after redesigning
+// Option so external option implementations do not depend on it.
 type Config struct {
 	Message    string
 	IgnoreCase bool
+	// Deprecated: NotPanic includes stack traces by default.
 	StackTrace bool
 	FailFast   bool
 	Time       TimeOptions
@@ -35,8 +39,8 @@ type message string
 // ignoreCase is a boolean flag for ignoring case in comparisons.
 type ignoreCase bool
 
-// stackTrace is a boolean flag for including stack traces on NotPanic assertions.
-type stackTrace bool
+// deprecatedStackTrace preserves compatibility with WithStackTrace.
+type deprecatedStackTrace struct{}
 
 // failFast is a boolean flag for stopping the test on assertion failure.
 type failFast bool
@@ -56,9 +60,7 @@ func (i ignoreCase) Apply(c *Config) {
 	c.IgnoreCase = bool(i)
 }
 
-func (s stackTrace) Apply(c *Config) {
-	c.StackTrace = bool(s)
-}
+func (deprecatedStackTrace) Apply(*Config) {}
 
 func (f failFast) Apply(c *Config) {
 	c.FailFast = bool(f)
@@ -106,9 +108,12 @@ func WithIgnoreCase() Option {
 	return ignoreCase(true)
 }
 
-// WithStackTrace creates an option for including stack traces on [NotPanic] assertions.
+// WithStackTrace is retained for compatibility and has no effect because NotPanic
+// includes stack traces by default.
+//
+// Deprecated: NotPanic includes stack traces by default.
 func WithStackTrace() Option {
-	return stackTrace(true)
+	return deprecatedStackTrace{}
 }
 
 // WithFailFast stops the test immediately when an assertion fails, instead of

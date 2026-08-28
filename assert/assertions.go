@@ -1402,8 +1402,9 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 // NotPanic reports a test failure if the given function panics.
 //
 // This assertion executes the provided function and expects it to complete normally
-// without panicking. If a panic occurs, it captures the panic value and includes it
-// in the error message. Supports optional custom error messages through [Option].
+// without panicking. If a panic occurs, it captures the panic value and stack trace
+// and includes both in the error message. Supports optional custom error messages
+// through [Option].
 //
 // Example:
 //
@@ -1416,15 +1417,13 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 //		user.Save()
 //	}, should.WithMessage("Save operation should not panic"))
 //
-// Note: Stack trace is only available when [WithStackTrace] is used
-//
 // The function parameter must not be nil.
 func NotPanic(t testing.TB, fn func(), opts ...Option) {
 	t.Helper()
 	cfg := processOptions(opts...)
 	panicInfo := didPanic(fn)
 	if panicInfo.Panicked {
-		errorMsg := formatNotPanicError(panicInfo, cfg)
+		errorMsg := formatNotPanicError(panicInfo)
 
 		failWithOptions(t, cfg, errorMsg)
 	}

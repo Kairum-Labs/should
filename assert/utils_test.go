@@ -3493,16 +3493,14 @@ func TestFormatRangeError(t *testing.T) {
 func TestFormatNotPanicError(t *testing.T) {
 	t.Parallel()
 
-	t.Run("without stack trace", func(t *testing.T) {
+	t.Run("without captured stack trace", func(t *testing.T) {
 		t.Parallel()
 		panicInfo := panicInfo{
 			Panicked:  true,
 			Recovered: "test error",
 			Stack:     "",
 		}
-		cfg := &Config{StackTrace: false}
-
-		result := formatNotPanicError(panicInfo, cfg)
+		result := formatNotPanicError(panicInfo)
 
 		if !strings.Contains(result, "Expected for the function to not panic") {
 			t.Error("Should contain basic panic message")
@@ -3519,9 +3517,7 @@ func TestFormatNotPanicError(t *testing.T) {
 			Recovered: "runtime error",
 			Stack:     "some stack trace",
 		}
-		cfg := &Config{StackTrace: true}
-
-		result := formatNotPanicError(panicInfo, cfg)
+		result := formatNotPanicError(panicInfo)
 
 		if !strings.Contains(result, "Expected for the function to not panic") {
 			t.Error("Should contain basic panic message")
