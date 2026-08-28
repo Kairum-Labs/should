@@ -26,6 +26,14 @@ const similarityThreshold = 0.05
 // error messages before the string is truncated for readability.
 const displayMaxRunes = 56
 
+// headTruncationMarker is appended to a string truncated from the tail end,
+// keeping the beginning visible (used by truncateHead and prefix assertions).
+const headTruncationMarker = "… (truncated)"
+
+// tailTruncationMarker is prepended to a string truncated from the front,
+// keeping the end visible (used by truncateTail and suffix assertions).
+const tailTruncationMarker = "(truncated) …"
+
 // truncateHead keeps the first maxRunes runes of s and appends a truncation marker.
 // Used to display the beginning of a string (prefix assertions, expected values).
 // Safe for multi-byte encodings (emoji, CJK, etc.) — never splits a rune.
@@ -36,12 +44,11 @@ func truncateHead(s string, maxRunes int) string {
 	if n <= maxRunes {
 		return s
 	}
-	const marker = "… (truncated)"
 	// Only truncate when the result is strictly shorter than the original.
-	if maxRunes+utf8.RuneCountInString(marker) >= n {
+	if maxRunes+utf8.RuneCountInString(headTruncationMarker) >= n {
 		return s
 	}
-	return string(runes[:maxRunes]) + marker
+	return string(runes[:maxRunes]) + headTruncationMarker
 }
 
 // truncateTail keeps the last maxRunes runes of s and prepends a truncation marker.
@@ -55,12 +62,11 @@ func truncateTail(s string, maxRunes int) string {
 	if n <= maxRunes {
 		return s
 	}
-	const marker = "(truncated) …"
 	// Only truncate when the result is strictly shorter than the original.
-	if maxRunes+utf8.RuneCountInString(marker) >= n {
+	if maxRunes+utf8.RuneCountInString(tailTruncationMarker) >= n {
 		return s
 	}
-	return marker + string(runes[n-maxRunes:])
+	return tailTruncationMarker + string(runes[n-maxRunes:])
 }
 
 // isSliceOrArray checks if the provided value is a slice or an array.
@@ -1379,6 +1385,14 @@ func addPrefixHighlight(msg *strings.Builder, actual, expected string) {
 	}
 }
 
+func addMatchingPrefixHighlight(msg *strings.Builder, actual, prefix string) {
+	prefixLength := utf8.RuneCountInString(prefix)
+	if utf8.RuneCountInString(actual) >= prefixLength {
+		fmt.Fprintf(msg, "\n            %s", strings.Repeat("^", prefixLength))
+		msg.WriteString("\n          (matching prefix)")
+	}
+}
+
 func addPrefixHighlightToEnd(msg *strings.Builder, actual, expected string) {
 	expectedLen := utf8.RuneCountInString(expected)
 	actualLen := utf8.RuneCountInString(actual)
@@ -1403,6 +1417,17 @@ func formatStartsWithError(actual string, expected string, startWith string, not
 	fmt.Fprintf(&msg, "\nExpected : '%s'", expected)
 	fmt.Fprintf(&msg, "\nActual   : '%s'", actual)
 	addPrefixHighlight(&msg, actual, expected)
+	msg.WriteString(noteMsg)
+	return msg.String()
+}
+
+// formatNotStartsWithError formats the error message for NotStartWith assertions.
+func formatNotStartsWithError(actual string, prefix string, noteMsg string) string {
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "Expected string to NOT start with '%s', but it does:", prefix)
+	fmt.Fprintf(&msg, "\nPrefix   : '%s'", prefix)
+	fmt.Fprintf(&msg, "\nActual   : '%s'", actual)
+	addMatchingPrefixHighlight(&msg, actual, prefix)
 	msg.WriteString(noteMsg)
 	return msg.String()
 }
@@ -2473,13 +2498,13 @@ func formatRangeError[T Ordered](actual, minValue, maxValue T) string {
 		minValue, maxValue, actual, minValue, maxValue, actual-maxValue, actual, maxValue, maxValue)
 }
 
-// formatNotPanicError formats a detailed error message for NotPanic assertions
-func formatNotPanicError(panicInfo panicInfo, cfg *Config) string {
+// formatNotPanicError formats a detailed error message for NotPanic assertions.
+func formatNotPanicError(panicInfo panicInfo) string {
 	var messageBuilder strings.Builder
 	messageBuilder.WriteString("Expected for the function to not panic, but it panicked with: ")
 	fmt.Fprintf(&messageBuilder, "%v", panicInfo.Recovered)
 
-	if cfg.StackTrace && panicInfo.Stack != "" {
+	if panicInfo.Stack != "" {
 		messageBuilder.WriteString("\nStack trace:\n")
 		messageBuilder.WriteString(panicInfo.Stack)
 	}
@@ -2575,6 +2600,43 @@ func formatSortError(result sortCheckResult) string {
 			remainingText = fmt.Sprintf("  - ... and %d more violations", remaining)
 		}
 		msg.WriteString(remainingText)
+	}
+
+	return msg.String()
+}
+
+const allMatchLargeCollectionThreshold = 100
+
+// formatAllMatchError creates a detailed error message for AllMatch failures.
+func formatAllMatchError(result allMatchResult) string {
+	var msg strings.Builder
+
+	msg.WriteString("Expected every item in the collection to match the predicate, but some did not:\n")
+
+	collectionInfo := fmt.Sprintf("Collection: (total: %d elements)\n", result.Total)
+	if result.Total > allMatchLargeCollectionThreshold {
+		collectionInfo = fmt.Sprintf("Collection: [Large collection] (total: %d elements)\n", result.Total)
+	}
+	msg.WriteString(collectionInfo)
+
+	statusText := fmt.Sprintf("Status    : %d predicate failures found\n", result.FailureCount)
+	if result.FailureCount == 1 {
+		statusText = "Status    : 1 predicate failure found\n"
+	}
+	msg.WriteString(statusText)
+
+	msg.WriteString("Problems  :\n")
+	for _, failure := range result.Failures {
+		fmt.Fprintf(&msg, "  - Index %d: %s (predicate returned false)\n",
+			failure.Index, formatComparisonValue(failure.Value))
+	}
+
+	remaining := result.FailureCount - len(result.Failures)
+	if remaining == 1 {
+		msg.WriteString("  - ... and 1 more predicate failure")
+	}
+	if remaining > 1 {
+		fmt.Fprintf(&msg, "  - ... and %d more predicate failures", remaining)
 	}
 
 	return msg.String()

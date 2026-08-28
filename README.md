@@ -69,6 +69,9 @@ func TestBasicAssertions(t *testing.T) {
 	should.BeGreaterOrEqualTo(t, score, 0, should.WithMessage("Score cannot be negative"))
 	should.BeLessOrEqualTo(t, user.Age, 65, should.WithMessage("User must be under retirement age"))
 
+	// Stop the test immediately if a critical assertion fails
+	should.NotBeError(t, err, should.WithFailFast())
+
 	// Empty/Non-empty checks
 	should.BeEmpty(t, "")
 	should.NotBeEmpty(t, []int{1, 2, 3})
@@ -358,6 +361,32 @@ should.StartWith(t, actual, "different")
 //             ^^^^^^^^^
 //           (actual prefix)
 
+// Negative counterpart — assert string does NOT start with a prefix
+should.NotStartWith(t, "Hello, World!", "temp_")
+
+// Fails when the prefix matches:
+should.NotStartWith(t, "temp_user_data.txt", "temp_")
+// Output:
+// Expected string to NOT start with 'temp_', but it does:
+// Prefix   : 'temp_'
+// Actual   : 'temp_user_data.txt'
+//             ^^^^^
+//           (matching prefix)
+
+// With custom message
+should.NotStartWith(t, username, "admin_",
+	should.WithMessage("Username cannot start with admin prefix"))
+// Output:
+// Username cannot start with admin prefix
+// Expected string to NOT start with 'admin_', but it does:
+// Prefix   : 'admin_'
+// Actual   : 'admin_user123'
+//             ^^^^^^
+//           (matching prefix)
+
+// Case-insensitive negative check
+should.NotStartWith(t, "TEMP_file.txt", "temp_", should.WithIgnoreCase())
+
 // String suffix checking
 should.EndWith(t, "Hello, World!", "World!")
 
@@ -396,6 +425,20 @@ should.EndWith(t, actual, "different")
 // With custom messages
 should.StartWith(t, filename, "temp_", should.WithMessage("Temporary files must have temp_ prefix"))
 should.EndWith(t, filename, ".log", should.WithMessage("Log files must have .log extension"))
+
+// Negated suffix checking
+should.NotEndWith(t, "Hello, world!", "planet")  // passes
+should.NotEndWith(t, "Hello, world!", "world!") // fails
+// Output:
+// Expected string to NOT end with 'world!', but it does
+// Expected : 'world!'
+// Actual   : 'Hello, world!'
+
+// Case-insensitive negated suffix
+should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase()) // fails
+
+// With custom messages
+should.NotEndWith(t, filename, ".tmp", should.WithMessage("Output files must not have .tmp extension"))
 ```
 
 ### String Substring Assertions
@@ -717,7 +760,9 @@ should.NotContainValue(t, userRoles, 3)
 ### String Operations
 
 - `StartWith(t, actual, expected)` - Check if string starts with expected substring
+- `NotStartWith(t, actual, prefix)` - Check if string does NOT start with given prefix
 - `EndWith(t, actual, expected)` - Check if string ends with expected substring
+- `NotEndWith(t, actual, expected)` - Check if string does NOT end with expected substring
 - `ContainSubstring(t, actual, substring)` - Check if string contains expected substring
 
 ### Collection Operations
@@ -727,6 +772,7 @@ should.NotContainValue(t, userRoles, 3)
 - `NotContain(t, collection, element)` - Check if slice/array does not contain an element
 - `NotContainDuplicates(t, collection)` - Check if slice/array contains no duplicate values
 - `AnyMatch(t, collection, predicate)` - Check if any element matches a custom predicate
+- `AllMatch(t, collection, predicate)` - Check if every element matches a custom predicate
 - `BeSorted(t, slice)` - Check if slice is sorted in ascending order (supports numeric types and strings)
 
 ### Map Operations
@@ -741,7 +787,9 @@ should.NotContainValue(t, userRoles, 3)
 - `Panic(t, func, opts ...Option)` - Assert that a function panics
 - `NotPanic(t, func, opts ...Option)` - Assert that a function does not panic
 
-Examples with custom messages and stack traces:
+`NotPanic` includes the recovered panic value and stack trace automatically when it fails.
+
+Examples with custom messages:
 
 ```go
 // Assert function panics with custom message
@@ -754,10 +802,6 @@ should.NotPanic(t, func() {
     user.Save()
 }, should.WithMessage("Save operation should not panic"))
 
-// Get detailed stack trace on panic
-should.NotPanic(t, func() {
-    user.Save()
-}, should.WithStackTrace(), should.WithMessage("Save operation should not panic"))
 ```
 
 ## Advanced Usage
@@ -783,15 +827,16 @@ should.BeGreaterOrEqualTo(t, account.Balance, 0, should.WithMessagef(
 ))
 ```
 
-#### Stack Traces with `WithStackTrace`
+#### Fail Fast with `WithFailFast`
 
-For `NotPanic` assert, you can capture detailed stack traces using `should.WithStackTrace()`:
+By default, a failed assertion marks the test as failed and execution continues. `should.WithFailFast()` stops the test immediately instead, which is useful for preconditions where continuing could be misleading or cause a panic:
 
 ```go
-// Get stack trace when panic occurs
-should.NotPanic(t, func() {
-    riskyOperation()
-}, should.WithStackTrace())
+user, err := findUser(id)
+should.NotBeError(t, err, should.WithFailFast())
+
+// Reached only when findUser succeeded.
+should.NotBeNil(t, user, should.WithFailFast())
 ```
 
 #### Time comparisons with options
@@ -834,6 +879,18 @@ should.AnyMatch(t, people, func(item Person) bool {
 should.AnyMatch(t, people, func(item Person) bool {
 	return item.Age >= 65
 }, should.WithMessage("No elderly users found"))
+
+// Verify every person satisfies a predicate
+should.AllMatch(t, people, func(item Person) bool {
+	return item.Age >= 30
+}, should.WithMessage("All users must be at least 30"))
+// Output:
+// All users must be at least 30
+// Expected every item in the collection to match the predicate, but some did not:
+// Collection: (total: 3 elements)
+// Status    : 1 predicate failure found
+// Problems  :
+//   - Index 0: {Name: "Alice", Age: 25} (predicate returned false)
 ```
 
 ## Contributing

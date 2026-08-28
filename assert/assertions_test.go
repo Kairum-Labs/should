@@ -34,7 +34,7 @@ func TestFailWithOptions(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		config           *Config
+		config           *config
 		format           string
 		args             []any
 		expectedExact    string   // for exact match
@@ -43,14 +43,14 @@ func TestFailWithOptions(t *testing.T) {
 	}{
 		{
 			name:          "without custom message",
-			config:        &Config{},
+			config:        &config{},
 			format:        "Expected condition failed",
 			args:          nil,
 			expectedExact: "Expected condition failed",
 		},
 		{
 			name:   "with custom message",
-			config: &Config{Message: "Custom error message"},
+			config: &config{Message: "Custom error message"},
 			format: "Expected condition failed",
 			args:   nil,
 			expectedContains: []string{
@@ -61,14 +61,14 @@ func TestFailWithOptions(t *testing.T) {
 		},
 		{
 			name:          "with format args",
-			config:        &Config{},
+			config:        &config{},
 			format:        "Expected %d to be greater than %d",
 			args:          []any{5, 10},
 			expectedExact: "Expected 5 to be greater than 10",
 		},
 		{
 			name:   "with custom message and format args",
-			config: &Config{Message: "Age validation failed"},
+			config: &config{Message: "Age validation failed"},
 			format: "Expected age %d to be at least %d",
 			args:   []any{16, 18},
 			expectedContains: []string{
@@ -85,14 +85,14 @@ func TestFailWithOptions(t *testing.T) {
 		},
 		{
 			name:          "with empty custom message",
-			config:        &Config{Message: ""},
+			config:        &config{Message: ""},
 			format:        "Expected condition failed",
 			args:          nil,
 			expectedExact: "Expected condition failed",
 		},
 		{
 			name:   "with multiline messages",
-			config: &Config{Message: "Validation failed:\n- Age is too low\n- Missing required field"},
+			config: &config{Message: "Validation failed:\n- Age is too low\n- Missing required field"},
 			format: "Expected user to be valid\nDetails: Invalid age",
 			args:   nil,
 			expectedContains: []string{
@@ -146,6 +146,71 @@ func TestFailWithOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWithFailFast(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stops after a value mismatch", func(t *testing.T) {
+		t.Parallel()
+		reached := false
+		failed, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2, WithFailFast())
+			reached = true
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
+		}
+	})
+
+	t.Run("stops after an invalid assertion input", func(t *testing.T) {
+		t.Parallel()
+		reached := false
+		failed, failedNow, message := assertFailsFast(t, func(t testing.TB) {
+			BeInRange(t, 5, 100, 0, WithFailFast(), WithMessage("invalid range"))
+			reached = true
+		})
+		if !failed || !failedNow {
+			t.Fatalf("Expected invalid input failure to call FailNow, got failed=%v failedNow=%v", failed, failedNow)
+		}
+		if !strings.Contains(message, "invalid range") {
+			t.Fatalf("Expected custom message in invalid input failure, got %q", message)
+		}
+		if reached {
+			t.Fatal("Expected code after the failed assertion not to run")
+		}
+	})
+
+	t.Run("does not stop by default", func(t *testing.T) {
+		t.Parallel()
+		_, failedNow, _ := assertFailsFast(t, func(t testing.TB) {
+			BeEqual(t, 1, 2)
+		})
+		if failedNow {
+			t.Fatal("Expected failure without WithFailFast not to call FailNow")
+		}
+	})
+
+	t.Run("re-panics a value that is not the FailNow sentinel", func(t *testing.T) {
+		t.Parallel()
+
+		var recovered any
+		func() {
+			defer func() {
+				recovered = recover()
+			}()
+			assertFails(t, func(t testing.TB) {
+				panic("boom")
+			})
+		}()
+
+		if recovered != "boom" {
+			t.Fatalf("Expected the unrelated panic to propagate out, got %v", recovered)
+		}
+	})
 }
 
 func TestBeTrue_Succeeds_WhenTrue(t *testing.T) {
@@ -1027,6 +1092,154 @@ func TestContainFunc_WithCustomMessage(t *testing.T) {
 
 	if !strings.Contains(mockT.message, "Predicate does not match") {
 		t.Errorf("Expected message to contain default error message, but got %q", mockT.message)
+	}
+}
+
+func TestAllMatch(t *testing.T) {
+	t.Parallel()
+
+	largeOddNumbers := make([]int, 101)
+	for index := range largeOddNumbers {
+		largeOddNumbers[index] = index*2 + 1
+	}
+
+	tests := []struct {
+		name            string
+		actual          []int
+		opts            []Option
+		shouldFail      bool
+		expectedParts   []string
+		unexpectedParts []string
+		expectedCalls   int
+	}{
+		{
+			name:          "passes when every item matches",
+			actual:        []int{2, 4, 6, 8},
+			expectedCalls: 4,
+		},
+		{
+			name:       "fails for an empty slice",
+			actual:     []int{},
+			shouldFail: true,
+			expectedParts: []string{
+				"Expected collection to contain at least one item, but it is empty",
+			},
+			expectedCalls: 0,
+		},
+		{
+			name:       "fails for a nil slice",
+			actual:     nil,
+			shouldFail: true,
+			expectedParts: []string{
+				"Expected collection to contain at least one item, but it is empty",
+			},
+			expectedCalls: 0,
+		},
+		{
+			name:       "reports a single failing item",
+			actual:     []int{2, 4, 5, 8},
+			shouldFail: true,
+			expectedParts: []string{
+				"Collection: (total: 4 elements)",
+				"Status    : 1 predicate failure found",
+				"  - Index 2: 5 (predicate returned false)",
+			},
+			unexpectedParts: []string{
+				"and 0 more predicate failures",
+			},
+			expectedCalls: 4,
+		},
+		{
+			name:       "reports multiple failures and a custom message",
+			actual:     []int{1, 2, 3, 4, 5, 6, 7},
+			opts:       []Option{WithMessage("All values must be even")},
+			shouldFail: true,
+			expectedParts: []string{
+				"All values must be even",
+				"Status    : 4 predicate failures found",
+				"  - Index 0: 1 (predicate returned false)",
+				"  - Index 6: 7 (predicate returned false)",
+			},
+			expectedCalls: 7,
+		},
+		{
+			name:       "reports a single omitted failure",
+			actual:     []int{1, 3, 5, 7, 9, 11},
+			shouldFail: true,
+			expectedParts: []string{
+				"Status    : 6 predicate failures found",
+				"  - ... and 1 more predicate failure",
+			},
+			expectedCalls: 6,
+		},
+		{
+			name:       "limits displayed failures while retaining the total",
+			actual:     largeOddNumbers,
+			shouldFail: true,
+			expectedParts: []string{
+				"Collection: [Large collection] (total: 101 elements)",
+				"Status    : 101 predicate failures found",
+				"  - Index 4: 9 (predicate returned false)",
+				"  - ... and 96 more predicate failures",
+			},
+			expectedCalls: 101,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			calls := 0
+			predicate := func(item int) bool {
+				calls++
+				return item%2 == 0
+			}
+
+			failed, message := assertFails(t, func(t testing.TB) {
+				AllMatch(t, tt.actual, predicate, tt.opts...)
+			})
+
+			if failed != tt.shouldFail {
+				t.Fatalf("Expected failure=%v, got failure=%v with message %q", tt.shouldFail, failed, message)
+			}
+			if calls != tt.expectedCalls {
+				t.Fatalf("Expected predicate to be called %d times, got %d", tt.expectedCalls, calls)
+			}
+			for _, expected := range tt.expectedParts {
+				if !strings.Contains(message, expected) {
+					t.Errorf("Expected message to contain %q, got:\n%s", expected, message)
+				}
+			}
+			for _, unexpected := range tt.unexpectedParts {
+				if strings.Contains(message, unexpected) {
+					t.Errorf("Expected message not to contain %q, got:\n%s", unexpected, message)
+				}
+			}
+		})
+	}
+}
+
+func TestAllMatch_FormatsStructValues(t *testing.T) {
+	t.Parallel()
+
+	type user struct {
+		Name   string
+		Active bool
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		AllMatch(t, []user{{Name: "Ana", Active: true}, {Name: "João", Active: false}}, func(item user) bool {
+			return item.Active
+		})
+	})
+
+	if !failed {
+		t.Fatal("Expected AllMatch to fail")
+	}
+	expected := `  - Index 1: {Name: "João", Active: false} (predicate returned false)`
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, got:\n%s", expected, message)
 	}
 }
 
@@ -1914,6 +2127,7 @@ func TestNotPanic_Fails_WhenPanicOccurs(t *testing.T) {
 	expectedParts := []string{
 		"Expected for the function to not panic, but it panicked with:",
 		"unexpected panic",
+		"Stack trace:",
 	}
 
 	for _, part := range expectedParts {
@@ -1940,6 +2154,7 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 		"Save operation should not panic",
 		"Expected for the function to not panic, but it panicked with:",
 		"error occurred",
+		"Stack trace:",
 	}
 
 	for _, part := range expectedParts {
@@ -1952,130 +2167,81 @@ func TestNotPanic_WithCustomMessage(t *testing.T) {
 func TestNotPanic_Extended(t *testing.T) {
 	t.Parallel()
 
-	t.Run("With WithStackTrace option", func(t *testing.T) {
-		t.Parallel()
-		tests := []struct {
-			name          string
-			testFunc      func()
-			opts          []Option
-			shouldFail    bool
-			expectedParts []string
-		}{
-			{
-				name: "should pass when no panic occurs",
-				testFunc: func() {
-					result := 1 + 2
-					_ = result
-				},
-				opts:       []Option{WithStackTrace()},
-				shouldFail: false,
+	tests := []struct {
+		name          string
+		testFunc      func()
+		opts          []Option
+		expectedParts []string
+	}{
+		{
+			name: "includes a stack trace for a manual panic",
+			testFunc: func() {
+				panic("runtime error")
 			},
-			{
-				name: "should fail with stack trace when manual panic occurs",
-				testFunc: func() {
-					panic("runtime error")
-				},
-				opts:       []Option{WithStackTrace()},
-				shouldFail: true,
-				expectedParts: []string{
-					"Expected for the function to not panic, but it panicked with:",
-					"runtime error",
-					"Stack trace:",
-				},
+			expectedParts: []string{
+				"Expected for the function to not panic, but it panicked with:",
+				"runtime error",
+				"Stack trace:",
 			},
-			{
-				name: "should fail with stack trace when runtime panic occurs",
-				testFunc: func() {
-					x := 1
-					y := 0
-					result := x / y
-					_ = result
-				},
-				opts:       []Option{WithStackTrace()},
-				shouldFail: true,
-				expectedParts: []string{
-					"Expected for the function to not panic, but it panicked with:",
-					"integer divide by zero",
-					"Stack trace:",
-				},
+		},
+		{
+			name: "keeps WithStackTrace compatible",
+			testFunc: func() {
+				panic("compatibility error")
 			},
-		}
+			opts: []Option{WithStackTrace()},
+			expectedParts: []string{
+				"compatibility error",
+				"Stack trace:",
+			},
+		},
+		{
+			name: "includes a stack trace for a runtime panic",
+			testFunc: func() {
+				x := 1
+				y := 0
+				result := x / y
+				_ = result
+			},
+			expectedParts: []string{
+				"Expected for the function to not panic, but it panicked with:",
+				"integer divide by zero",
+				"Stack trace:",
+			},
+		},
+		{
+			name: "combines a custom message with the stack trace",
+			testFunc: func() {
+				panic("database error")
+			},
+			opts: []Option{WithMessage("Database operation should not panic")},
+			expectedParts: []string{
+				"Database operation should not panic",
+				"Expected for the function to not panic, but it panicked with:",
+				"database error",
+				"Stack trace:",
+			},
+		},
+	}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				if tt.shouldFail {
-					failed, message := assertFails(t, func(t testing.TB) {
-						NotPanic(t, tt.testFunc, tt.opts...)
-					})
-
-					if !failed {
-						t.Fatal("Expected test to fail, but it passed")
-					}
-
-					for _, part := range tt.expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
-						}
-					}
-				} else {
-					NotPanic(t, tt.testFunc, tt.opts...)
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			failed, message := assertFails(t, func(t testing.TB) {
+				NotPanic(t, tt.testFunc, tt.opts...)
 			})
-		}
-	})
 
-	t.Run("Combined options", func(t *testing.T) {
-		t.Parallel()
-		tests := []struct {
-			name          string
-			testFunc      func()
-			opts          []Option
-			shouldFail    bool
-			expectedParts []string
-		}{
-			{
-				name: "should combine WithMessage and WithStackTrace",
-				testFunc: func() {
-					panic("database error")
-				},
-				opts: []Option{
-					WithMessage("Database operation should not panic"),
-					WithStackTrace(),
-				},
-				shouldFail: true,
-				expectedParts: []string{
-					"Database operation should not panic",
-					"Expected for the function to not panic, but it panicked with:",
-					"database error",
-					"Stack trace:",
-				},
-			},
-		}
+			if !failed {
+				t.Fatal("Expected test to fail, but it passed")
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				if tt.shouldFail {
-					failed, message := assertFails(t, func(t testing.TB) {
-						NotPanic(t, tt.testFunc, tt.opts...)
-					})
-
-					if !failed {
-						t.Fatal("Expected test to fail, but it passed")
-					}
-
-					for _, part := range tt.expectedParts {
-						if !strings.Contains(message, part) {
-							t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
-						}
-					}
-				} else {
-					NotPanic(t, tt.testFunc, tt.opts...)
+			for _, part := range tt.expectedParts {
+				if !strings.Contains(message, part) {
+					t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
 				}
-			})
-		}
-	})
+			}
+		})
+	}
 }
 
 // === Tests for BeGreaterOrEqualTo ===
@@ -3796,6 +3962,23 @@ func TestNotContainDuplicates_Succeeds_WhenNoDuplicates(t *testing.T) {
 	NotContainDuplicates(t, users)
 }
 
+func TestNotContainDuplicates_Fails_WithNonSliceInput(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotContainDuplicates(t, 42)
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "expected a slice or array, but got int"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
 func TestNotContainDuplicates_WithCustomMessage(t *testing.T) {
 	t.Parallel()
 
@@ -4099,7 +4282,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "Different",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "… (truncated)") {
+					if !strings.Contains(message, headTruncationMarker) {
 						t.Errorf("Expected message to contain truncated actual string, got: %s", message)
 					}
 				},
@@ -4110,7 +4293,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "… (truncated)") {
+					if !strings.Contains(message, headTruncationMarker) {
 						t.Errorf("Expected message to contain truncated expected string, got: %s", message)
 					}
 				},
@@ -4121,7 +4304,7 @@ func TestStartsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					truncatedOccurrences := strings.Count(message, "… (truncated)")
+					truncatedOccurrences := strings.Count(message, headTruncationMarker)
 					if truncatedOccurrences < 2 {
 						t.Errorf("Expected at least 2 truncated strings in message, got %d occurrences in: %s", truncatedOccurrences, message)
 					}
@@ -4190,8 +4373,303 @@ func TestStartsWith(t *testing.T) {
 		if !strings.Contains(mockT.message, "unique_start_") {
 			t.Errorf("Expected head of actual to be visible in error, got:\n%s", mockT.message)
 		}
-		if !strings.Contains(mockT.message, "… (truncated)") {
+		if !strings.Contains(mockT.message, headTruncationMarker) {
 			t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+		}
+	})
+}
+
+// === Tests for NotStartWith ===
+
+func TestNotStartsWith_WithCustomMessage(t *testing.T) {
+	t.Parallel()
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		NotStartWith(t, "temp_user_data.txt", "temp_", WithMessage("Temporary files are not allowed"))
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expectedParts := []string{
+		"Temporary files are not allowed",
+		"Expected string to NOT start with 'temp_', but it does:",
+		"Prefix   : 'temp_'",
+		"Actual   : 'temp_user_data.txt'",
+	}
+	for _, part := range expectedParts {
+		if !strings.Contains(message, part) {
+			t.Errorf("Expected message to contain: %q\n\nFull message:\n%s", part, message)
+		}
+	}
+}
+
+func TestNotStartsWith(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "passes when string does not start with prefix",
+				actual:     "Hello, world!",
+				expected:   "world",
+				shouldFail: false,
+			},
+			{
+				name:       "fails when string starts with prefix",
+				actual:     "temp_user_data.txt",
+				expected:   "temp_",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected string to NOT start with 'temp_', but it does:") {
+						t.Errorf("Unexpected error message:\n%s", message)
+					}
+					if !strings.Contains(message, "Prefix   : 'temp_'") {
+						t.Errorf("Expected message to contain prefix line, got:\n%s", message)
+					}
+					if !strings.Contains(message, "Actual   : 'temp_user_data.txt'") {
+						t.Errorf("Expected message to contain actual line, got:\n%s", message)
+					}
+					if !strings.Contains(message, "(matching prefix)") {
+						t.Errorf("Expected message to contain caret indicator, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "fails when string equals prefix exactly",
+				actual:     "admin",
+				expected:   "admin",
+				shouldFail: true,
+			},
+			{
+				name:       "passes when prefix is longer than actual",
+				actual:     "abc",
+				expected:   "abcdef",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				NotStartWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected NotStartWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected NotStartWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Options handling", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "case-sensitive by default: passes when case differs",
+				actual:     "Hello, world!",
+				expected:   "hello",
+				shouldFail: false,
+			},
+			{
+				name:       "case-sensitive by default: fails when case matches exactly",
+				actual:     "Hello, world!",
+				expected:   "Hello",
+				shouldFail: true,
+			},
+			{
+				name:       "WithIgnoreCase: fails when prefix matches case-insensitively",
+				actual:     "TEMP_file.txt",
+				expected:   "temp_",
+				opts:       []Option{WithIgnoreCase()},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected string to NOT start with 'temp_', but it does:") {
+						t.Errorf("Expected base error message, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "WithIgnoreCase: passes when prefix does not match case-insensitively",
+				actual:     "HELLO_world",
+				expected:   "temp_",
+				opts:       []Option{WithIgnoreCase()},
+				shouldFail: false,
+			},
+			{
+				name:       "WithMessage: custom message appears before the error detail",
+				actual:     "admin_user",
+				expected:   "admin_",
+				opts:       []Option{WithMessage("Username cannot start with admin prefix")},
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Username cannot start with admin prefix") {
+						t.Errorf("Expected custom message, got:\n%s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				NotStartWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected NotStartWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected NotStartWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "empty actual does not start with non-empty prefix — passes",
+				actual:     "",
+				expected:   "prefix",
+				shouldFail: false,
+			},
+			{
+				name:       "empty prefix always matches — fails",
+				actual:     "anything",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NotStartWith requires a non-empty prefix") {
+						t.Errorf("Expected non-empty prefix error in message, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "both empty — empty prefix matches — fails",
+				actual:     "",
+				expected:   "",
+				shouldFail: true,
+			},
+			{
+				name:       "whitespace-only actual starts with space prefix — shows <empty> placeholder",
+				actual:     "   ",
+				expected:   " ",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "<empty>") {
+						t.Errorf("Expected <empty> placeholder for whitespace-only actual, got:\n%s", message)
+					}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				NotStartWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected NotStartWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected NotStartWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Large inputs handling", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "long actual is truncated in error message",
+				actual:     "temp_" + strings.Repeat("a", 100),
+				expected:   "temp_",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, headTruncationMarker) {
+						t.Errorf("Expected truncated output, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "long prefix is truncated in error message",
+				actual:     strings.Repeat("x", 100),
+				expected:   strings.Repeat("x", 100),
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, headTruncationMarker) {
+						t.Errorf("Expected truncated output, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "long actual that does not match — passes without truncation issue",
+				actual:     strings.Repeat("b", 100),
+				expected:   "temp_",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				mockT := &mockT{}
+				NotStartWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.failed {
+					t.Fatal("Expected NotStartWith to fail, but it passed")
+				}
+				if !tt.shouldFail && mockT.failed {
+					t.Errorf("Expected NotStartWith to pass, but it failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
 		}
 	})
 }
@@ -4408,7 +4886,7 @@ func TestEndsWith(t *testing.T) {
 				expected:   "Different",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "(truncated) …") {
+					if !strings.Contains(message, tailTruncationMarker) {
 						t.Errorf("Expected message to contain tail-truncation marker '(truncated) …', got: %s", message)
 					}
 				},
@@ -4419,7 +4897,7 @@ func TestEndsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "… (truncated)") {
+					if !strings.Contains(message, headTruncationMarker) {
 						t.Errorf("Expected message to contain head-truncation marker '… (truncated)', got: %s", message)
 					}
 				},
@@ -4430,10 +4908,10 @@ func TestEndsWith(t *testing.T) {
 				expected:   "This is a very long expected string that exceeds the 56 character limit for display purposes in error messages",
 				shouldFail: true,
 				errorCheck: func(t *testing.T, message string) {
-					if !strings.Contains(message, "(truncated) …") {
+					if !strings.Contains(message, tailTruncationMarker) {
 						t.Errorf("Expected tail-truncation marker '(truncated) …' for actual, got: %s", message)
 					}
-					if !strings.Contains(message, "… (truncated)") {
+					if !strings.Contains(message, headTruncationMarker) {
 						t.Errorf("Expected head-truncation marker '… (truncated)' for expected, got: %s", message)
 					}
 				},
@@ -4472,7 +4950,7 @@ func TestEndsWith(t *testing.T) {
 		if !mockT.failed {
 			t.Fatal("Expected failure but test passed")
 		}
-		if !strings.Contains(mockT.message, "(truncated) …") {
+		if !strings.Contains(mockT.message, tailTruncationMarker) {
 			t.Errorf("Expected tail-truncation marker '(truncated) …' in error, got:\n%s", mockT.message)
 		}
 		if !strings.Contains(mockT.message, "xyz") {
@@ -4493,7 +4971,7 @@ func TestEndsWith(t *testing.T) {
 		if !strings.Contains(mockT.message, "start_") {
 			t.Errorf("Expected start of expected string 'start_' to be visible, got:\n%s", mockT.message)
 		}
-		if !strings.Contains(mockT.message, "… (truncated)") {
+		if !strings.Contains(mockT.message, headTruncationMarker) {
 			t.Errorf("Expected head-truncation marker '… (truncated)' for expected string, got:\n%s", mockT.message)
 		}
 	})
@@ -4538,6 +5016,271 @@ func TestEndsWith(t *testing.T) {
 		if !strings.Contains(mockT.message, "你好世界") {
 			t.Errorf("Expected CJK tail to be visible in error (not garbled), got:\n%s", mockT.message)
 		}
+	})
+}
+
+// === Tests for NotEndWith ===
+
+func TestNotEndsWith(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Basic functionality", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Success when actual does not end with expected",
+				actual:     "Hello, world!",
+				expected:   "planet",
+				shouldFail: false,
+			},
+			{
+				name:       "Failure when actual ends with expected",
+				actual:     "Hello, world!",
+				expected:   "world!",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "Expected string to NOT end with") {
+						t.Errorf("Expected 'NOT end with' message, got:\n%s", message)
+					}
+				},
+			},
+			{
+				name:       "Failure on exact match",
+				actual:     "world",
+				expected:   "world",
+				shouldFail: true,
+			},
+			{
+				name:       "Success when expected is longer than actual",
+				actual:     "abc",
+				expected:   "abcdef",
+				shouldFail: false,
+			},
+			{
+				name:       "Success when suffix does not match",
+				actual:     "Hello, world!",
+				expected:   "Hello",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed: %s", mockT.message)
+				}
+
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Case sensitivity", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			opts       []Option
+			shouldFail bool
+		}{
+			{
+				name:       "Success without ignore case when case differs",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{},
+				shouldFail: false,
+			},
+			{
+				name:       "Failure with ignore case enabled when case-insensitive match exists",
+				actual:     "Hello, WORLD",
+				expected:   "world",
+				opts:       []Option{WithIgnoreCase()},
+				shouldFail: true,
+			},
+			{
+				name:       "Success with ignore case when suffix does not match at all",
+				actual:     "Hello, WORLD",
+				expected:   "planet",
+				opts:       []Option{WithIgnoreCase()},
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected, tt.opts...)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed: %s", mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("Custom messages", func(t *testing.T) {
+		t.Parallel()
+		t.Run("Fails with custom message", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			NotEndWith(mockT, "Hello, world!", "world!", WithMessage("String should not end with 'world!'"))
+
+			if !mockT.Failed() {
+				t.Errorf("Expected failure but test passed")
+			}
+
+			expectedStrings := []string{
+				"String should not end with 'world!'",
+				"Expected string to NOT end with",
+			}
+
+			for _, expectedString := range expectedStrings {
+				if !strings.Contains(mockT.message, expectedString) {
+					t.Errorf("Expected message to contain %q, but got %q", expectedString, mockT.message)
+				}
+			}
+		})
+	})
+
+	t.Run("Edge cases", func(t *testing.T) {
+		t.Parallel()
+		tests := []struct {
+			name       string
+			actual     string
+			expected   string
+			shouldFail bool
+			errorCheck func(t *testing.T, message string)
+		}{
+			{
+				name:       "Empty strings",
+				actual:     "",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NotEndWith requires a non-empty expected suffix") {
+						t.Errorf("Expected clear empty-suffix error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Empty expected with non-empty actual",
+				actual:     "hello",
+				expected:   "",
+				shouldFail: true,
+				errorCheck: func(t *testing.T, message string) {
+					if !strings.Contains(message, "NotEndWith requires a non-empty expected suffix") {
+						t.Errorf("Expected clear empty-suffix error, got: %s", message)
+					}
+				},
+			},
+			{
+				name:       "Non-empty expected with empty actual",
+				actual:     "",
+				expected:   "hello",
+				shouldFail: false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				mockT := &mockT{}
+				NotEndWith(mockT, tt.actual, tt.expected)
+
+				if tt.shouldFail && !mockT.Failed() {
+					t.Errorf("Expected failure but test passed")
+				}
+				if !tt.shouldFail && mockT.Failed() {
+					t.Errorf("Expected success but test failed: %s", mockT.message)
+				}
+				if tt.errorCheck != nil && mockT.failed {
+					tt.errorCheck(t, mockT.message)
+				}
+			})
+		}
+	})
+
+	t.Run("String truncation", func(t *testing.T) {
+		t.Parallel()
+		t.Run("should truncate long actual string in error message", func(t *testing.T) {
+			t.Parallel()
+			longActual := strings.Repeat("a", 200) + "xyz"
+			mockT := &mockT{}
+			NotEndWith(mockT, longActual, "xyz")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "(truncated)") {
+				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+			}
+		})
+
+		t.Run("Whitespace-only actual is rendered as empty placeholder", func(t *testing.T) {
+			t.Parallel()
+			mockT := &mockT{}
+			NotEndWith(mockT, "   ", " ")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "Actual   : '<empty>'") {
+				t.Errorf("Expected whitespace-only actual to render as <empty>, got:\n%s", mockT.message)
+			}
+		})
+
+		t.Run("Unicode — emoji suffix visible after tail truncation", func(t *testing.T) {
+			t.Parallel()
+			longActual := strings.Repeat("a", 200) + "🎉🎊🎈"
+			mockT := &mockT{}
+			NotEndWith(mockT, longActual, "🎉🎊🎈")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "🎉🎊🎈") {
+				t.Errorf("Expected emoji suffix to be visible in error (not garbled), got:\n%s", mockT.message)
+			}
+			if !strings.Contains(mockT.message, "(truncated)") {
+				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+			}
+		})
+
+		t.Run("Unicode — CJK suffix visible after tail truncation", func(t *testing.T) {
+			t.Parallel()
+			longActual := strings.Repeat("a", 200) + "你好世界"
+			mockT := &mockT{}
+			NotEndWith(mockT, longActual, "你好世界")
+			if !mockT.failed {
+				t.Fatal("Expected failure but test passed")
+			}
+			if !strings.Contains(mockT.message, "你好世界") {
+				t.Errorf("Expected CJK suffix to be visible in error (not garbled), got:\n%s", mockT.message)
+			}
+			if !strings.Contains(mockT.message, "(truncated)") {
+				t.Errorf("Expected truncation marker in error, got:\n%s", mockT.message)
+			}
+		})
 	})
 }
 
@@ -6999,9 +7742,9 @@ func TestContainSubstring(t *testing.T) {
 	})
 }
 
-// === Tests for fail function ===
+// === Tests for failWithOptions error reporting ===
 
-func TestFail(t *testing.T) {
+func TestFailWithOptions_ErrorReporting(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Basic functionality", func(t *testing.T) {
@@ -7047,10 +7790,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7103,10 +7846,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7159,10 +7902,10 @@ func TestFail(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				mockT := &mockT{}
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 
 				if mockT.message != tt.expectedOutput {
@@ -7219,27 +7962,27 @@ func TestFail(t *testing.T) {
 					}
 				}()
 
-				fail(mockT, tt.message, tt.args...)
+				failWithOptions(mockT, nil, tt.message, tt.args...)
 
 				if !mockT.Failed() {
-					t.Fatal("Expected fail to mark test as failed")
+					t.Fatal("Expected failWithOptions to mark test as failed")
 				}
 			})
 		}
 	})
 
 	t.Run("Helper method call", func(t *testing.T) {
-		// This test verifies that fail calls t.Helper()
+		// This test verifies that failWithOptions calls t.Helper().
 		t.Parallel()
 
 		t.Run("should call Helper method", func(t *testing.T) {
 			t.Parallel()
 			mockT := &mockT{}
 
-			fail(mockT, "test message")
+			failWithOptions(mockT, nil, "test message")
 
 			if !mockT.Failed() {
-				t.Fatal("Expected fail to mark test as failed")
+				t.Fatal("Expected failWithOptions to mark test as failed")
 			}
 		})
 	})
@@ -7254,7 +7997,7 @@ func TestFail_Integration(t *testing.T) {
 		BeTrue(mockT, false)
 
 		if !mockT.Failed() {
-			t.Fatal("Expected BeTrue to fail and call fail function")
+			t.Fatal("Expected BeTrue to fail and report the failure")
 		}
 
 		expected := "Expected true, got false"

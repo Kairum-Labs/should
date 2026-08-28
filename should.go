@@ -22,7 +22,9 @@ import (
 	"github.com/Kairum-Labs/should/assert"
 )
 
-// Option is a functional option for configuring assertions.
+// Option configures an assertion.
+//
+// Options are created by the With* helpers.
 type Option = assert.Option
 
 // WithMessage creates an option for setting a custom error message.
@@ -55,25 +57,29 @@ func WithMessagef(message string, args ...any) Option {
 // WithIgnoreCase returns an option that makes string comparisons case-insensitive.
 //
 // This option can be passed to assertions that perform string comparisons,
-// such as [StartWith] and [EndWith], to ensure that case differences are ignored.
+// such as [StartWith], [EndWith], and [NotEndWith], to ensure that case differences are ignored.
 //
 // Example:
 //
 //	should.StartWith(t, "hello", "HELLO", should.WithIgnoreCase())
 //	should.EndWith(t, "Hello, world", "WORLD", should.WithIgnoreCase())
+//	should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase())
 func WithIgnoreCase() Option {
 	return assert.WithIgnoreCase()
 }
 
-// WithStackTrace creates an option for including stack traces on [NotPanic] assertions.
+// WithStackTrace is retained for compatibility and has no effect because NotPanic
+// includes stack traces by default.
 //
-// Example:
-//
-//	should.NotPanic(t, func() {
-//		panic("expected panic")
-//	}, should.WithStackTrace())
+// Deprecated: NotPanic includes stack traces by default.
 func WithStackTrace() Option {
 	return assert.WithStackTrace()
+}
+
+// WithFailFast stops the test immediately when an assertion fails, instead of
+// marking it failed and allowing execution to continue.
+func WithFailFast() Option {
+	return assert.WithFailFast()
 }
 
 // WithIgnoreTimezone returns an option that makes time comparisons ignore timezone/location differences.
@@ -517,6 +523,27 @@ func AnyMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...O
 	assert.AnyMatch(t, actual, predicate, opts...)
 }
 
+// AllMatch reports a test failure if any element in the slice does not match the predicate function.
+//
+// The assertion evaluates every element so that its failure message can report
+// the total number of predicate failures. Empty and nil slices fail.
+//
+// Example:
+//
+//	numbers := []int{2, 4, 6, 8}
+//	should.AllMatch(t, numbers, func(n int) bool {
+//		return n%2 == 0
+//	})
+//
+//	users := []User{{Active: true}, {Active: false}}
+//	should.AllMatch(t, users, func(user User) bool {
+//		return user.Active
+//	}, should.WithMessage("All users must be active"))
+func AllMatch[T any](t testing.TB, actual []T, predicate func(T) bool, opts ...Option) {
+	t.Helper()
+	assert.AllMatch(t, actual, predicate, opts...)
+}
+
 // StartWith reports a test failure if the string does not start with the expected substring.
 //
 // This assertion checks if the actual string starts with the expected substring.
@@ -538,6 +565,26 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 	assert.StartWith(t, actual, expected, opts...)
 }
 
+// NotStartWith reports a test failure if the string starts with the given prefix.
+//
+// This is the negative counterpart of StartWith. It checks that the actual string
+// does NOT start with the expected prefix, and provides a detailed error message
+// with a caret indicator highlighting the matching prefix.
+//
+// Example:
+//
+//	should.NotStartWith(t, filename, "temp_")
+//
+//	should.NotStartWith(t, filename, "TEMP", should.WithIgnoreCase())
+//
+//	should.NotStartWith(t, username, "admin_", should.WithMessage("Username cannot start with admin prefix"))
+//
+// Note: The assertion is case-sensitive by default. Use should.WithIgnoreCase() to ignore case.
+func NotStartWith(t testing.TB, actual string, prefix string, opts ...Option) {
+	t.Helper()
+	assert.NotStartWith(t, actual, prefix, opts...)
+}
+
 // EndWith reports a test failure if the string does not end with the expected substring.
 //
 // This assertion checks if the actual string ends with the expected substring.
@@ -557,6 +604,26 @@ func StartWith(t testing.TB, actual string, expected string, opts ...Option) {
 func EndWith(t testing.TB, actual string, expected string, opts ...Option) {
 	t.Helper()
 	assert.EndWith(t, actual, expected, opts...)
+}
+
+// NotEndWith reports a test failure if the string ends with the expected substring.
+//
+// This assertion checks if the actual string does NOT end with the expected substring.
+// It provides a detailed error message showing the expected and actual strings.
+// The expected suffix must be non-empty.
+//
+// Example:
+//
+//	should.NotEndWith(t, "Hello, world!", "planet")
+//
+//	should.NotEndWith(t, "Hello, WORLD", "world", should.WithIgnoreCase()) // fails
+//
+//	should.NotEndWith(t, "Hello, world!", "world", should.WithMessage("String should not end with 'world'"))
+//
+// Note: The assertion is case-sensitive by default. Use [WithIgnoreCase] to ignore case.
+func NotEndWith(t testing.TB, actual string, expected string, opts ...Option) {
+	t.Helper()
+	assert.NotEndWith(t, actual, expected, opts...)
 }
 
 // ContainSubstring reports a test failure if the string does not contain the expected substring.
@@ -605,8 +672,9 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 // NotPanic reports a test failure if the given function panics.
 //
 // This assertion executes the provided function and expects it to complete normally
-// without panicking. If a panic occurs, it captures the panic value and includes it
-// in the error message. Supports optional custom error messages through [Option].
+// without panicking. If a panic occurs, it captures the panic value and stack trace
+// and includes both in the error message. Supports optional custom error messages
+// through [Option].
 //
 // Example:
 //
@@ -618,8 +686,6 @@ func Panic(t testing.TB, fn func(), opts ...Option) {
 //	should.NotPanic(t, func() {
 //		user.Save()
 //	}, should.WithMessage("Save operation should not panic"))
-//
-// Note: Stack trace is only available when [WithStackTrace] is used
 //
 // The function parameter must not be nil.
 func NotPanic(t testing.TB, fn func(), opts ...Option) {

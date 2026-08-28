@@ -13,6 +13,7 @@ import (
 type mockTB struct {
 	testing.TB
 	failed      bool
+	failedNow   bool
 	lastMessage string
 }
 
@@ -28,9 +29,87 @@ func (m *mockTB) Error(args ...any) {
 	m.lastMessage = fmt.Sprint(args...)
 }
 
+// failNowSignalType backs the failNowSignal sentinel. It carries a field
+// specifically so it isn't zero-size: the Go spec allows distinct zero-size
+// variables to share the same address (allocation may just return &zerobase),
+// which would make pointer-identity comparison on a *struct{} unreliable.
+type failNowSignalType struct{ _ byte }
+
+// failNowSignal is the panic value FailNow raises to unwind the current
+// goroutine, mirroring the real testing.T.FailNow (which calls runtime.Goexit
+// and never returns to the caller). Without it, code placed after a failed
+// WithFailFast assertion would keep running in the test below.
+//
+// It's compared by pointer identity (not a type assertion), so the recover
+// below only ever swallows this exact panic.
+var failNowSignal = &failNowSignalType{}
+
 func (m *mockTB) FailNow() {
 	m.failed = true
-	panic("FailNow called")
+	m.failedNow = true
+	panic(failNowSignal)
+}
+
+func TestWithFailFast(t *testing.T) {
+	t.Parallel()
+
+	mockT := &mockTB{}
+	reached := false
+	func() {
+		defer func() {
+			if r := recover(); r != nil && r != failNowSignal {
+				panic(r)
+			}
+		}()
+		BeTrue(mockT, false, WithFailFast())
+		reached = true
+	}()
+
+	if !mockT.failed || !mockT.failedNow {
+		t.Fatalf("Expected WithFailFast to fail and call FailNow, got failed=%v failedNow=%v", mockT.failed, mockT.failedNow)
+	}
+	if reached {
+		t.Fatal("Expected code after the failed assertion not to run")
+	}
+}
+
+func TestAllMatch(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		actual   []int
+		expected string
+	}{
+		{
+			name:     "forwards a predicate failure",
+			actual:   []int{2, 3, 4},
+			expected: "Index 1: 3",
+		},
+		{
+			name:     "forwards an empty slice failure",
+			actual:   []int{},
+			expected: "Expected collection to contain at least one item, but it is empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockT := &mockTB{}
+			AllMatch(mockT, tt.actual, func(value int) bool {
+				return value%2 == 0
+			})
+
+			if !mockT.failed {
+				t.Fatal("Expected AllMatch to fail")
+			}
+			if !strings.Contains(mockT.lastMessage, tt.expected) {
+				t.Fatalf("Expected AllMatch message to contain %q, got %q", tt.expected, mockT.lastMessage)
+			}
+		})
+	}
 }
 
 func TestAssertions(t *testing.T) {
@@ -161,6 +240,15 @@ func TestNotPanic(t *testing.T) {
 
 func TestWrappers(t *testing.T) {
 	t.Parallel()
+	t.Run("NotPanic with deprecated stack trace option passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotPanic(mockT, func() {}, WithStackTrace())
+		if mockT.failed {
+			t.Error("NotPanic should pass")
+		}
+	})
+
 	// BeTrue
 	t.Run("BeTrue passes", func(t *testing.T) {
 		t.Parallel()
@@ -469,12 +557,38 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
+	t.Run("NotStartWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotStartWith(mockT, "Hello, world!", "world")
+		if mockT.failed {
+			t.Error("NotStartWith should pass")
+		}
+	})
+
 	t.Run("EndWith passes", func(t *testing.T) {
 		t.Parallel()
 		mockT := &mockTB{}
 		EndWith(mockT, "Hello, world", "world")
 		if mockT.failed {
 			t.Error("EndWith should pass")
+		}
+	})
+
+	t.Run("NotEndWith passes", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotEndWith(mockT, "Hello, world", "planet")
+		if mockT.failed {
+			t.Error("NotEndWith should pass")
+		}
+	})
+	t.Run("NotEndWith fails", func(t *testing.T) {
+		t.Parallel()
+		mockT := &mockTB{}
+		NotEndWith(mockT, "Hello, world", "world")
+		if !mockT.failed {
+			t.Error("NotEndWith should fail")
 		}
 	})
 
@@ -585,15 +699,6 @@ func TestWrappers(t *testing.T) {
 		}
 	})
 
-	t.Run("NotPanic with stack trace passes", func(t *testing.T) {
-		t.Parallel()
-		mockT := &mockTB{}
-		NotPanic(mockT, func() {
-		}, WithStackTrace())
-		if mockT.failed {
-			t.Error("NotPanic should pass")
-		}
-	})
 }
 
 func TestContainKey_Integration(t *testing.T) {
