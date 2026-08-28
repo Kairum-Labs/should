@@ -34,7 +34,7 @@ func TestFailWithOptions(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		config           *Config
+		config           *config
 		format           string
 		args             []any
 		expectedExact    string   // for exact match
@@ -43,14 +43,14 @@ func TestFailWithOptions(t *testing.T) {
 	}{
 		{
 			name:          "without custom message",
-			config:        &Config{},
+			config:        &config{},
 			format:        "Expected condition failed",
 			args:          nil,
 			expectedExact: "Expected condition failed",
 		},
 		{
 			name:   "with custom message",
-			config: &Config{Message: "Custom error message"},
+			config: &config{Message: "Custom error message"},
 			format: "Expected condition failed",
 			args:   nil,
 			expectedContains: []string{
@@ -61,14 +61,14 @@ func TestFailWithOptions(t *testing.T) {
 		},
 		{
 			name:          "with format args",
-			config:        &Config{},
+			config:        &config{},
 			format:        "Expected %d to be greater than %d",
 			args:          []any{5, 10},
 			expectedExact: "Expected 5 to be greater than 10",
 		},
 		{
 			name:   "with custom message and format args",
-			config: &Config{Message: "Age validation failed"},
+			config: &config{Message: "Age validation failed"},
 			format: "Expected age %d to be at least %d",
 			args:   []any{16, 18},
 			expectedContains: []string{
@@ -85,14 +85,14 @@ func TestFailWithOptions(t *testing.T) {
 		},
 		{
 			name:          "with empty custom message",
-			config:        &Config{Message: ""},
+			config:        &config{Message: ""},
 			format:        "Expected condition failed",
 			args:          nil,
 			expectedExact: "Expected condition failed",
 		},
 		{
 			name:   "with multiline messages",
-			config: &Config{Message: "Validation failed:\n- Age is too low\n- Missing required field"},
+			config: &config{Message: "Validation failed:\n- Age is too low\n- Missing required field"},
 			format: "Expected user to be valid\nDetails: Invalid age",
 			args:   nil,
 			expectedContains: []string{
