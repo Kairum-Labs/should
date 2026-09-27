@@ -143,7 +143,8 @@ func formatValueComparison(v reflect.Value) string {
 		return formatValueComparison(v.Elem())
 
 	case reflect.Slice, reflect.Array:
-		if v.IsNil() {
+		// Arrays can't be nil, and reflect.Value.IsNil panics on them.
+		if v.Kind() == reflect.Slice && v.IsNil() {
 			return "nil"
 		}
 		var elements []string
@@ -304,7 +305,8 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 		}
 
 	case reflect.Slice, reflect.Array:
-		if expectedValue.IsNil() != actualValue.IsNil() {
+		// Arrays can't be nil, and reflect.Value.IsNil panics on them.
+		if expectedValue.Kind() == reflect.Slice && expectedValue.IsNil() != actualValue.IsNil() {
 			diffs = append(diffs, fieldDiff{
 				Path:     path,
 				Expected: expectedValue.Interface(),
@@ -2385,7 +2387,8 @@ func formatDiffValueConcise(value interface{}) string {
 		// For maps with multiple entries, show count
 		return fmt.Sprintf("map[%d entries]", v.Len())
 	case reflect.Slice, reflect.Array:
-		if v.IsNil() {
+		// Arrays can't be nil, and reflect.Value.IsNil panics on them.
+		if v.Kind() == reflect.Slice && v.IsNil() {
 			return "nil"
 		}
 		if v.Len() == 0 {
