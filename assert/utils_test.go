@@ -2077,6 +2077,11 @@ func TestFormatFieldWithTruncation(t *testing.T) {
 			expected: "[]string(3 items)",
 		},
 		{
+			name:     "array with items",
+			input:    [3]int{1, 2, 3},
+			expected: "[3]int(3 items)",
+		},
+		{
 			name:     "empty map",
 			input:    map[string]int{},
 			expected: "map[string]int{}",

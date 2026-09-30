@@ -304,9 +304,8 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 			diffs = append(diffs, compareExpectedActual(expectedValue.Elem().Interface(), actualValue.Elem().Interface(), path)...)
 		}
 
-	case reflect.Slice, reflect.Array:
-		// Arrays can't be nil, and reflect.Value.IsNil panics on them.
-		if expectedValue.Kind() == reflect.Slice && expectedValue.IsNil() != actualValue.IsNil() {
+	case reflect.Slice:
+		if expectedValue.IsNil() != actualValue.IsNil() {
 			diffs = append(diffs, fieldDiff{
 				Path:     path,
 				Expected: expectedValue.Interface(),
@@ -314,6 +313,9 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 			})
 			return
 		}
+		fallthrough
+
+	case reflect.Array:
 
 		if expectedValue.Len() == 0 && actualValue.Len() == 0 {
 			return
@@ -2343,10 +2345,12 @@ func formatFieldWithTruncation(rv reflect.Value) string {
 			return fmt.Sprintf("%s{}", rv.Type().Name())
 		}
 		return fmt.Sprintf("%s{...}", rv.Type().Name())
-	case reflect.Map, reflect.Slice, reflect.Array:
+	case reflect.Map, reflect.Slice:
 		if rv.IsNil() {
 			return "nil"
 		}
+		fallthrough
+	case reflect.Array:
 		if rv.Len() == 0 {
 			return fmt.Sprintf("%s{}", rv.Type().String())
 		}
