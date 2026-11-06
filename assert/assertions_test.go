@@ -379,6 +379,70 @@ func TestBeEqual_BothNilLiteral_Succeeds(t *testing.T) {
 	}
 }
 
+func TestBeEqual_ForArrays_FailsWithoutPanic(t *testing.T) {
+	t.Parallel()
+
+	// Fixed-size byte arrays, like UUID types, reach the diff code as
+	// reflect.Array values.
+	type UUID [16]byte
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEqual(t, UUID{1, 2, 3}, UUID{4, 5, 6})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "└─ [0]: 4 ≠ 1"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestBeEqual_ForStructsWithArrayFields_FailsWithoutPanic(t *testing.T) {
+	t.Parallel()
+
+	type UUID [16]byte
+	type Tenant struct {
+		ID UUID
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEqual(t, Tenant{ID: UUID{1}}, Tenant{ID: UUID{2}})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "└─ ID.[0]: 2 ≠ 1"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
+func TestBeEqual_ForSmallArrayFields_FailsWithoutPanic(t *testing.T) {
+	t.Parallel()
+
+	type Item struct {
+		Codes [3]int
+	}
+
+	failed, message := assertFails(t, func(t testing.TB) {
+		BeEqual(t, map[string]Item{"a": {Codes: [3]int{1, 2, 3}}}, map[string]Item{"a": {Codes: [3]int{1, 2, 4}}})
+	})
+
+	if !failed {
+		t.Fatal("Expected test to fail, but it passed")
+	}
+
+	expected := "└─ [a].Codes.[2]: 4 ≠ 3"
+	if !strings.Contains(message, expected) {
+		t.Fatalf("Expected message to contain %q, but got %q", expected, message)
+	}
+}
+
 func TestBeEqual_PrimitiveFormatting(t *testing.T) {
 	t.Parallel()
 

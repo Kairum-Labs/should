@@ -2077,6 +2077,11 @@ func TestFormatFieldWithTruncation(t *testing.T) {
 			expected: "[]string(3 items)",
 		},
 		{
+			name:     "array with items",
+			input:    [3]int{1, 2, 3},
+			expected: "[3]int(3 items)",
+		},
+		{
 			name:     "empty map",
 			input:    map[string]int{},
 			expected: "map[string]int{}",
@@ -2100,6 +2105,39 @@ func TestFormatFieldWithTruncation(t *testing.T) {
 			result := formatFieldWithTruncation(v)
 			if result != test.expected {
 				t.Errorf("formatFieldWithTruncation(%s): expected %q, got %q", test.name, test.expected, result)
+			}
+		})
+	}
+}
+
+func TestFormatters_NilValuesAndArrays(t *testing.T) {
+	t.Parallel()
+	formatters := map[string]func(any) string{
+		"comparison": func(value any) string { return formatValueComparison(reflect.ValueOf(value)) },
+		"field":      func(value any) string { return formatFieldWithTruncation(reflect.ValueOf(value)) },
+		"concise":    formatDiffValueConcise,
+		"complex":    formatComplexType,
+	}
+	values := map[string]any{
+		"nil":      nil,
+		"pointer":  (*int)(nil),
+		"slice":    []int(nil),
+		"map":      map[string]int(nil),
+		"channel":  (chan int)(nil),
+		"function": (func())(nil),
+	}
+	for name, format := range formatters {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			for name, value := range values {
+				t.Run(name, func(t *testing.T) {
+					if got := format(value); got != "nil" {
+						t.Fatalf("expected nil, got %q", got)
+					}
+				})
+			}
+			if got := format([2]int{1, 2}); got == "nil" {
+				t.Fatal("array must not be formatted as nil")
 			}
 		})
 	}

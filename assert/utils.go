@@ -106,10 +106,22 @@ func formatComparisonValue(obj interface{}) string {
 	return formatValueComparison(reflect.ValueOf(obj))
 }
 
+// isNilable reports whether values of kind k support reflect.Value.IsNil.
+func isNilable(k reflect.Kind) bool {
+	switch k {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
+		return true
+	}
+	return false
+}
+
 // formatValueComparison handles the formatting logic for different reflect.Value types
 // to provide consistent and readable output for comparison purposes.
 func formatValueComparison(v reflect.Value) string {
 	if !v.IsValid() {
+		return "nil"
+	}
+	if isNilable(v.Kind()) && v.IsNil() {
 		return "nil"
 	}
 
@@ -137,15 +149,9 @@ func formatValueComparison(v reflect.Value) string {
 		return fmt.Sprint(v.Interface())
 
 	case reflect.Pointer:
-		if v.IsNil() {
-			return "nil"
-		}
 		return formatValueComparison(v.Elem())
 
 	case reflect.Slice, reflect.Array:
-		if v.IsNil() {
-			return "nil"
-		}
 		var elements []string
 		for i := 0; i < v.Len(); i++ {
 			elements = append(elements, formatValueComparison(v.Index(i)))
@@ -153,9 +159,6 @@ func formatValueComparison(v reflect.Value) string {
 		return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
 
 	case reflect.Map:
-		if v.IsNil() {
-			return "nil"
-		}
 		var pairs []string
 		for _, key := range v.MapKeys() {
 			value := v.MapIndex(key)
@@ -219,6 +222,23 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 			Actual:   actualValue.Kind(),
 		})
 		return
+	}
+
+	// Preserve nil comparison for the kinds handled by the recursive comparer.
+	switch expectedValue.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Map:
+		expectedNil, actualNil := expectedValue.IsNil(), actualValue.IsNil()
+		if expectedNil != actualNil {
+			diffs = append(diffs, fieldDiff{
+				Path:     path,
+				Expected: expected,
+				Actual:   actual,
+			})
+			return
+		}
+		if expectedNil {
+			return
+		}
 	}
 
 	switch expectedValue.Kind() {
@@ -291,28 +311,9 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 		}
 
 	case reflect.Pointer:
-		if expectedValue.IsNil() != actualValue.IsNil() {
-			diffs = append(diffs, fieldDiff{
-				Path:     path,
-				Expected: expectedValue.Interface(),
-				Actual:   actualValue.Interface(),
-			})
-			return
-		}
-		if !expectedValue.IsNil() {
-			diffs = append(diffs, compareExpectedActual(expectedValue.Elem().Interface(), actualValue.Elem().Interface(), path)...)
-		}
+		diffs = append(diffs, compareExpectedActual(expectedValue.Elem().Interface(), actualValue.Elem().Interface(), path)...)
 
 	case reflect.Slice, reflect.Array:
-		if expectedValue.IsNil() != actualValue.IsNil() {
-			diffs = append(diffs, fieldDiff{
-				Path:     path,
-				Expected: expectedValue.Interface(),
-				Actual:   actualValue.Interface(),
-			})
-			return
-		}
-
 		if expectedValue.Len() == 0 && actualValue.Len() == 0 {
 			return
 		}
@@ -344,19 +345,6 @@ func compareExpectedActual(expected, actual interface{}, path string) (diffs []f
 		}
 
 	case reflect.Map:
-		if expectedValue.IsNil() != actualValue.IsNil() {
-			diffs = append(diffs, fieldDiff{
-				Path:     path,
-				Expected: expectedValue.Interface(),
-				Actual:   actualValue.Interface(),
-			})
-			return
-		}
-
-		if expectedValue.IsNil() {
-			return
-		}
-
 		for _, key := range expectedValue.MapKeys() {
 			actualVal := actualValue.MapIndex(key)
 			keyStr := fmt.Sprint(key.Interface())
@@ -2266,9 +2254,12 @@ func formatComplexType(item any) string {
 	}
 
 	rv := reflect.ValueOf(item)
+	if isNilable(rv.Kind()) && rv.IsNil() {
+		return "nil"
+	}
 
 	// If it's a pointer, dereference it
-	if rv.Kind() == reflect.Pointer && !rv.IsNil() {
+	if rv.Kind() == reflect.Pointer {
 		rv = rv.Elem()
 	}
 
@@ -2323,6 +2314,9 @@ func formatFieldWithTruncation(rv reflect.Value) string {
 	if !rv.IsValid() {
 		return "nil"
 	}
+	if isNilable(rv.Kind()) && rv.IsNil() {
+		return "nil"
+	}
 
 	switch rv.Kind() {
 	case reflect.String:
@@ -2332,9 +2326,6 @@ func formatFieldWithTruncation(rv reflect.Value) string {
 		}
 		return fmt.Sprintf("%q", str)
 	case reflect.Pointer:
-		if rv.IsNil() {
-			return "nil"
-		}
 		return formatFieldWithTruncation(rv.Elem())
 	case reflect.Struct:
 		if !rv.IsValid() || rv.IsZero() {
@@ -2342,9 +2333,6 @@ func formatFieldWithTruncation(rv reflect.Value) string {
 		}
 		return fmt.Sprintf("%s{...}", rv.Type().Name())
 	case reflect.Map, reflect.Slice, reflect.Array:
-		if rv.IsNil() {
-			return "nil"
-		}
 		if rv.Len() == 0 {
 			return fmt.Sprintf("%s{}", rv.Type().String())
 		}
@@ -2361,6 +2349,9 @@ func formatDiffValueConcise(value interface{}) string {
 	}
 
 	v := reflect.ValueOf(value)
+	if isNilable(v.Kind()) && v.IsNil() {
+		return "nil"
+	}
 	switch v.Kind() {
 	case reflect.String:
 		str := v.String()
@@ -2369,9 +2360,6 @@ func formatDiffValueConcise(value interface{}) string {
 		}
 		return fmt.Sprintf("%q", str)
 	case reflect.Map:
-		if v.IsNil() {
-			return "nil"
-		}
 		if v.Len() == 0 {
 			return "map[]"
 		}
@@ -2385,9 +2373,6 @@ func formatDiffValueConcise(value interface{}) string {
 		// For maps with multiple entries, show count
 		return fmt.Sprintf("map[%d entries]", v.Len())
 	case reflect.Slice, reflect.Array:
-		if v.IsNil() {
-			return "nil"
-		}
 		if v.Len() == 0 {
 			return "[]"
 		}

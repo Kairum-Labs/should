@@ -198,15 +198,7 @@ func BeNil(t testing.TB, actual any, opts ...Option) {
 		return // A nil interface is considered nil.
 	}
 
-	kind := v.Kind()
-	nillable := kind == reflect.Chan ||
-		kind == reflect.Func ||
-		kind == reflect.Interface ||
-		kind == reflect.Map ||
-		kind == reflect.Pointer ||
-		kind == reflect.Slice
-
-	if !nillable {
+	if !isNilable(v.Kind()) {
 		failWithOptions(t, cfg, "BeNil can only be used with nillable types, but got %T", actual)
 		return
 	}
@@ -236,15 +228,7 @@ func NotBeNil(t testing.TB, actual any, opts ...Option) {
 
 	isNil := !v.IsValid()
 	if v.IsValid() {
-		kind := v.Kind()
-		nillable := kind == reflect.Chan ||
-			kind == reflect.Func ||
-			kind == reflect.Interface ||
-			kind == reflect.Map ||
-			kind == reflect.Pointer ||
-			kind == reflect.Slice
-
-		if !nillable {
+		if !isNilable(v.Kind()) {
 			failWithOptions(t, cfg, "NotBeNil can only be used with nillable types, but got %T", actual)
 			return
 		}
